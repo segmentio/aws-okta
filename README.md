@@ -16,6 +16,12 @@ We use a multiple steps authentication here :
 
 ## Usage
 
+Get the CLI :
+
+```
+go get github.com/segmentio/aws-okta/cmd/aws-okta
+```
+
 Authenticate against Okta and get your AWS creds :
 
 ```
@@ -27,6 +33,8 @@ Exec `aws s3 ls` using your temporary AWS credentials :
 ```
 aws-okta exec <profile_name> -- aws s3 ls
 ```
+
+Right now the keystore is only used to store the username/password for the Okta authentication. Once all the features are working properly we will also store the AWS credentials there.
 
 Export your temporary AWS credentials into the current shell environment :
 
