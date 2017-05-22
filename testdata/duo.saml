@@ -1,0 +1,152 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><meta name="robots" content="noarchive"/><meta name="googlebot" content="noarchive"/><meta name="robots" content="noindex" />
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="googlebot" content="noindex" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="none" />
+<link href="https://ok4static.oktacdn.com/assets/img/icons/favicons/favicon-16x16.c55b69ae49b08edc7c000d12b8e5483f.png" rel="icon" type="image/png" sizes="16x16"/><link href="https://ok4static.oktacdn.com/assets/img/icons/favicons/favicon-32x32.99bc356b6e293b927f9e3a2b69761c26.png" rel="icon" type="image/png" sizes="32x32"/><link href="https://ok4static.oktacdn.com/assets/img/icons/favicons/favicon-96x96.de98828614fa33ca04fcfaa07679f345.png" rel="icon" type="image/png" sizes="96x96"/><meta name="msapplication-TileColor" content="#ffffff">
+<meta name="msapplication-TileImage" content="/img/icons/favicons/ms-icon-144x144.png">
+<meta name="application-name" content="Okta"/>
+<meta name="theme-color" content="#ffffff">
+<meta name="msapplication-config" content="/img/icons/favicons/browserconfig.xml"/>
+
+
+<title>Segment - Signing in...</title>
+<script>var _M=["0ua26ubcldFMn50GZ1t7_loggedIn","enduser-visited","0ua27mqk3sisB8aw81t7_seen","0ua26ubclheP74nhN1t7_seen","0ua26ubcldFMn50GZ1t7_userVerifiedCredential","0ua26ubcldFMn50GZ1t7_seen","0ua27n445hK3v5kYk1t7_loggedIn","0ua27xplefYyCz3A21t7_loggedIn"];</script>
+<!--[if IE]><link href="https://ok4static.oktacdn.com/assets/css/ie/ie.dfbe39884a139eeaa652e6b1ce8fc198.css" type="text/css" rel="stylesheet"/><![endif]-->
+<!--[if IE 7]><link href="https://ok4static.oktacdn.com/assets/css/ie/ie7.00cf245ce935958a8872ed5b16754ffa.css" type="text/css" rel="stylesheet"/><![endif]-->
+<!--[if IE 8]><link href="https://ok4static.oktacdn.com/assets/css/ie/ie8.ab88bee11dc4e5fc665dd656aa481ced.css" type="text/css" rel="stylesheet"/><![endif]-->
+<!--[if lte IE 8]><link href="https://ok4static.oktacdn.com/assets/css/ie/ie-user-states.c5d8b475ffffc4eddd5443901a30ce35.css" type="text/css" rel="stylesheet"/><![endif]-->
+<!--[if gte IE 9]><link href="https://ok4static.oktacdn.com/assets/css/ie/ie9.2e6d4e6712ae809a0b9259d91cf16475.css" type="text/css" rel="stylesheet"/><![endif]-->
+
+<script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+
+<script>
+    var okta = {
+        migrateMute: true,
+        locale: 'en',
+        settings: {
+            orgId: '00o21cnnwi93J7Hll1t7',
+            orgName: 'Segment',
+            serverStatus: 'ACTIVE',
+            isPreview: 'false' === 'true',
+            permissions: []
+        }
+    };
+</script>
+<script>var _features=["FAST_MASTER_PRIORITY_FETCH","OKTA_VERIFY_FACTOR_WITH_PUSH","SELF_SERVICE","NEW_SIGNIN_FLOWS","AD_PROVISIONING","ADMINISTRATORS","SAML_AUTO_DETECT_COMPRESSION","ENG_OKTA_WINDOWS_VERIFY","APP_SIGNON_QUERY_PARAM_FIX","JIRA_USE_REST_FOR_GROUPS","PROV_GAPPS_ENABLE_MULTIPART_HTTP","BASIC_SSO","ENG_ACTIVE_DIRECT_APPGROUPS","RATE_LIMIT_EARLY_WARNING","OKTA_SESSION_POLICY","PROV_GAPPS_INCREASE_DOWNLOAD_USERS_MAX_RESULTS","PROFILE_EDITOR_V2_NEW_SCHEMA_EDITOR","SMS_SERVICE","OKTA_GROUP_MEMBERSHIPS_V2_WRITES","OKTA_GROUP_PROFILES_V2_WRITES","ENG_DUPLICATED_APPGROUPS_FIX","MFA_SOFT_LOCK_FOR_DELAUTH_USERS","YUBIKEY_FACTOR","OSX_MDM","GROUP_MEMBERSHIPS_V2_WRITES","NEW_SIGN_IN_MIGRATION","PROFILE_EDITOR_V2","USG_EXTERNAL_ORG_ID_KEY","SIMPLE_HAL_LINKS_ON_USER_COLLECTIONS","GOOGLE_LICENSE_MANAGEMENT","VERIFY_PASSWORD_WHEN_MINTING_OAUTH_TOKEN","IN_PRODUCT_HELP","ENG_MIGRATE_PASSWORD_POLICY_PROPERTY_VALUES","ENABLE_PER_USER_RATE_LIMITS","ANDROID_UPGRADE_REQUIREMENT","AD_INTEGRATION_V2","ATTRIBUTE_LEVEL_MASTERING","MULTI_AD_DOMAIN","API_V1_APPS_REFACTOR_BATCHING","ENG_GAA_PRECEDENCE_OVER_MAPPING","APP_PROFILE_MASTERS","SYMANTEC_VIP_FACTOR","ENG_UD_ENABLE_LOCALE_VALIDATION","ONPREM_PROVISIONING","WORKDAY_IMPORT_IMPROVEMENT","ENABLE_DELAUTH_TIMEOUT_TO_CACHE_REDIRECT","DELETE_USER","SAGE","UD_INBOUND_SAML","EXTENSIBLE_PROFILE_ENCRYPTION","ENG_GENERIC_OMM_INTEGRATION","DUO_SECURITY_FACTOR","POLICY_FRAMEWORK","SECURID_FACTOR","USE_REPLICA_DB_APP_GROUP_USER_API","PLUGIN_SITEFLOW_OVERRIDES","FACTOR_ENROLLMENT_LOOP_PREVENTION","AUTOMATIC_UD_PROFILE_MIGRATION","AD_ADVANCED_BATCH_IMPORTS","AUTH_WHITELIST_URLS","MFA_SECURITY_QUESTION_FACTOR","TRUSTED_ORIGINS_UI","AD_FORGOT_PASSWORD","USER_MANAGEMENT","ALLOW_SWA","UD_INBOUND_SAML_SHARED_ACS","MFA_POLICY","OUTBOUND_SAML_AUTHN_INSTANT_FIX","ENG_ACCOUNT_CHOOSER_PUBLISH","ENG_RETRY_ASSIGNMENT_ON_LOCK_TIMEOUT","LDAP_PASSWORD_RESET","GROUP_MEMBERSHIP_RULES","AD_PASSWORD_RESET","INBOUND_SAML","ANDROID_FOR_WORK","DEPROVISIONING_WORKFLOW","EXTENSIBLE_PROFILE_ENCRYPTION_RESOURCE_REQUEST","ADMIN_SUPPORT","MOBILE_MIM","ANDROID_UPGRADE_WARNING","MFA_SOFT_TOKEN_FACTOR","UNRESTRICTED_APP_CREATION","ENG_OU_NAME_MIGRATION","AD_PASSWORD_SYNC","OPENSAML_MANAGE_UI","CDN_CONTENT_ENABLED","OFFICE365_V1","SET_USER_CONTEXT_FOR_FACTORS_API","USE_INDEXED_MFA_STATE_TOKEN_STORE","LDAP_USER_WELCOME_PAGE_SECURITY_QUESTION","SWA_SIGNON_ADMIN_SETS_CREDENTIALS","EXTENSIBLE_PROFILE_ENCRYPTION_APP_USER","CLOUD_DIRECTORY","BATCH_USER_GROUP_UPDATES_TO_LAST_MEMBERSHIP_UPDATE","ADVANCED_SSO","OKTA_VERIFY_FACTOR","OKTA_GROUP_MEMBERSHIPS_V2_READS","PLUGIN_ON_THE_FLY_APP_ADDITION","JIRA_ON_PREM_ENABLE_TLS_V_1_2"];</script><script>window.okta || (window.okta = {}); okta.cdnUrlHostname = "//ok4static.oktacdn.com"; okta.cdnPerformCheck = false;</script><script>window.okta || (window.okta = {});window.okta.mixpanel = true;</script><script src="https://ok4static.oktacdn.com/assets/js/jquery-1.11.3.min.895323ed2f7258af4fae2c738c8aea49.js" type="text/javascript"></script><!--[if lt IE 9]><script src="https://ok4static.oktacdn.com/assets/enduser/js/vendor/css3-mediaqueries.fa295f0132f5335f352071ca3613a94a.js" type="text/javascript"></script><![endif]-->
+
+<script>if (window.module) module = window.module;</script>
+
+</head>
+<body id="app" class="enduser-app  ">
+<noscript><div id="noscript-mask"></div><div id="noscript-msg" class="infobox infobox-warning infobox-compact"><span class="icon warning-16"></span><h3>Javascript is disabled on your browser.</h3><p>Please enable Javascript and refresh this page to use Okta.</p></div></noscript>
+
+<div id="container">
+<link href="https://ok4static.oktacdn.com/assets/css/sections/interstitial.07e04b8aa937570381d239f3a47b12a0.css" type="text/css" rel="stylesheet"/><script>
+    var interstitialMinWaitTime = 1200;
+    </script>
+<script src="https://ok4static.oktacdn.com/assets/js/widget/spin.min.545405225c13b2f42ab103fca31a49b1.js" type="text/javascript"></script><!--[if lte IE 9]>
+            <style type="text/css">
+                #okta-auth-spin {
+                    top: 35%;
+                }
+            </style>
+        <![endif]-->
+
+        <!--[if lte IE 8]>
+            <style type="text/css">
+                #okta-auth-band {
+                    height: 200px;
+                }
+            </style>
+        <![endif]-->
+
+        <div id="okta-interstitial-wrap" class="non-android">
+                <div id="okta-auth-mask"></div>
+        <div id="okta-auth-band">   
+            <div id="okta-auth-spin"></div>
+                    <div id="okta-auth-spin-small"></div>
+                <h1 id="okta-auth-heading" class ='signing-in-text'>Signing in to Amazon Web Services</h1>
+            </div>
+
+        </div>
+        
+        <script type="text/javascript">
+            $(function(){
+
+                if ($('#okta-auth-spin').hasClass('android-spinner')) {
+                    return;
+                }
+                
+                $('.new-img').on('load', function(evt){
+                    //gif loaded correctly, fade out static asset and fade in gif
+                    //making sure we show the graphic before the form submit happens in 200ms              
+                    $('.new-img-static').hide(0,function(){
+                        $('.new-img').show(0);
+                    });
+                });
+
+                //For cached images with src the load event fires just before you add a listener for it. Hence setting the source again to make sure the event handlers fire in the right order.
+                //http://stackoverflow.com/questions/3588102/jquery-load-not-working-on-my-image
+                var assetUrl = $('.new-img').attr('src');
+                $('.new-img').attr('src', assetUrl);
+
+                var standard = document.getElementById('okta-auth-spin');
+                var small = document.getElementById('okta-auth-spin-small');
+
+                var optsStandard = {
+                    lines: 9, // The number of lines to draw
+                    length: 0, // The length of each line
+                    width: 8, // The line thickness
+                    radius: 21, // The radius of the inner circle
+                    corners: 1, // Corner roundness (0..1)
+                    rotate: 0, // The rotation offset
+                    direction: 1, // 1: clockwise, -1: counterclockwise
+                    color: '#fff', // #rgb or #rrggbb
+                    speed: 1, // Rounds per second
+                    trail: 60, // Afterglow percentage
+                    shadow: false, // Whether to render a shadow
+                    hwaccel: false, // Whether to use hardware acceleration
+                    className: 'okta-auth-spinner', // The CSS class to assign to the spinner
+                    zIndex: 2e9, // The z-index (defaults to 2000000000)
+                    top: 'auto', // Top position relative to parent in px
+                    left: 'auto' // Left position relative to parent in px
+                };
+
+                var optsSmall = {
+                    lines: 9, // The number of lines to draw
+                    length: 0, // The length of each line
+                    width: 6, // The line thickness
+                    radius: 14, // The radius of the inner circle
+                    corners: 1, // Corner roundness (0..1)
+                    rotate: 0, // The rotation offset
+                    direction: 1, // 1: clockwise, -1: counterclockwise
+                    color: '#fff', // #rgb or #rrggbb
+                    speed: 1, // Rounds per second
+                    trail: 60, // Afterglow percentage
+                    shadow: false, // Whether to render a shadow
+                    hwaccel: false, // Whether to use hardware acceleration
+                    className: 'okta-auth-spinner', // The CSS class to assign to the spinner
+                    zIndex: 2e9, // The z-index (defaults to 2000000000)
+                    top: 'auto', // Top position relative to parent in px
+                    left: 'auto' // Left position relative to parent in px
+                };
+                if (typeof Spinner === 'function') {
+                    var spinnerStandard = new Spinner(optsStandard);
+                    var spinnerSmall = new Spinner(optsSmall);
+
+                    spinnerStandard.spin(standard);
+                    spinnerSmall.spin(small);
+                }
+
+            });
+        </script>
+    <form id="appForm" action="https&#x3a;&#x2f;&#x2f;signin.aws.amazon.com&#x2f;saml" method="POST">
+    <input name="SAMLResponse" type="hidden" value="PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c2FtbDJwOlJlc3BvbnNlIHhtbG5zOnNhbWwycD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOnByb3RvY29sIiBEZXN0aW5hdGlvbj0iaHR0cHM6Ly9zaWduaW4uYXdzLmFtYXpvbi5jb20vc2FtbCIgSUQ9ImlkMjIzODczMjkwMDY5ODczNDQyMDY1MDMxNzkzIiBJc3N1ZUluc3RhbnQ9IjIwMTctMDUtMTZUMDA6MTc6NDkuNDM4WiIgVmVyc2lvbj0iMi4wIiB4bWxuczp4cz0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEiPjxzYW1sMjpJc3N1ZXIgeG1sbnM6c2FtbDI9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphc3NlcnRpb24iIEZvcm1hdD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOm5hbWVpZC1mb3JtYXQ6ZW50aXR5Ij5odHRwOi8vd3d3Lm9rdGEuY29tL2V4azI1cTU4c2kzaGZEM1dKMXQ3PC9zYW1sMjpJc3N1ZXI&#x2b;PGRzOlNpZ25hdHVyZSB4bWxuczpkcz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC8wOS94bWxkc2lnIyI&#x2b;PGRzOlNpZ25lZEluZm8&#x2b;PGRzOkNhbm9uaWNhbGl6YXRpb25NZXRob2QgQWxnb3JpdGhtPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzEwL3htbC1leGMtYzE0biMiLz48ZHM6U2lnbmF0dXJlTWV0aG9kIEFsZ29yaXRobT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS8wNC94bWxkc2lnLW1vcmUjcnNhLXNoYTI1NiIvPjxkczpSZWZlcmVuY2UgVVJJPSIjaWQyMjM4NzMyOTAwNjk4NzM0NDIwNjUwMzE3OTMiPjxkczpUcmFuc2Zvcm1zPjxkczpUcmFuc2Zvcm0gQWxnb3JpdGhtPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwLzA5L3htbGRzaWcjZW52ZWxvcGVkLXNpZ25hdHVyZSIvPjxkczpUcmFuc2Zvcm0gQWxnb3JpdGhtPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzEwL3htbC1leGMtYzE0biMiPjxlYzpJbmNsdXNpdmVOYW1lc3BhY2VzIHhtbG5zOmVjPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzEwL3htbC1leGMtYzE0biMiIFByZWZpeExpc3Q9InhzIi8&#x2b;PC9kczpUcmFuc2Zvcm0&#x2b;PC9kczpUcmFuc2Zvcm1zPjxkczpEaWdlc3RNZXRob2QgQWxnb3JpdGhtPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGVuYyNzaGEyNTYiLz48ZHM6RGlnZXN0VmFsdWU&#x2b;SkZtcUtxdEUreTYrUVhTNGVUY2tCMzdTK0dNbnpEMWlTLzBSWjl5MVp2az08L2RzOkRpZ2VzdFZhbHVlPjwvZHM6UmVmZXJlbmNlPjwvZHM6U2lnbmVkSW5mbz48ZHM6U2lnbmF0dXJlVmFsdWU&#x2b;b2ZERTg3TWxRYjl3Vjl4UWtTWUFiOWVDOGE3d28vNlVVUUFnSmxpeGFGS2QxNXlUY0RqU3JlYzZ4UkhqTXNFVE1Tc1pRNkNjM05oUHJtcEYzNXlVejB2TTFUbGNVS1kwbGkzNFd5dkQ4S0lubDM3dUdpK3pxZDBjeXNVYXdOY1cxS1N4Z2MrTGlkK1NMb2RUNERnWFFHSFZqaitpb3BWbTcxRGRubHRrQldQTDdKU1JHbW55d1FwYkZTNDZaL0lab1o0b0hseGcyMTNWMDZSMllwV25oVzhzSURjWUZpMHczQVp3MjZidXJZaS9DM21KVUZ2UWkyK3pZdUJ6RXFCSHJranRXS2xBU1lJQ0ErYVpLUUJWY1JuWHhsaTc1c2FpMlpGQjJSSVV1eXJCYmhlZ2p5cjV0bzlvdlpGSS9ES3pwU25yVVRiMW5YdWpjUnVWV0FNWGJ3PT08L2RzOlNpZ25hdHVyZVZhbHVlPjxkczpLZXlJbmZvPjxkczpYNTA5RGF0YT48ZHM6WDUwOUNlcnRpZmljYXRlPk1JSURuakNDQW9hZ0F3SUJBZ0lHQVZ1T1ZscUpNQTBHQ1NxR1NJYjNEUUVCQlFVQU1JR1BNUXN3Q1FZRFZRUUdFd0pWVXpFVE1CRUcKQTFVRUNBd0tRMkZzYVdadmNtNXBZVEVXTUJRR0ExVUVCd3dOVTJGdUlFWnlZVzVqYVhOamJ6RU5NQXNHQTFVRUNnd0VUMnQwWVRFVQpNQklHQTFVRUN3d0xVMU5QVUhKdmRtbGtaWEl4RURBT0JnTlZCQU1NQjNObFoyMWxiblF4SERBYUJna3Foa2lHOXcwQkNRRVdEV2x1ClptOUFiMnQwWVM1amIyMHdIaGNOTVRjd05ESXhNREl5TmpVMVdoY05NamN3TkRJeE1ESXlOelUxV2pDQmp6RUxNQWtHQTFVRUJoTUMKVlZNeEV6QVJCZ05WQkFnTUNrTmhiR2xtYjNKdWFXRXhGakFVQmdOVkJBY01EVk5oYmlCR2NtRnVZMmx6WTI4eERUQUxCZ05WQkFvTQpCRTlyZEdFeEZEQVNCZ05WQkFzTUMxTlRUMUJ5YjNacFpHVnlNUkF3RGdZRFZRUUREQWR6WldkdFpXNTBNUnd3R2dZSktvWklodmNOCkFRa0JGZzFwYm1adlFHOXJkR0V1WTI5dE1JSUJJakFOQmdrcWhraUc5dzBCQVFFRkFBT0NBUThBTUlJQkNnS0NBUUVBeVphWEZuMk4KU013SVJ0UEVvVmY1ZGpFWE9lR2MvS0h6dzZWc0lkOWUwWHZmUU1QQVZGSHNWTzFFaG1xaU1GY2pTdVJlS3luWEhHVkM5YWE2RFNyNgp6NmxUcFV2U3hnN0pOY1pCV3JWUThIMFJCbTZXcHZzaFJLNkFUVTRpRHpmNWRGSDdQZW9jY1JHbUczYUtBcVNwSStJZFBoTjNtZ3Q3Cnh6Sy81YnIxWnZuTk40YmhLZldlRzJyemNRN0ZOZTMyOTNmSWVURmEzRnJ6bCt4UldDaTR0Ui8zaHVEd3hFby9Rdm1xb0xCNnh5NjIKcHZJbmNWNTV1VEFrWUJHTjd2b3J3ZWVsYzRFRHp6Snk4ZjQ3QVVubDRMS1Z6Y0V5ekxaZWNGUXRrczlDdUhuSUZBdG93YzR2cW5VNAozTTBSOFZVMFErVjBWc2lUUFBFUVNuTGtJa1hBS1FJREFRQUJNQTBHQ1NxR1NJYjNEUUVCQlFVQUE0SUJBUUJpSE95MzQvd0NVREF2CnNnRWpsM3FWc3doUkE4d3RlbUFpa2xoSnpmak1uMWlUYlNzNTFRMGJDZjZOei9nZFQrbkVFR1BBV2F2Q1dOZUowZmZhaS8wa0VUZlQKWWd2aGtsQ0M5bU5OLzZUZi81LzlxbFlHVjkwZTE0NlFodG9PdVJsTk5TU2VkRWNabGY0Zy9FNWN4eGJiaCtnOW5TWXUrSXUvbkVqTAp3M3Y3WE95WkRvdkJ0T3E2RkV4ZDVLd2FZanVKK24rKzY4VDZOblF4QkF0Y3dDUnRTTkJ5UHhIdGw1V1ZQNmtTRmpHUXI1OFNTdmRrCjYyREwxWXY4T2tIZVJtNVkvRjlvY2ZUQ2grT3JDclpGUHdEejBwK1dodGVKUzVKMXVvQXN6d3E1VnBvRm0wVDU2VWpzMnlEZXZzNzgKbU5DeG1vZ3JWaDFQQWh2T2J5SllrM245PC9kczpYNTA5Q2VydGlmaWNhdGU&#x2b;PC9kczpYNTA5RGF0YT48L2RzOktleUluZm8&#x2b;PC9kczpTaWduYXR1cmU&#x2b;PHNhbWwycDpTdGF0dXMgeG1sbnM6c2FtbDJwPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6cHJvdG9jb2wiPjxzYW1sMnA6U3RhdHVzQ29kZSBWYWx1ZT0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOnN0YXR1czpTdWNjZXNzIi8&#x2b;PC9zYW1sMnA6U3RhdHVzPjxzYW1sMjpBc3NlcnRpb24geG1sbnM6c2FtbDI9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphc3NlcnRpb24iIElEPSJpZDIyMzg3MzI5MDA3MDIyNDIwMjk1NDYwMTkwIiBJc3N1ZUluc3RhbnQ9IjIwMTctMDUtMTZUMDA6MTc6NDkuNDM4WiIgVmVyc2lvbj0iMi4wIiB4bWxuczp4cz0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEiPjxzYW1sMjpJc3N1ZXIgRm9ybWF0PSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6bmFtZWlkLWZvcm1hdDplbnRpdHkiIHhtbG5zOnNhbWwyPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YXNzZXJ0aW9uIj5odHRwOi8vd3d3Lm9rdGEuY29tL2V4azI1cTU4c2kzaGZEM1dKMXQ3PC9zYW1sMjpJc3N1ZXI&#x2b;PGRzOlNpZ25hdHVyZSB4bWxuczpkcz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC8wOS94bWxkc2lnIyI&#x2b;PGRzOlNpZ25lZEluZm8&#x2b;PGRzOkNhbm9uaWNhbGl6YXRpb25NZXRob2QgQWxnb3JpdGhtPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzEwL3htbC1leGMtYzE0biMiLz48ZHM6U2lnbmF0dXJlTWV0aG9kIEFsZ29yaXRobT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS8wNC94bWxkc2lnLW1vcmUjcnNhLXNoYTI1NiIvPjxkczpSZWZlcmVuY2UgVVJJPSIjaWQyMjM4NzMyOTAwNzAyMjQyMDI5NTQ2MDE5MCI&#x2b;PGRzOlRyYW5zZm9ybXM&#x2b;PGRzOlRyYW5zZm9ybSBBbGdvcml0aG09Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvMDkveG1sZHNpZyNlbnZlbG9wZWQtc2lnbmF0dXJlIi8&#x2b;PGRzOlRyYW5zZm9ybSBBbGdvcml0aG09Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvMTAveG1sLWV4Yy1jMTRuIyI&#x2b;PGVjOkluY2x1c2l2ZU5hbWVzcGFjZXMgeG1sbnM6ZWM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvMTAveG1sLWV4Yy1jMTRuIyIgUHJlZml4TGlzdD0ieHMiLz48L2RzOlRyYW5zZm9ybT48L2RzOlRyYW5zZm9ybXM&#x2b;PGRzOkRpZ2VzdE1ldGhvZCBBbGdvcml0aG09Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvMDQveG1sZW5jI3NoYTI1NiIvPjxkczpEaWdlc3RWYWx1ZT4vSGtvOU5tcE51N1FLM2FMQXNKOTdXNWdZcTVqc2o5emNXbEd2T09zWWU0PTwvZHM6RGlnZXN0VmFsdWU&#x2b;PC9kczpSZWZlcmVuY2U&#x2b;PC9kczpTaWduZWRJbmZvPjxkczpTaWduYXR1cmVWYWx1ZT50NVB1alhhd1o5ck9saldxSTd1M0VubkFNdElVbXFsbGNZd2VJR3Y2Zy9lMUNsYmtvRHVDaGd2RlJ4UWxFcEl2eXVUOElsOGFrcEdyVFpNd3pZZ3NDT3l0ZzZ0V1REK09aUjB4S2JVTm8wS2Y1SCt1RFFlZ1BpSnd5MmQ2YnJncVVnMWQ1YStyUFZzVndCVWFBanRmdHpSaTV3TWdqQlhHZXJ3SERQOWZqbkZFdGpPNXkrR2dQd0hOdWV1Sk5ZWEdVcUFUYlJrZUlqZEp4Tk9tT0xqN1FBM1RPYmd1MHkySjRGWitibStzR2Z4bDNGT0EvR0hrcWxlcVVXMFBxSjEyWjRXN3VNZ092ak1xRUczOGlyQlpoT3c0VWNtZ2oyUnMvUzlmS0ZzbjhVeVhiVGNWK1poU0JZblc1NTJUVFkvNjJiNkdKNUVaOTdGS05uMDR6cFFsOEE9PTwvZHM6U2lnbmF0dXJlVmFsdWU&#x2b;PGRzOktleUluZm8&#x2b;PGRzOlg1MDlEYXRhPjxkczpYNTA5Q2VydGlmaWNhdGU&#x2b;TUlJRG5qQ0NBb2FnQXdJQkFnSUdBVnVPVmxxSk1BMEdDU3FHU0liM0RRRUJCUVVBTUlHUE1Rc3dDUVlEVlFRR0V3SlZVekVUTUJFRwpBMVVFQ0F3S1EyRnNhV1p2Y201cFlURVdNQlFHQTFVRUJ3d05VMkZ1SUVaeVlXNWphWE5qYnpFTk1Bc0dBMVVFQ2d3RVQydDBZVEVVCk1CSUdBMVVFQ3d3TFUxTlBVSEp2ZG1sa1pYSXhFREFPQmdOVkJBTU1CM05sWjIxbGJuUXhIREFhQmdrcWhraUc5dzBCQ1FFV0RXbHUKWm05QWIydDBZUzVqYjIwd0hoY05NVGN3TkRJeE1ESXlOalUxV2hjTk1qY3dOREl4TURJeU56VTFXakNCanpFTE1Ba0dBMVVFQmhNQwpWVk14RXpBUkJnTlZCQWdNQ2tOaGJHbG1iM0p1YVdFeEZqQVVCZ05WQkFjTURWTmhiaUJHY21GdVkybHpZMjh4RFRBTEJnTlZCQW9NCkJFOXJkR0V4RkRBU0JnTlZCQXNNQzFOVFQxQnliM1pwWkdWeU1SQXdEZ1lEVlFRRERBZHpaV2R0Wlc1ME1Sd3dHZ1lKS29aSWh2Y04KQVFrQkZnMXBibVp2UUc5cmRHRXVZMjl0TUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUF5WmFYRm4yTgpTTXdJUnRQRW9WZjVkakVYT2VHYy9LSHp3NlZzSWQ5ZTBYdmZRTVBBVkZIc1ZPMUVobXFpTUZjalN1UmVLeW5YSEdWQzlhYTZEU3I2Cno2bFRwVXZTeGc3Sk5jWkJXclZROEgwUkJtNldwdnNoUks2QVRVNGlEemY1ZEZIN1Blb2NjUkdtRzNhS0FxU3BJK0lkUGhOM21ndDcKeHpLLzVicjFadm5OTjRiaEtmV2VHMnJ6Y1E3Rk5lMzI5M2ZJZVRGYTNGcnpsK3hSV0NpNHRSLzNodUR3eEVvL1F2bXFvTEI2eHk2MgpwdkluY1Y1NXVUQWtZQkdON3ZvcndlZWxjNEVEenpKeThmNDdBVW5sNExLVnpjRXl6TFplY0ZRdGtzOUN1SG5JRkF0b3djNHZxblU0CjNNMFI4VlUwUStWMFZzaVRQUEVRU25Ma0lrWEFLUUlEQVFBQk1BMEdDU3FHU0liM0RRRUJCUVVBQTRJQkFRQmlIT3kzNC93Q1VEQXYKc2dFamwzcVZzd2hSQTh3dGVtQWlrbGhKemZqTW4xaVRiU3M1MVEwYkNmNk56L2dkVCtuRUVHUEFXYXZDV05lSjBmZmFpLzBrRVRmVApZZ3Zoa2xDQzltTk4vNlRmLzUvOXFsWUdWOTBlMTQ2UWh0b091UmxOTlNTZWRFY1psZjRnL0U1Y3h4YmJoK2c5blNZdStJdS9uRWpMCnczdjdYT3laRG92QnRPcTZGRXhkNUt3YVlqdUorbisrNjhUNk5uUXhCQXRjd0NSdFNOQnlQeEh0bDVXVlA2a1NGakdRcjU4U1N2ZGsKNjJETDFZdjhPa0hlUm01WS9GOW9jZlRDaCtPckNyWkZQd0R6MHArV2h0ZUpTNUoxdW9Bc3p3cTVWcG9GbTBUNTZVanMyeURldnM3OAptTkN4bW9nclZoMVBBaHZPYnlKWWszbjk8L2RzOlg1MDlDZXJ0aWZpY2F0ZT48L2RzOlg1MDlEYXRhPjwvZHM6S2V5SW5mbz48L2RzOlNpZ25hdHVyZT48c2FtbDI6U3ViamVjdCB4bWxuczpzYW1sMj0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOmFzc2VydGlvbiI&#x2b;PHNhbWwyOk5hbWVJRCBGb3JtYXQ9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDpuYW1laWQtZm9ybWF0OnVuc3BlY2lmaWVkIj5qdWxpZW5Ac2VnbWVudC5jb208L3NhbWwyOk5hbWVJRD48c2FtbDI6U3ViamVjdENvbmZpcm1hdGlvbiBNZXRob2Q9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDpjbTpiZWFyZXIiPjxzYW1sMjpTdWJqZWN0Q29uZmlybWF0aW9uRGF0YSBOb3RPbk9yQWZ0ZXI9IjIwMTctMDUtMTZUMDA6MjI6NDkuNDM4WiIgUmVjaXBpZW50PSJodHRwczovL3NpZ25pbi5hd3MuYW1hem9uLmNvbS9zYW1sIi8&#x2b;PC9zYW1sMjpTdWJqZWN0Q29uZmlybWF0aW9uPjwvc2FtbDI6U3ViamVjdD48c2FtbDI6Q29uZGl0aW9ucyBOb3RCZWZvcmU9IjIwMTctMDUtMTZUMDA6MTI6NDkuNDM4WiIgTm90T25PckFmdGVyPSIyMDE3LTA1LTE2VDAwOjIyOjQ5LjQzOFoiIHhtbG5zOnNhbWwyPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YXNzZXJ0aW9uIj48c2FtbDI6QXVkaWVuY2VSZXN0cmljdGlvbj48c2FtbDI6QXVkaWVuY2U&#x2b;dXJuOmFtYXpvbjp3ZWJzZXJ2aWNlczwvc2FtbDI6QXVkaWVuY2U&#x2b;PC9zYW1sMjpBdWRpZW5jZVJlc3RyaWN0aW9uPjwvc2FtbDI6Q29uZGl0aW9ucz48c2FtbDI6QXV0aG5TdGF0ZW1lbnQgQXV0aG5JbnN0YW50PSIyMDE3LTA1LTE2VDAwOjE3OjMzLjU4MFoiIFNlc3Npb25JbmRleD0iaWQxNDk0ODkzODY5NDM4LjE0NjMxNDUyMzQiIHhtbG5zOnNhbWwyPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YXNzZXJ0aW9uIj48c2FtbDI6QXV0aG5Db250ZXh0PjxzYW1sMjpBdXRobkNvbnRleHRDbGFzc1JlZj51cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YWM6Y2xhc3NlczpQYXNzd29yZFByb3RlY3RlZFRyYW5zcG9ydDwvc2FtbDI6QXV0aG5Db250ZXh0Q2xhc3NSZWY&#x2b;PC9zYW1sMjpBdXRobkNvbnRleHQ&#x2b;PC9zYW1sMjpBdXRoblN0YXRlbWVudD48c2FtbDI6QXR0cmlidXRlU3RhdGVtZW50IHhtbG5zOnNhbWwyPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YXNzZXJ0aW9uIj48c2FtbDI6QXR0cmlidXRlIE5hbWU9Imh0dHBzOi8vYXdzLmFtYXpvbi5jb20vU0FNTC9BdHRyaWJ1dGVzL1JvbGUiIE5hbWVGb3JtYXQ9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphdHRybmFtZS1mb3JtYXQ6dXJpIj48c2FtbDI6QXR0cmlidXRlVmFsdWUgeG1sbnM6eHM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hIiB4bWxuczp4c2k9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hLWluc3RhbmNlIiB4c2k6dHlwZT0ieHM6c3RyaW5nIj5hcm46YXdzOmlhbTo6NTI4NDUxMzg0Mzg0OnNhbWwtcHJvdmlkZXIvT2t0YSxhcm46YXdzOmlhbTo6NTI4NDUxMzg0Mzg0OnJvbGUvb2t0YS1hZG1pbjwvc2FtbDI6QXR0cmlidXRlVmFsdWU&#x2b;PHNhbWwyOkF0dHJpYnV0ZVZhbHVlIHhtbG5zOnhzPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYSIgeG1sbnM6eHNpPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYS1pbnN0YW5jZSIgeHNpOnR5cGU9InhzOnN0cmluZyI&#x2b;YXJuOmF3czppYW06OjUyODQ1MTM4NDM4NDpzYW1sLXByb3ZpZGVyL09rdGEsYXJuOmF3czppYW06OjUyODQ1MTM4NDM4NDpyb2xlL3Rlc3QtZGV2ZWxvcG1lbnQtRUMyRnVsbEFjY2Vzczwvc2FtbDI6QXR0cmlidXRlVmFsdWU&#x2b;PC9zYW1sMjpBdHRyaWJ1dGU&#x2b;PHNhbWwyOkF0dHJpYnV0ZSBOYW1lPSJodHRwczovL2F3cy5hbWF6b24uY29tL1NBTUwvQXR0cmlidXRlcy9Sb2xlU2Vzc2lvbk5hbWUiIE5hbWVGb3JtYXQ9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphdHRybmFtZS1mb3JtYXQ6YmFzaWMiPjxzYW1sMjpBdHRyaWJ1dGVWYWx1ZSB4bWxuczp4cz0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEiIHhtbG5zOnhzaT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEtaW5zdGFuY2UiIHhzaTp0eXBlPSJ4czpzdHJpbmciPmp1bGllbkBzZWdtZW50LmNvbTwvc2FtbDI6QXR0cmlidXRlVmFsdWU&#x2b;PC9zYW1sMjpBdHRyaWJ1dGU&#x2b;PHNhbWwyOkF0dHJpYnV0ZSBOYW1lPSJodHRwczovL2F3cy5hbWF6b24uY29tL1NBTUwvQXR0cmlidXRlcy9TZXNzaW9uRHVyYXRpb24iIE5hbWVGb3JtYXQ9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphdHRybmFtZS1mb3JtYXQ6YmFzaWMiPjxzYW1sMjpBdHRyaWJ1dGVWYWx1ZSB4bWxuczp4cz0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEiIHhtbG5zOnhzaT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEtaW5zdGFuY2UiIHhzaTp0eXBlPSJ4czpzdHJpbmciPjM2MDA8L3NhbWwyOkF0dHJpYnV0ZVZhbHVlPjwvc2FtbDI6QXR0cmlidXRlPjwvc2FtbDI6QXR0cmlidXRlU3RhdGVtZW50Pjwvc2FtbDI6QXNzZXJ0aW9uPjwvc2FtbDJwOlJlc3BvbnNlPg&#x3d;&#x3d;"/>
+    <input name="RelayState" type="hidden" value=""/>
+</form>
+
+<script src="https://ok4static.oktacdn.com/assets/js/app/sso/interstitial.0dee13f2d74d523aca30e2028a2b2199.js" type="text/javascript"></script></div>
+<!-- close #container -->
+</body>
+</html>
