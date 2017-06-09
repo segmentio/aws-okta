@@ -14,6 +14,7 @@ import (
 
 type loginConfig struct {
 	Profile string `conf:"profile" help:"AWS Profile to use to exec the command."`
+	Debug   bool   `conf:"debug" help:"Enable debug for the Exec command"`
 }
 
 func cmdLogin(args []string) (err error) {

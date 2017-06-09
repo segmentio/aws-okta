@@ -10,7 +10,6 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 
 	"golang.org/x/net/publicsuffix"
@@ -24,6 +23,7 @@ import (
 )
 
 const (
+	OktaServer       = "oktapreview.com"
 	OktaOrganization = "segment"
 	OktaAwsSAMLUrl   = "home/amazon_aws/0oa25q58sjnJXnvIg1t7/272"
 
@@ -37,17 +37,11 @@ type OktaClient struct {
 	Username        string
 	Password        string
 	UserAuth        *OktaUserAuthn
-	DuoAuth         *DuoAuth
+	DuoClient       *DuoClient
 	AccessKeyId     string
 	SecretAccessKey string
 	SessionToken    string
 	Expiration      time.Time
-}
-
-type DuoAuth struct {
-	Host      string
-	Signature string
-	Callback  string
 }
 
 type SAMLAssertion struct {
@@ -80,6 +74,7 @@ func (o *OktaClient) Authenticate(roleArn, profile string) (err error) {
 		return
 	}
 
+	log.Debug("Step: 1")
 	err = o.Get("POST", "api/v1/authn", payload, &oktaUserAuthn, "json")
 	if err != nil {
 		return
@@ -88,6 +83,7 @@ func (o *OktaClient) Authenticate(roleArn, profile string) (err error) {
 	o.UserAuth = &oktaUserAuthn
 
 	// Step 2 : Challenge MFA if needed
+	log.Debug("Step: 2")
 	if o.UserAuth.Status == "MFA_REQUIRED" {
 		err = o.challengeMFA()
 	}
@@ -98,6 +94,7 @@ func (o *OktaClient) Authenticate(roleArn, profile string) (err error) {
 	}
 
 	// Step 3 : Get SAML Assertion and retrieve IAM Roles
+	log.Debug("Step: 3")
 	assertion = SAMLAssertion{}
 	err = o.Get("GET", OktaAwsSAMLUrl+"?onetimetoken="+o.UserAuth.SessionToken,
 		nil, &assertion, "saml")
@@ -184,7 +181,7 @@ func SelectAWSRoles(roles []string) (role string) {
 func (o *OktaClient) challengeMFA() (err error) {
 	var oktaFactorId string
 	var payload []byte
-	var wg sync.WaitGroup
+	//var wg sync.WaitGroup
 
 	for _, f := range o.UserAuth.Embedded.Factors {
 		oktaFactorId, err = GetFactorId(&f)
@@ -192,6 +189,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 	if oktaFactorId == "" {
 		return
 	}
+	log.Debugf("Okta Factor ID: %s\n", oktaFactorId)
 
 	payload, err = json.Marshal(OktaStateToken{
 		StateToken: o.UserAuth.StateToken,
@@ -210,7 +208,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 	if o.UserAuth.Status == "MFA_CHALLENGE" {
 		f := o.UserAuth.Embedded.Factor
 
-		o.DuoAuth = &DuoAuth{
+		o.DuoClient = &DuoClient{
 			Host:      f.Embedded.Verification.Host,
 			Signature: f.Embedded.Verification.Signature,
 			Callback:  f.Embedded.Verification.Links.Complete.Href,
@@ -219,10 +217,21 @@ func (o *OktaClient) challengeMFA() (err error) {
 		log.Debugf("Host:%s\nSignature:%s\nStateToken:%s\n",
 			f.Embedded.Verification.Host, f.Embedded.Verification.Signature,
 			o.UserAuth.StateToken)
-		wg.Add(1)
-		go func() {
-			o.serveDuo()
-		}()
+
+		err = o.DuoClient.ChallengeU2f()
+		if err != nil {
+			return fmt.Errorf("DuoClient.ChallengeU2f: %s", err)
+		}
+
+		//wg.Add(1)
+		//go func() {
+		//	o.serveDuo()
+		//	log.Info("challenge u2f")
+		//	err = o.DuoClient.ChallengeU2f()
+		//	if err != nil {
+		//		wg.Done()
+		//	}
+		//}()
 
 		// Poll Okta until Duo authentication has been completed
 		for o.UserAuth.Status != "SUCCESS" {
@@ -234,9 +243,8 @@ func (o *OktaClient) challengeMFA() (err error) {
 			}
 			time.Sleep(2 * time.Second)
 		}
-		wg.Done()
-
-		wg.Wait()
+		//wg.Done()
+		//wg.Wait()
 	}
 	return
 }
@@ -253,9 +261,9 @@ func (o *OktaClient) ServeTemplate(w http.ResponseWriter, r *http.Request) {
 
 	tmpl.ExecuteTemplate(w, "duo.html", map[string]interface{}{
 		"StateToken": o.UserAuth.StateToken,
-		"Host":       o.DuoAuth.Host,
-		"Signature":  o.DuoAuth.Signature,
-		"Callback":   o.DuoAuth.Callback,
+		"Host":       o.DuoClient.Host,
+		"Signature":  o.DuoClient.Signature,
+		"Callback":   o.DuoClient.Callback,
 	})
 }
 
@@ -278,7 +286,7 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	var jar *cookiejar.Jar
 
 	url, err = url.Parse(fmt.Sprintf(
-		"https://%s.okta.com/%s", o.Organization, path,
+		"https://%s.%s/%s", o.Organization, OktaServer, path,
 	))
 
 	if format == "json" {
