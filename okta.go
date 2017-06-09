@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/net/publicsuffix"
@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	OktaServer       = "oktapreview.com"
+	OktaServer       = "okta.com"
 	OktaOrganization = "segment"
 	OktaAwsSAMLUrl   = "home/amazon_aws/0oa25q58sjnJXnvIg1t7/272"
 
@@ -181,7 +181,7 @@ func SelectAWSRoles(roles []string) (role string) {
 func (o *OktaClient) challengeMFA() (err error) {
 	var oktaFactorId string
 	var payload []byte
-	//var wg sync.WaitGroup
+	var wg sync.WaitGroup
 
 	for _, f := range o.UserAuth.Embedded.Factors {
 		oktaFactorId, err = GetFactorId(&f)
@@ -209,29 +209,24 @@ func (o *OktaClient) challengeMFA() (err error) {
 		f := o.UserAuth.Embedded.Factor
 
 		o.DuoClient = &DuoClient{
-			Host:      f.Embedded.Verification.Host,
-			Signature: f.Embedded.Verification.Signature,
-			Callback:  f.Embedded.Verification.Links.Complete.Href,
+			Host:       f.Embedded.Verification.Host,
+			Signature:  f.Embedded.Verification.Signature,
+			Callback:   f.Embedded.Verification.Links.Complete.Href,
+			StateToken: o.UserAuth.StateToken,
 		}
 
 		log.Debugf("Host:%s\nSignature:%s\nStateToken:%s\n",
 			f.Embedded.Verification.Host, f.Embedded.Verification.Signature,
 			o.UserAuth.StateToken)
 
-		err = o.DuoClient.ChallengeU2f()
-		if err != nil {
-			return fmt.Errorf("DuoClient.ChallengeU2f: %s", err)
-		}
-
-		//wg.Add(1)
-		//go func() {
-		//	o.serveDuo()
-		//	log.Info("challenge u2f")
-		//	err = o.DuoClient.ChallengeU2f()
-		//	if err != nil {
-		//		wg.Done()
-		//	}
-		//}()
+		wg.Add(1)
+		go func() {
+			log.Info("challenge u2f")
+			err = o.DuoClient.ChallengeU2f()
+			if err != nil {
+				wg.Done()
+			}
+		}()
 
 		// Poll Okta until Duo authentication has been completed
 		for o.UserAuth.Status != "SUCCESS" {
@@ -243,28 +238,10 @@ func (o *OktaClient) challengeMFA() (err error) {
 			}
 			time.Sleep(2 * time.Second)
 		}
-		//wg.Done()
-		//wg.Wait()
+		wg.Done()
+		wg.Wait()
 	}
 	return
-}
-
-func (o *OktaClient) serveDuo() {
-	http.HandleFunc("/duo", o.ServeTemplate)
-
-	fmt.Printf("DUO U2F link : http://0.0.0.0:3000/duo\n\n")
-	http.ListenAndServe(":3000", nil)
-}
-
-func (o *OktaClient) ServeTemplate(w http.ResponseWriter, r *http.Request) {
-	var tmpl = template.Must(template.ParseFiles("templates/duo.html"))
-
-	tmpl.ExecuteTemplate(w, "duo.html", map[string]interface{}{
-		"StateToken": o.UserAuth.StateToken,
-		"Host":       o.DuoClient.Host,
-		"Signature":  o.DuoClient.Signature,
-		"Callback":   o.DuoClient.Callback,
-	})
 }
 
 func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {

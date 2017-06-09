@@ -14,22 +14,19 @@ type Response struct {
 	InResponseTo string `xml:"InResponseTo,attr"`
 
 	Assertion Assertion `xml:"Assertion"`
-	//Signature Signature `xml:"Signature"`
-	//Issuer    Issuer    `xml:"Issuer"`
-	Status Status `xml:"Status"`
+	Status    Status    `xml:"Status"`
 
 	originalString string
 }
 
 type Assertion struct {
-	XMLName      xml.Name
-	ID           string `xml:"ID,attr"`
-	Version      string `xml:"Version,attr"`
-	XS           string `xml:"xmlns:xs,attr"`
-	XSI          string `xml:"xmlns:xsi,attr"`
-	SAML         string `xml:"saml,attr"`
-	IssueInstant string `xml:"IssueInstant,attr"`
-	//Issuer             Issuer `xml:"Issuer"`
+	XMLName            xml.Name
+	ID                 string `xml:"ID,attr"`
+	Version            string `xml:"Version,attr"`
+	XS                 string `xml:"xmlns:xs,attr"`
+	XSI                string `xml:"xmlns:xsi,attr"`
+	SAML               string `xml:"saml,attr"`
+	IssueInstant       string `xml:"IssueInstant,attr"`
 	Subject            Subject
 	Conditions         Conditions
 	AttributeStatement AttributeStatement

@@ -12,7 +12,7 @@ func TestAuthenticate(t *testing.T) {
 
 	log.SetLevel(log.DebugLevel)
 
-	username := "julien@segment.com"
+	username := "sloth@segment.com"
 	password := "\\tszkGpO)h7%qWZVI20?bRg}`\"SLOr"
 	profile := "stage"
 
@@ -34,13 +34,4 @@ func TestAuthenticate(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
-	//// Store data into keystore
-	//creds, _ = client.GetCredentials()
-
-	//log.WithFields(log.Fields{
-	//	"credentials": creds,
-	//}).Debug("retrieved credentials")
-
-	//err = StoreBlob(config.Profile, creds)
 }

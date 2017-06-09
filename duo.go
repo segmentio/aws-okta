@@ -1,23 +1,44 @@
 package okta
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 )
 
 type DuoClient struct {
-	Host      string
-	Signature string
-	Callback  string
+	Host       string
+	Signature  string
+	Callback   string
+	StateToken string
+}
+
+type StatusResp struct {
+	Response struct {
+		U2FSignRequest []struct {
+			Version   string `json:"version"`
+			Challenge string `json:"challenge"`
+			AppID     string `json:"appId"`
+			KeyHandle string `json:"keyHandle"`
+			SessionID string `json:"sessionId"`
+		} `json:"u2f_sign_request"`
+		Status     string `json:"status"`
+		StatusCode string `json:"status_code"`
+		Reason     string `json:"reason"`
+		Parent     string `json:"parent"`
+		Cookie     string `json:"cookie"`
+		Result     string `json:"result"`
+	} `json:"response"`
+	Stat string `json:"stat"`
 }
 
 type PromptResp struct {
 	Response struct {
 		Txid string `json:"txid"`
 	} `json:"response"`
+	Stat string `json:"stat"`
 }
 
 func NewDuoClient(host, signature, callback string) *DuoClient {
@@ -34,121 +55,207 @@ func NewDuoClient(host, signature, callback string) *DuoClient {
 // to fake Duo is order to use the CLI without any browser.
 //
 // The function perform three successive calls to retry the challenge data.
-// Wait for the user to perform the verification (touch the Yubikey). And then
+// Wait for the user to perform the verification (Duo Push or Yubikey). And then
 // call the callback url.
 //
 // TODO: Use a Context to gracefully shutdown the thing and have a nice timeout
 func (d *DuoClient) ChallengeU2f() (err error) {
-	var sid string
-	var tx string
+	var sid, tx, txid, auth string
 
 	tx = strings.Split(d.Signature, ":")[0]
 
-	// Call the auth API and retrieve the Location from the Header
-	var location string
-	err = d.Do("POST", "frame/web/v1/auth?tx="+tx+"&parent=http://0.0.0.0:3000/duo&v=2.1",
-		[]byte("parent=http%3A%2F%2F0.0.0.0%3A3000"), nil, &location)
+	sid, err = d.DoAuth(tx)
 	if err != nil {
 		return
 	}
-	fmt.Println(location)
-	if location != "" {
-		sid = strings.Split(location, "=")[1]
-	} else {
-		return fmt.Errorf("Location not part of the auth header. Authentication failed ?")
+
+	txid, err = d.DoPrompt(sid)
+	if err != nil {
+		return
 	}
-	fmt.Printf("Location: %s\nsid: %s\n", location, sid)
 
-	//promptHeader := http.Header{
-	//	"Accept":           []string{"text/plain", "*/*"},
-	//	"X-Requested-With": []string{"XMLHttpRequest"},
-	//}
-	//promptPayload := []byte(fmt.Sprintf("sid=%s&device=u2f_token&factor=U2F+Token", sid))
-	//promptResp := PromptResp{}
-	//err = d.Do("POST", "frame/prompt", promptPayload, &promptHeader, &promptResp, nil)
-	//if err != nil {
-	//	return
-	//}
+	_, err = d.DoStatus(txid, sid)
+	if err != nil {
+		return
+	}
 
-	//txid := promptResp.Response.Txid
-	//fmt.Println(txid)
+	// This one should block untile 2fa completed
+	auth, err = d.DoStatus(txid, sid)
+	if err != nil {
+		return
+	}
+
+	err = d.DoCallback(auth)
+	if err != nil {
+		return
+	}
 
 	return
 }
 
-func (d *DuoClient) Do(method string, path string, data []byte, recv interface{}, headerRecv interface{}) (err error) {
-	var url *url.URL
-	var res *http.Response
+// DoAuth sends a POST request to the Duo /frame/web/v1/auth endpoint.
+// The request will not follow the redirect and retrieve the location from the HTTP header.
+// From the Location we get the Duo Session ID (sid) required for the rest of the communication.
+//
+// The function will return the sid
+func (d *DuoClient) DoAuth(tx string) (sid string, err error) {
+	var req *http.Request
+	var location string
 
-	url, err = url.Parse(fmt.Sprintf(
-		"https://%s/%s", d.Host, path,
-	))
-	if err != nil {
-		return
-	}
+	url := fmt.Sprintf(
+		"https://%s/frame/web/v1/auth?tx=%s&parent=http://0.0.0.0:3000/duo&v=2.1",
+		d.Host, tx,
+	)
 
-	header := &http.Header{
-		"Origin":       []string{"https://" + d.Host},
-		"Content-Type": []string{"application/x-www-form-urlencoded"},
-	}
-
-	client := http.Client{
+	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
 	}
-	req := &http.Request{
-		Method:     method,
-		URL:        url,
-		Proto:      "HTTP/1.1",
-		ProtoMajor: 1,
-		ProtoMinor: 1,
-		Header:     *header,
+
+	req, err = http.NewRequest("POST", url, nil)
+	if err != nil {
+		return
 	}
 
-	if res, err = client.Do(req); err != nil {
+	req.Header.Add("Origin", "https://"+d.Host)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err := client.Do(req)
+	if err != nil {
 		return
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusFound {
-		err = fmt.Errorf("%s %v: %s", method, url, res.Status)
-		fmt.Println(err)
+	if res.StatusCode == http.StatusFound {
+		location = res.Header.Get("Location")
+		if location != "" {
+			sid = strings.Split(location, "=")[1]
+		} else {
+			err = fmt.Errorf("Location not part of the auth header. Authentication failed ?")
+		}
 	} else {
-		if recv != nil {
-			err = json.NewDecoder(res.Body).Decode(recv)
-		}
-		if headerRecv != nil {
-			headerRecv = res.Header.Get("Location")
-			fmt.Println(headerRecv)
-		}
+		err = fmt.Errorf("Request failed or followed redirect: %s", res.StatusCode)
 	}
 
 	return
 }
 
-// mergeHeader is a helper to merge two http.Header
-func mergeHeader(src, target *http.Header) {
-	for k, v := range *src {
-		for i := 0; i < len(v); i++ {
-			target.Add(k, v[i])
-		}
-	}
-}
+// DoPrompt sends a POST request to the Duo /frame/promt endpoint
+//
+// The functions returns the Duo transaction ID which is different from
+// the Okta transaction ID
+func (d *DuoClient) DoPrompt(sid string) (txid string, err error) {
+	var req *http.Request
 
-func parsePromptResp(payload []byte) (txid string, err error) {
-	type Prompt struct {
-		Response struct {
-			Txid string `json:"txid"`
-		} `json:"response"`
-	}
-	prompt := Prompt{}
-	err = json.Unmarshal(payload, &prompt)
+	url := "https://" + d.Host + "/frame/prompt"
+
+	client := &http.Client{}
+
+	//TODO: Here we automatically use Duo Push. The user should be able to choose
+	//between Duo Push and the Yubikey ("&device=u2f_token&factor=U2F+Token")
+	promptData := "sid=" + sid + "&device=phone1&factor=Duo+Push&out_of_date=False"
+	req, err = http.NewRequest("POST", url, bytes.NewReader([]byte(promptData)))
 	if err != nil {
 		return
 	}
 
-	txid = prompt.Response.Txid
+	req.Header.Add("Origin", "https://"+d.Host)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("X-Requested-With", "XMLHttpRequest")
+
+	res, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		err = fmt.Errorf("Prompt request failed: %s", res.StatusCode)
+		return
+	}
+
+	var status PromptResp
+	err = json.NewDecoder(res.Body).Decode(&status)
+
+	txid = status.Response.Txid
+
+	return
+}
+
+// DoStatus sends a POST request against the Duo /frame/status endpoint
+//
+// The function returns the auth string required for the Okta Callback if
+// the request succeeded.
+func (d *DuoClient) DoStatus(txid, sid string) (auth string, err error) {
+	var req *http.Request
+
+	url := "https://" + d.Host + "/frame/status"
+
+	client := &http.Client{}
+
+	statusData := "sid=" + sid + "&txid=" + txid
+	req, err = http.NewRequest("POST", url, bytes.NewReader([]byte(statusData)))
+	if err != nil {
+		return
+	}
+
+	req.Header.Add("Origin", "https://"+d.Host)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("X-Requested-With", "XMLHttpRequest")
+
+	res, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		err = fmt.Errorf("Prompt request failed: %s", res.StatusCode)
+		return
+	}
+
+	var status StatusResp
+	err = json.NewDecoder(res.Body).Decode(&status)
+
+	if status.Response.Result == "SUCCESS" {
+		auth = status.Response.Cookie
+	}
+	return
+}
+
+// DoCallback send a POST request to the Okta callback url defined in the DuoClient
+//
+// The callback request requires the stateToken from Okta and a sig_response built
+// from the precedent requests.
+func (d *DuoClient) DoCallback(auth string) (err error) {
+	var app string
+	var req *http.Request
+
+	app = strings.Split(d.Signature, ":")[1]
+
+	sigResp := auth + ":" + app
+
+	client := &http.Client{}
+
+	callbackData := "stateToken=" + d.StateToken + "&sig_response=" + sigResp
+	req, err = http.NewRequest("POST", d.Callback, bytes.NewReader([]byte(callbackData)))
+	if err != nil {
+		return
+	}
+
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		err = fmt.Errorf("Prompt request failed: %s", res.StatusCode)
+		return
+	}
 
 	return
 }
