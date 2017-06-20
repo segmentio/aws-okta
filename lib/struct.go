@@ -1,4 +1,4 @@
-package okta
+package lib
 
 // http://developer.okta.com/docs/api/resources/authn.html
 type OktaUser struct {
@@ -16,6 +16,7 @@ type OktaUserAuthn struct {
 	ExpiresAt    string                `json:"expiresAt"`
 	Status       string                `json:"status"`
 	Embedded     OktaUserAuthnEmbedded `json:"_embedded"`
+	FactorResult string                `json:"factorResult"`
 }
 
 type OktaUserAuthnEmbedded struct {

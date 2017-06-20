@@ -1,4 +1,4 @@
-package okta
+package lib
 
 import (
 	"bytes"
@@ -135,7 +135,7 @@ func (d *DuoClient) DoAuth(tx string) (sid string, err error) {
 			err = fmt.Errorf("Location not part of the auth header. Authentication failed ?")
 		}
 	} else {
-		err = fmt.Errorf("Request failed or followed redirect: %s", res.StatusCode)
+		err = fmt.Errorf("Request failed or followed redirect: %d", res.StatusCode)
 	}
 
 	return
@@ -171,7 +171,7 @@ func (d *DuoClient) DoPrompt(sid string) (txid string, err error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Prompt request failed: %s", res.StatusCode)
+		err = fmt.Errorf("Prompt request failed: %d", res.StatusCode)
 		return
 	}
 
@@ -211,7 +211,7 @@ func (d *DuoClient) DoStatus(txid, sid string) (auth string, err error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Prompt request failed: %s", res.StatusCode)
+		err = fmt.Errorf("Prompt request failed: %d", res.StatusCode)
 		return
 	}
 
@@ -253,9 +253,8 @@ func (d *DuoClient) DoCallback(auth string) (err error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Prompt request failed: %s", res.StatusCode)
+		err = fmt.Errorf("Prompt request failed: %d", res.StatusCode)
 		return
 	}
-
 	return
 }
