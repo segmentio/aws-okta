@@ -1,35 +1,28 @@
-package okta
+package lib
 
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"strings"
-	"sync"
 	"time"
 
 	"golang.org/x/net/publicsuffix"
 
-	"github.com/apex/log"
+	"github.com/99designs/aws-vault/keyring"
+	log "github.com/Sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/segmentio/aws-okta/saml"
+	"github.com/segmentio/aws-okta/lib/saml"
 )
 
 const (
-	OktaServer       = "okta.com"
-	OktaOrganization = "segment"
-	OktaAwsSAMLUrl   = "home/amazon_aws/0oa25q58sjnJXnvIg1t7/272"
-
-	KeystoreName    = "aws-okta"
-	KeystoreOktaKey = "okta-login"
-	DefaultRegion   = "us-west-2"
+	OktaServer = "okta.com"
 )
 
 type OktaClient struct {
@@ -42,6 +35,7 @@ type OktaClient struct {
 	SecretAccessKey string
 	SessionToken    string
 	Expiration      time.Time
+	OktaAwsSAMLUrl  string
 }
 
 type SAMLAssertion struct {
@@ -49,19 +43,25 @@ type SAMLAssertion struct {
 	RawData []byte
 }
 
-func NewOktaClient(organization, username, password string) *OktaClient {
+type OktaCreds struct {
+	Organization string
+	Username     string
+	Password     string
+}
+
+func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string) *OktaClient {
 	return &OktaClient{
-		Organization: organization,
-		Username:     username,
-		Password:     password,
+		Organization:   creds.Organization,
+		Username:       creds.Username,
+		Password:       creds.Password,
+		OktaAwsSAMLUrl: oktaAwsSAMLUrl,
 	}
 }
 
-func (o *OktaClient) Authenticate(roleArn, profile string) (err error) {
+func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, error) {
 	var payload []byte
 	var oktaUserAuthn OktaUserAuthn
 	var assertion SAMLAssertion
-	var awsRoles []string
 
 	// Step 1 : Basic authentication
 	user := OktaUser{
@@ -69,15 +69,15 @@ func (o *OktaClient) Authenticate(roleArn, profile string) (err error) {
 		Password: o.Password,
 	}
 
-	payload, err = json.Marshal(user)
+	payload, err := json.Marshal(user)
 	if err != nil {
-		return
+		return sts.Credentials{}, err
 	}
 
 	log.Debug("Step: 1")
 	err = o.Get("POST", "api/v1/authn", payload, &oktaUserAuthn, "json")
 	if err != nil {
-		return
+		return sts.Credentials{}, errors.New("Failed to authenticate with okta.  Please check that your credentials have been set correctly with `aws-okta add`")
 	}
 
 	o.UserAuth = &oktaUserAuthn
@@ -85,103 +85,53 @@ func (o *OktaClient) Authenticate(roleArn, profile string) (err error) {
 	// Step 2 : Challenge MFA if needed
 	log.Debug("Step: 2")
 	if o.UserAuth.Status == "MFA_REQUIRED" {
-		err = o.challengeMFA()
+		log.Info("Sending push notification...")
+		if err = o.challengeMFA(); err != nil {
+			return sts.Credentials{}, err
+		}
 	}
 
 	if o.UserAuth.SessionToken == "" {
-		err = fmt.Errorf("authentication failed for %s", o.Username)
-		return
+		return sts.Credentials{}, fmt.Errorf("authentication failed for %s", o.Username)
 	}
 
 	// Step 3 : Get SAML Assertion and retrieve IAM Roles
 	log.Debug("Step: 3")
 	assertion = SAMLAssertion{}
-	err = o.Get("GET", OktaAwsSAMLUrl+"?onetimetoken="+o.UserAuth.SessionToken,
-		nil, &assertion, "saml")
-	if err != nil {
-		return
+	if err = o.Get("GET", o.OktaAwsSAMLUrl+"?onetimetoken="+o.UserAuth.SessionToken,
+		nil, &assertion, "saml"); err != nil {
+		return sts.Credentials{}, err
 	}
 
-	awsRoles, err = GetRolesFromSAML(assertion.Resp)
+	principal, role, err := GetRoleFromSAML(assertion.Resp, profileARN)
 	if err != nil {
-		return
+		return sts.Credentials{}, err
 	}
-
-	if len(awsRoles) == 0 {
-		err = fmt.Errorf("do AWS Roles found for user %s\n", o.Username)
-		return
-	}
-	awsRole := SelectAWSRoles(awsRoles)
-	arns := strings.Split(awsRole, ",")
 
 	// Step 4 : Assume Role with SAML
 	samlSess := session.Must(session.NewSession())
 	svc := sts.New(samlSess)
 
-	log.Debugf("assuming first role with SAML : %v\n", arns)
-
 	samlParams := &sts.AssumeRoleWithSAMLInput{
-		PrincipalArn:    aws.String(arns[0]),
-		RoleArn:         aws.String(arns[1]),
+		PrincipalArn:    aws.String(principal),
+		RoleArn:         aws.String(role),
 		SAMLAssertion:   aws.String(string(assertion.RawData)),
-		DurationSeconds: aws.Int64(3600),
+		DurationSeconds: aws.Int64(int64(duration.Seconds())),
 	}
 
 	samlResp, err := svc.AssumeRoleWithSAML(samlParams)
 	if err != nil {
-		log.WithField("role", arns[0]).Errorf(
+		log.WithField("role", role).Errorf(
 			"error assuming role with SAML: %s", err.Error())
-		return
+		return sts.Credentials{}, err
 	}
 
-	// Step 5 : Chain to final Role and get temporary credentials
-	client := sts.New(session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
-		*samlResp.Credentials.AccessKeyId,
-		*samlResp.Credentials.SecretAccessKey,
-		*samlResp.Credentials.SessionToken,
-	)}))
-
-	log.Debugf("assuming role %s with profile %s\n", roleArn, profile)
-
-	params := &sts.AssumeRoleInput{
-		RoleArn:         aws.String(roleArn),
-		RoleSessionName: aws.String("okta-" + profile),
-	}
-	resp, err := client.AssumeRole(params)
-	if err != nil {
-		log.WithField("role", roleArn).Errorf(
-			"error assuming role: %s", err.Error())
-		return
-	}
-
-	o.AccessKeyId = *resp.Credentials.AccessKeyId
-	o.SecretAccessKey = *resp.Credentials.SecretAccessKey
-	o.SessionToken = *resp.Credentials.SessionToken
-	o.Expiration = *resp.Credentials.Expiration
-
-	return
-}
-
-func (o *OktaClient) GetCredentials() (creds sts.Credentials, err error) {
-	creds = sts.Credentials{
-		AccessKeyId:     aws.String(o.AccessKeyId),
-		SecretAccessKey: aws.String(o.SecretAccessKey),
-		SessionToken:    aws.String(o.SessionToken),
-		Expiration:      aws.Time(o.Expiration),
-	}
-	return
-}
-
-//TODO: The selection of the AWS role should be done using "source_role"
-//		from the configuration
-func SelectAWSRoles(roles []string) (role string) {
-	return roles[0]
+	return *samlResp.Credentials, nil
 }
 
 func (o *OktaClient) challengeMFA() (err error) {
 	var oktaFactorId string
 	var payload []byte
-	var wg sync.WaitGroup
 
 	for _, f := range o.UserAuth.Embedded.Factors {
 		oktaFactorId, err = GetFactorId(&f)
@@ -219,27 +169,32 @@ func (o *OktaClient) challengeMFA() (err error) {
 			f.Embedded.Verification.Host, f.Embedded.Verification.Signature,
 			o.UserAuth.StateToken)
 
-		wg.Add(1)
+		errChan := make(chan error, 1)
 		go func() {
-			log.Info("challenge u2f")
-			err = o.DuoClient.ChallengeU2f()
+			log.Debug("challenge u2f")
+			err := o.DuoClient.ChallengeU2f()
 			if err != nil {
-				wg.Done()
+				errChan <- err
 			}
 		}()
 
 		// Poll Okta until Duo authentication has been completed
 		for o.UserAuth.Status != "SUCCESS" {
-			err = o.Get("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify",
-				payload, &o.UserAuth, "json",
-			)
-			if err != nil {
-				return
+			select {
+			case duoErr := <-errChan:
+				if duoErr != nil {
+					return errors.New("Failed Duo challenge")
+				}
+			default:
+				err = o.Get("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify",
+					payload, &o.UserAuth, "json",
+				)
+				if err != nil {
+					return err
+				}
 			}
 			time.Sleep(2 * time.Second)
 		}
-		wg.Done()
-		wg.Wait()
 	}
 	return
 }
@@ -265,6 +220,9 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	url, err = url.Parse(fmt.Sprintf(
 		"https://%s.%s/%s", o.Organization, OktaServer, path,
 	))
+	if err != nil {
+		return err
+	}
 
 	if format == "json" {
 		header = http.Header{
@@ -281,7 +239,6 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	client = http.Client{
 		Jar: jar,
 	}
-
 	req := &http.Request{
 		Method:        method,
 		URL:           url,
@@ -310,9 +267,40 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 			if err != nil {
 				return
 			}
-			err = ParseSAML(rawData, recv.(*SAMLAssertion))
+			if err := ParseSAML(rawData, recv.(*SAMLAssertion)); err != nil {
+				return fmt.Errorf("Okta user %s does not have the AWS app added to their account.  Please contact your Okta admin to make sure things are configured properly.", o.Username)
+			}
 		}
 	}
 
 	return
+}
+
+type OktaProvider struct {
+	Keyring         keyring.Keyring
+	ProfileARN      string
+	SessionDuration time.Duration
+	OktaAwsSAMLUrl  string
+}
+
+func (p *OktaProvider) Retrieve() (sts.Credentials, error) {
+	log.Debug("using okta provider")
+	item, err := p.Keyring.Get("okta-creds")
+	if err != nil {
+		log.Debug("couldnt get okta creds from keyring: %s", err)
+		return sts.Credentials{}, err
+	}
+
+	var oktaCreds OktaCreds
+	if err = json.Unmarshal(item.Data, &oktaCreds); err != nil {
+		return sts.Credentials{}, errors.New("Failed to get okta credentials from your keyring.  Please make sure you have added okta credentials with `aws-okta add`")
+	}
+
+	oktaClient := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl)
+
+	creds, err := oktaClient.AuthenticateProfile(p.ProfileARN, p.SessionDuration)
+	if err != nil {
+		return sts.Credentials{}, err
+	}
+	return creds, err
 }

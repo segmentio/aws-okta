@@ -1,33 +1,35 @@
-package okta
+package lib
 
 import (
 	"encoding/base64"
 	"encoding/xml"
+	"fmt"
 	"strings"
 
-	"github.com/segmentio/aws-okta/saml"
+	"github.com/segmentio/aws-okta/lib/saml"
 	"golang.org/x/net/html"
 )
 
 //TODO: Move those functions into saml package
 
-func GetRolesFromSAML(resp *saml.Response) (roles []string, err error) {
+func GetRoleFromSAML(resp *saml.Response, profileARN string) (string, string, error) {
 	for _, a := range resp.Assertion.AttributeStatement.Attributes {
 		if strings.HasSuffix(a.Name, "SAML/Attributes/Role") {
 			for _, v := range a.AttributeValues {
-				if roles == nil {
-					roles = make([]string, 1)
-				} else {
-					newRoles := make([]string, len(roles)+1)
-					copy(newRoles, roles)
-					roles = newRoles
+				tokens := strings.Split(v.Value, ",")
+				if len(tokens) != 2 {
+					continue
 				}
-				roles[len(roles)-1] = v.Value
+
+				principalARN, profile := tokens[0], tokens[1]
+				if profile == profileARN {
+					return principalARN, profile, nil
+				}
 			}
 		}
 	}
 
-	return
+	return "", "", fmt.Errorf("Role '%s' not authorized by Okta.  Contact Okta admin to make sure that the AWS app is configured properly.", profileARN)
 }
 
 func ParseSAML(body []byte, resp *SAMLAssertion) (err error) {
