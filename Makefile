@@ -1,6 +1,7 @@
 version := $$CIRCLE_TAG
 
-release: gh-release clean dist
+release: gh-release govendor clean dist
+	govendor sync
 	github-release release \
 	--security-token $$GH_LOGIN \
 	--user segmentio \
@@ -34,3 +35,6 @@ dist:
 
 gh-release:
 	go get -u github.com/aktau/github-release
+
+govendor:
+	go get -u github.com/kardianos/govendor
