@@ -283,24 +283,24 @@ type OktaProvider struct {
 	OktaAwsSAMLUrl  string
 }
 
-func (p *OktaProvider) Retrieve() (sts.Credentials, error) {
+func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	log.Debug("using okta provider")
 	item, err := p.Keyring.Get("okta-creds")
 	if err != nil {
 		log.Debug("couldnt get okta creds from keyring: %s", err)
-		return sts.Credentials{}, err
+		return sts.Credentials{}, "", err
 	}
 
 	var oktaCreds OktaCreds
 	if err = json.Unmarshal(item.Data, &oktaCreds); err != nil {
-		return sts.Credentials{}, errors.New("Failed to get okta credentials from your keyring.  Please make sure you have added okta credentials with `aws-okta add`")
+		return sts.Credentials{}, "", errors.New("Failed to get okta credentials from your keyring.  Please make sure you have added okta credentials with `aws-okta add`")
 	}
 
 	oktaClient := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl)
 
 	creds, err := oktaClient.AuthenticateProfile(p.ProfileARN, p.SessionDuration)
 	if err != nil {
-		return sts.Credentials{}, err
+		return sts.Credentials{}, "", err
 	}
-	return creds, err
+	return creds, oktaCreds.Username, err
 }

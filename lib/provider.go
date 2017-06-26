@@ -59,12 +59,12 @@ func (o ProviderOptions) ApplyDefaults() ProviderOptions {
 type Provider struct {
 	credentials.Expiry
 	ProviderOptions
-	profile  string
-	expires  time.Time
-	keyring  keyring.Keyring
-	sessions *KeyringSessions
-	profiles profiles
-	creds    map[string]credentials.Value
+	profile                string
+	expires                time.Time
+	keyring                keyring.Keyring
+	sessions               *KeyringSessions
+	profiles               profiles
+	defaultRoleSessionName string
 }
 
 func NewProvider(k keyring.Keyring, profile string, opts ProviderOptions) (*Provider, error) {
@@ -78,7 +78,6 @@ func NewProvider(k keyring.Keyring, profile string, opts ProviderOptions) (*Prov
 		sessions:        &KeyringSessions{k, opts.Profiles},
 		profile:         profile,
 		profiles:        opts.Profiles,
-		creds:           map[string]credentials.Value{},
 	}, nil
 }
 
@@ -146,10 +145,11 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 		OktaAwsSAMLUrl:  oktaAwsSAMLUrl,
 	}
 
-	creds, err := provider.Retrieve()
+	creds, oktaUsername, err := provider.Retrieve()
 	if err != nil {
 		return sts.Credentials{}, err
 	}
+	p.defaultRoleSessionName = oktaUsername
 
 	return creds, nil
 }
@@ -180,6 +180,10 @@ func (p *Provider) assumeRoleFromSession(creds sts.Credentials, roleArn string) 
 func (p *Provider) roleSessionName() string {
 	if name := p.profiles[p.profile]["role_session_name"]; name != "" {
 		return name
+	}
+
+	if p.defaultRoleSessionName != "" {
+		return p.defaultRoleSessionName
 	}
 
 	// Try to work out a role name that will hopefully end up unique.
