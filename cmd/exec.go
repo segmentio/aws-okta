@@ -21,15 +21,45 @@ var (
 
 // execCmd represents the exec command
 var execCmd = &cobra.Command{
-	Use:   "exec <profile> -- <command>",
-	Short: "exec will run the command specified with aws credentials set in the environment",
-	RunE:  execRun,
+	Use:    "exec <profile> -- <command>",
+	Short:  "exec will run the command specified with aws credentials set in the environment",
+	RunE:   execRun,
+	PreRun: execPre,
 }
 
 func init() {
 	RootCmd.AddCommand(execCmd)
 	execCmd.Flags().DurationVarP(&sessionTTL, "session-ttl", "t", time.Hour, "Expiration time for okta role session")
 	execCmd.Flags().DurationVarP(&assumeRoleTTL, "assume-role-ttl", "a", time.Minute*15, "Expiration time for assumed role")
+}
+
+func loadDurationFlagFromEnv(cmd *cobra.Command, flagName string, envVar string, val *time.Duration) error {
+	if cmd.Flags().Lookup(flagName).Changed {
+		return nil
+	}
+
+	fromEnv, ok := os.LookupEnv(envVar)
+	if !ok {
+		return nil
+	}
+
+	dur, err := time.ParseDuration(fromEnv)
+	if err != nil {
+		return err
+	}
+
+	*val = dur
+	return nil
+}
+
+func execPre(cmd *cobra.Command, args []string) {
+	if err := loadDurationFlagFromEnv(cmd, "session-ttl", "AWS_SESSION_TTL", &sessionTTL); err != nil {
+		fmt.Fprintln(os.Stderr, "warning: failed to parse duration from AWS_SESSION_TTL")
+	}
+
+	if err := loadDurationFlagFromEnv(cmd, "assume-role-ttl", "AWS_ASSUME_ROLE_TTL", &assumeRoleTTL); err != nil {
+		fmt.Fprintln(os.Stderr, "warning: failed to parse duration from AWS_ASSUME_ROLE_TTL")
+	}
 }
 
 func execRun(cmd *cobra.Command, args []string) error {
