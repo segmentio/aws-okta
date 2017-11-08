@@ -102,19 +102,19 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 		(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
 		session.Expiration.Sub(time.Now()).String())
 
-	if role, ok := p.profiles[p.profile]["role_arn"]; ok {
-		session, err = p.assumeRoleFromSession(session, role)
-		if err != nil {
-			return credentials.Value{}, err
-		}
+	// if role, ok := p.profiles[p.profile]["role_arn"]; ok {
+	// 	session, err = p.assumeRoleFromSession(session, role)
+	// 	if err != nil {
+	// 		return credentials.Value{}, err
+	// 	}
 
-		log.Debugf("using role %s expires in %s",
-			(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
-			session.Expiration.Sub(time.Now()).String())
-	}
+	// 	log.Debugf("using role %s expires in %s",
+	// 		(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
+	// 		session.Expiration.Sub(time.Now()).String())
+	// }
 
-	p.SetExpiration(*session.Expiration, window)
-	p.expires = *session.Expiration
+	// p.SetExpiration(*session.Expiration, window)
+	// p.expires = *session.Expiration
 
 	value := credentials.Value{
 		AccessKeyID:     *session.AccessKeyId,
