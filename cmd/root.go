@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/99designs/aws-vault/keyring"
+	"github.com/99designs/keyring"
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
