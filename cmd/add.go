@@ -6,7 +6,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/99designs/aws-vault/keyring"
+	"github.com/99designs/keyring"
 	"github.com/segmentio/aws-okta/lib"
 	"github.com/spf13/cobra"
 )

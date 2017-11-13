@@ -11,7 +11,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/99designs/aws-vault/keyring"
+	"github.com/99designs/keyring"
 	"github.com/aws/aws-sdk-go/service/sts"
 )
 
