@@ -3,10 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "XtbjnQIn6uhrNyEn/sSp2PXVYc8=",
-			"path": "github.com/99designs/aws-vault/keyring",
-			"revision": "04f4cf622c594b72015f0c851813f426a74799bd",
-			"revisionTime": "2017-06-16T04:15:52Z"
+			"checksumSHA1": "8R9EXb/TllvzZPaMoRuXnV7ymY4=",
+			"path": "github.com/99designs/keyring",
+			"revision": "4e01943c6b5e89b6528a796958f47081f6eaaf98",
+			"revisionTime": "2017-10-19T23:16:57Z"
 		},
 		{
 			"checksumSHA1": "DYv6Q1+VfnUVxMwvk5IshAClLvw=",
