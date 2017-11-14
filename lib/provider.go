@@ -7,7 +7,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/99designs/aws-vault/keyring"
+	"github.com/99designs/keyring"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -101,20 +101,6 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	log.Debugf(" Using session %s, expires in %s",
 		(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
 		session.Expiration.Sub(time.Now()).String())
-
-	if role, ok := p.profiles[p.profile]["role_arn"]; ok {
-		session, err = p.assumeRoleFromSession(session, role)
-		if err != nil {
-			return credentials.Value{}, err
-		}
-
-		log.Debugf("using role %s expires in %s",
-			(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
-			session.Expiration.Sub(time.Now()).String())
-	}
-
-	p.SetExpiration(*session.Expiration, window)
-	p.expires = *session.Expiration
 
 	value := credentials.Value{
 		AccessKeyID:     *session.AccessKeyId,
