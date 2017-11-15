@@ -25,7 +25,15 @@ func init() {
 }
 
 func loginRun(cmd *cobra.Command, args []string) error {
+	if len(args) < 1 {
+		return ErrTooFewArguments
+	}
+	if len(args) > 1 {
+		return ErrTooManyArguments
+	}
+
 	profile := args[0]
+
 	config, err := lib.NewConfigFromEnv()
 	if err != nil {
 		return err
