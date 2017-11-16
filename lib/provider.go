@@ -105,7 +105,7 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	// If sourceProfile returns the same source then we do not need to assume a
 	// second role. Not assuming a second role allows us to assume IDP enabled
 	// roles directly.
-	if source != sourceProfile(p.profile, p.profiles) {
+	if p.profile != sourceProfile(p.profile, p.profiles) {
 		if role, ok := p.profiles[p.profile]["role_arn"]; ok {
 			session, err = p.assumeRoleFromSession(session, role)
 			if err != nil {
