@@ -102,15 +102,20 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 		(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
 		session.Expiration.Sub(time.Now()).String())
 
-	if role, ok := p.profiles[p.profile]["role_arn"]; ok {
-		session, err = p.assumeRoleFromSession(session, role)
-		if err != nil {
-			return credentials.Value{}, err
-		}
+	// If sourceProfile returns the same source then we do not need to assume a
+	// second role. Not assuming a second role allows us to assume IDP enabled
+	// roles directly.
+	if p.profile != source {
+		if role, ok := p.profiles[p.profile]["role_arn"]; ok {
+			session, err = p.assumeRoleFromSession(session, role)
+			if err != nil {
+				return credentials.Value{}, err
+			}
 
-		log.Debugf("using role %s expires in %s",
-			(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
-			session.Expiration.Sub(time.Now()).String())
+			log.Debugf("using role %s expires in %s",
+				(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
+				session.Expiration.Sub(time.Now()).String())
+		}
 	}
 
 	p.SetExpiration(*session.Expiration, window)
