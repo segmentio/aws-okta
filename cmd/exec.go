@@ -29,7 +29,7 @@ var execCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(execCmd)
 	execCmd.Flags().DurationVarP(&sessionTTL, "session-ttl", "t", time.Hour, "Expiration time for okta role session")
-	execCmd.Flags().DurationVarP(&assumeRoleTTL, "assume-role-ttl", "a", time.Minute*15, "Expiration time for assumed role")
+	execCmd.Flags().DurationVarP(&assumeRoleTTL, "assume-role-ttl", "a", time.Hour, "Expiration time for assumed role")
 }
 
 func execRun(cmd *cobra.Command, args []string) error {
