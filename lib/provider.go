@@ -138,11 +138,17 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 		return sts.Credentials{}, errors.New("Source profile must provide `role_arn`")
 	}
 
+	duoType, ok := p.profiles[source]["duo_type"]
+	if !ok {
+		duoType = "push"
+	}
+
 	provider := OktaProvider{
 		Keyring:         p.keyring,
 		ProfileARN:      profileARN,
 		SessionDuration: p.SessionDuration,
 		OktaAwsSAMLUrl:  oktaAwsSAMLUrl,
+		DuoType:         duoType,
 	}
 
 	creds, oktaUsername, err := provider.Retrieve()

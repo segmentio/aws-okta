@@ -286,19 +286,19 @@
 			"revisionTime": "2016-03-29T01:55:07Z"
 		},
 		{
-			"checksumSHA1": "00eQaGynDYrv3tL+C7l9xH0IDZg=",
+			"checksumSHA1": "z79z5msRzgU48FCZxSuxfU8b4rs=",
 			"path": "golang.org/x/net/html/atom",
 			"revision": "3e8a7b0329d536af18e227bb21b6da4d1dbbe180",
 			"revisionTime": "2016-03-29T01:55:07Z"
 		},
 		{
-			"checksumSHA1": "uR2JExVr6/6ZrBtvm7XguieokNI=",
+			"checksumSHA1": "9GGbaBrJHJOSnAdpo+Xkhwado3M=",
 			"path": "golang.org/x/net/publicsuffix",
 			"revision": "3e8a7b0329d536af18e227bb21b6da4d1dbbe180",
 			"revisionTime": "2016-03-29T01:55:07Z"
 		},
 		{
-			"checksumSHA1": "s+jPD0dANCQ66tN5Rmmxc2WT5W0=",
+			"checksumSHA1": "FabjX8CIwjHaz5+VYUjw8wXONeY=",
 			"path": "golang.org/x/sys/unix",
 			"revision": "b4e289961544fc90f340c908c3460ceae6a2202a",
 			"revisionTime": "2015-06-12T01:39:23Z"

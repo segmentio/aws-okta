@@ -31,6 +31,7 @@ type OktaClient struct {
 	Password        string
 	UserAuth        *OktaUserAuthn
 	DuoClient       *DuoClient
+	DuoType         string
 	AccessKeyId     string
 	SecretAccessKey string
 	SessionToken    string
@@ -49,12 +50,13 @@ type OktaCreds struct {
 	Password     string
 }
 
-func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string) *OktaClient {
+func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl, duoType string) *OktaClient {
 	return &OktaClient{
 		Organization:   creds.Organization,
 		Username:       creds.Username,
 		Password:       creds.Password,
 		OktaAwsSAMLUrl: oktaAwsSAMLUrl,
+		DuoType:        duoType,
 	}
 }
 
@@ -85,7 +87,7 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 	// Step 2 : Challenge MFA if needed
 	log.Debug("Step: 2")
 	if o.UserAuth.Status == "MFA_REQUIRED" {
-		log.Info("Sending push notification...")
+		log.Info("Sending 2fa authentication request...")
 		if err = o.challengeMFA(); err != nil {
 			return sts.Credentials{}, err
 		}
@@ -163,6 +165,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 			Signature:  f.Embedded.Verification.Signature,
 			Callback:   f.Embedded.Verification.Links.Complete.Href,
 			StateToken: o.UserAuth.StateToken,
+			Type:       o.DuoType,
 		}
 
 		log.Debugf("Host:%s\nSignature:%s\nStateToken:%s\n",
@@ -174,6 +177,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 			log.Debug("challenge u2f")
 			err := o.DuoClient.ChallengeU2f()
 			if err != nil {
+				log.Warn(err)
 				errChan <- err
 			}
 		}()
@@ -281,6 +285,7 @@ type OktaProvider struct {
 	ProfileARN      string
 	SessionDuration time.Duration
 	OktaAwsSAMLUrl  string
+	DuoType         string
 }
 
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
@@ -296,7 +301,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 		return sts.Credentials{}, "", errors.New("Failed to get okta credentials from your keyring.  Please make sure you have added okta credentials with `aws-okta add`")
 	}
 
-	oktaClient := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl)
+	oktaClient := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, p.DuoType)
 
 	creds, err := oktaClient.AuthenticateProfile(p.ProfileARN, p.SessionDuration)
 	if err != nil {

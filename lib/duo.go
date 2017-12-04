@@ -5,7 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"strings"
+
+	u2f "github.com/Pryz/go-u2fhost"
 )
 
 type DuoClient struct {
@@ -13,6 +17,7 @@ type DuoClient struct {
 	Signature  string
 	Callback   string
 	StateToken string
+	Type       string
 }
 
 type StatusResp struct {
@@ -60,7 +65,8 @@ func NewDuoClient(host, signature, callback string) *DuoClient {
 //
 // TODO: Use a Context to gracefully shutdown the thing and have a nice timeout
 func (d *DuoClient) ChallengeU2f() (err error) {
-	var sid, tx, txid, auth string
+	var sid, tx, txid string
+	var status StatusResp
 
 	tx = strings.Split(d.Signature, ":")[0]
 
@@ -74,18 +80,37 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 		return
 	}
 
-	_, err = d.DoStatus(txid, sid)
+	status, err = d.DoStatus(txid, sid)
 	if err != nil {
 		return
 	}
 
-	// This one should block untile 2fa completed
-	auth, err = d.DoStatus(txid, sid)
+	if len(status.Response.U2FSignRequest) < 1 {
+		err = fmt.Errorf("No u2f sign request")
+		return
+	}
+
+	//TODO: from the FIDO U2F specification the Facet should from the same domain
+	// as the AppID.
+	u2fReq := &u2f.AuthenticateRequest{
+		Challenge: status.Response.U2FSignRequest[0].Challenge,
+		AppId:     status.Response.U2FSignRequest[0].AppID,
+		Facet:     status.Response.U2FSignRequest[0].AppID,
+		KeyHandle: status.Response.U2FSignRequest[0].KeyHandle,
+	}
+	u2fResp, _ := json.Marshal(authenticateHelper(u2fReq, u2f.Devices()))
+	txid, err = d.DoU2fPrompt(sid, u2fResp)
 	if err != nil {
 		return
 	}
 
-	err = d.DoCallback(auth)
+	// This one should block until 2fa completed
+	status, err = d.DoStatus(txid, sid)
+	if err != nil {
+		return
+	}
+
+	err = d.DoCallback(status.Response.Cookie)
 	if err != nil {
 		return
 	}
@@ -141,6 +166,11 @@ func (d *DuoClient) DoAuth(tx string) (sid string, err error) {
 	return
 }
 
+const (
+	duoPromptPush = "device=phone1&facter=Duo+Push&out_of_date=False"
+	duoPromptU2f  = "device=u2f_token&factor=U2F+Token"
+)
+
 // DoPrompt sends a POST request to the Duo /frame/promt endpoint
 //
 // The functions returns the Duo transaction ID which is different from
@@ -152,9 +182,17 @@ func (d *DuoClient) DoPrompt(sid string) (txid string, err error) {
 
 	client := &http.Client{}
 
-	//TODO: Here we automatically use Duo Push. The user should be able to choose
-	//between Duo Push and the Yubikey ("&device=u2f_token&factor=U2F+Token")
-	promptData := "sid=" + sid + "&device=phone1&factor=Duo+Push&out_of_date=False"
+	promptData := "sid=" + sid + "&"
+
+	switch d.Type {
+	case "u2f":
+		promptData += duoPromptU2f
+	case "push":
+		fallthrough
+	default:
+		promptData += duoPromptPush
+	}
+
 	req, err = http.NewRequest("POST", url, bytes.NewReader([]byte(promptData)))
 	if err != nil {
 		return
@@ -183,11 +221,63 @@ func (d *DuoClient) DoPrompt(sid string) (txid string, err error) {
 	return
 }
 
+func (d *DuoClient) DoU2fPrompt(sid string, data []byte) (txid string, err error) {
+	var req *http.Request
+
+	pUrl := "https://" + d.Host + "/frame/prompt"
+
+	client := &http.Client{}
+
+	//promptData := "sid=" + sid + "&device=u2f_token&factor=u2f_finish&out_of_date=False&days_out_of_date=0&days_to_block=None&"
+	promptData := "sid=" + sid + "&device=u2f_token&factor=u2f_finish&"
+	finalData := []byte(promptData)
+
+	vdata, err := url.ParseQuery("response_data=" + string(data))
+	if err != nil {
+		return "", err
+	}
+	finalData = append(finalData, []byte(vdata.Encode())...)
+	//finalData = append(finalData, data...)
+
+	req, err = http.NewRequest("POST", pUrl, bytes.NewReader(finalData))
+	if err != nil {
+		return
+	}
+
+	requestDump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(requestDump))
+
+	req.Header.Add("Origin", "https://"+d.Host)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("X-Requested-With", "XMLHttpRequest")
+
+	res, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		err = fmt.Errorf("U2f prompt request failed: %d", res.StatusCode)
+		return
+	}
+
+	var status PromptResp
+	err = json.NewDecoder(res.Body).Decode(&status)
+
+	txid = status.Response.Txid
+
+	return
+}
+
 // DoStatus sends a POST request against the Duo /frame/status endpoint
 //
 // The function returns the auth string required for the Okta Callback if
 // the request succeeded.
-func (d *DuoClient) DoStatus(txid, sid string) (auth string, err error) {
+func (d *DuoClient) DoStatus(txid, sid string) (status StatusResp, err error) {
 	var req *http.Request
 
 	url := "https://" + d.Host + "/frame/status"
@@ -211,16 +301,19 @@ func (d *DuoClient) DoStatus(txid, sid string) (auth string, err error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Prompt request failed: %d", res.StatusCode)
+		err = fmt.Errorf("Status request failed: %d", res.StatusCode)
 		return
 	}
 
-	var status StatusResp
 	err = json.NewDecoder(res.Body).Decode(&status)
 
-	if status.Response.Result == "SUCCESS" {
-		auth = status.Response.Cookie
+	if status.Response.Result != "SUCCESS" || status.Response.Result != "OK" {
+		fmt.Printf("%v\n", status)
 	}
+
+	//if status.Response.Result == "SUCCESS" {
+	//	auth = status.Response.Cookie
+	//}
 	return
 }
 
@@ -238,6 +331,8 @@ func (d *DuoClient) DoCallback(auth string) (err error) {
 
 	client := &http.Client{}
 
+	fmt.Println(auth)
+
 	callbackData := "stateToken=" + d.StateToken + "&sig_response=" + sigResp
 	req, err = http.NewRequest("POST", d.Callback, bytes.NewReader([]byte(callbackData)))
 	if err != nil {
@@ -253,7 +348,7 @@ func (d *DuoClient) DoCallback(auth string) (err error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Prompt request failed: %d", res.StatusCode)
+		err = fmt.Errorf("Callback request failed: %d %s", res.StatusCode)
 		return
 	}
 	return
