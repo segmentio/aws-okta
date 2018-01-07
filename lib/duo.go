@@ -85,6 +85,8 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 		return
 	}
 
+	fmt.Println(status)
+
 	if len(status.Response.U2FSignRequest) < 1 {
 		err = fmt.Errorf("No u2f sign request")
 		return
@@ -93,10 +95,11 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 	//TODO: from the FIDO U2F specification the Facet should from the same domain
 	// as the AppID.
 	u2fReq := &u2f.AuthenticateRequest{
-		Challenge: status.Response.U2FSignRequest[0].Challenge,
-		AppId:     status.Response.U2FSignRequest[0].AppID,
-		Facet:     status.Response.U2FSignRequest[0].AppID,
-		KeyHandle: status.Response.U2FSignRequest[0].KeyHandle,
+		Challenge:       status.Response.U2FSignRequest[0].Challenge,
+		AppId:           status.Response.U2FSignRequest[0].AppID,
+		Facet:           status.Response.U2FSignRequest[0].AppID,
+		KeyHandle:       status.Response.U2FSignRequest[0].KeyHandle,
+		ChannelIdUnused: true,
 	}
 	u2fResp, _ := json.Marshal(authenticateHelper(u2fReq, u2f.Devices()))
 	txid, err = d.DoU2fPrompt(sid, u2fResp)
@@ -182,16 +185,7 @@ func (d *DuoClient) DoPrompt(sid string) (txid string, err error) {
 
 	client := &http.Client{}
 
-	promptData := "sid=" + sid + "&"
-
-	switch d.Type {
-	case "u2f":
-		promptData += duoPromptU2f
-	case "push":
-		fallthrough
-	default:
-		promptData += duoPromptPush
-	}
+	promptData := "sid=" + sid + "&" + duoPromptU2f
 
 	req, err = http.NewRequest("POST", url, bytes.NewReader([]byte(promptData)))
 	if err != nil {
@@ -228,9 +222,11 @@ func (d *DuoClient) DoU2fPrompt(sid string, data []byte) (txid string, err error
 
 	client := &http.Client{}
 
-	//promptData := "sid=" + sid + "&device=u2f_token&factor=u2f_finish&out_of_date=False&days_out_of_date=0&days_to_block=None&"
-	promptData := "sid=" + sid + "&device=u2f_token&factor=u2f_finish&"
+	promptData := "sid=" + sid + "&device=u2f_token&factor=u2f_finish&out_of_date=False&days_out_of_date=0&days_to_block=None&"
+	//promptData := "sid=" + sid + "&device=u2f_token&factor=u2f_finish&"
 	finalData := []byte(promptData)
+
+	fmt.Printf("\n%s\n", string(data))
 
 	vdata, err := url.ParseQuery("response_data=" + string(data))
 	if err != nil {
@@ -311,9 +307,6 @@ func (d *DuoClient) DoStatus(txid, sid string) (status StatusResp, err error) {
 		fmt.Printf("%v\n", status)
 	}
 
-	//if status.Response.Result == "SUCCESS" {
-	//	auth = status.Response.Cookie
-	//}
 	return
 }
 
