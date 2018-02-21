@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/99designs/aws-vault/keyring"
+	"github.com/99designs/keyring"
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -61,6 +61,10 @@ func prerun(cmd *cobra.Command, args []string) {
 }
 
 func init() {
-	RootCmd.PersistentFlags().StringVarP(&backend, "backend", "b", keyring.DefaultBackend, fmt.Sprintf("Secret backend to use %s", keyring.SupportedBackends()))
+	backendsAvailable := []string{}
+	for _, backendType := range keyring.AvailableBackends() {
+		backendsAvailable = append(backendsAvailable, string(backendType))
+	}
+	RootCmd.PersistentFlags().StringVarP(&backend, "backend", "b", "", fmt.Sprintf("Secret backend to use %s", backendsAvailable))
 	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
 }

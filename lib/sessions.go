@@ -11,7 +11,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/99designs/aws-vault/keyring"
+	"github.com/99designs/keyring"
 	"github.com/aws/aws-sdk-go/service/sts"
 )
 
@@ -65,10 +65,10 @@ func (s *KeyringSessions) Store(profile string, session sts.Credentials, duratio
 
 	log.Debugf("Writing session for %s to keyring", profile)
 	s.Keyring.Set(keyring.Item{
-		Key:       s.key(profile, duration),
-		Label:     "aws-vault session for " + profile,
-		Data:      bytes,
-		TrustSelf: true,
+		Key:   s.key(profile, duration),
+		Label: "aws-vault session for " + profile,
+		Data:  bytes,
+		KeychainNotTrustApplication: false,
 	})
 
 	return nil

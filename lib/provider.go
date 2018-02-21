@@ -7,7 +7,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/99designs/aws-vault/keyring"
+	"github.com/99designs/keyring"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -40,6 +40,7 @@ func (o ProviderOptions) Validate() error {
 	if o.AssumeRoleDuration < MinAssumeRoleDuration {
 		return errors.New("Minimum duration for assumed roles is " + MinAssumeRoleDuration.String())
 	} else if o.AssumeRoleDuration > MaxAssumeRoleDuration {
+		log.Println(o.AssumeRoleDuration)
 		return errors.New("Maximum duration for assumed roles is " + MaxAssumeRoleDuration.String())
 	}
 

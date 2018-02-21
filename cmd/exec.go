@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/99designs/aws-vault/keyring"
+	"github.com/99designs/keyring"
 	"github.com/segmentio/aws-okta/lib"
 	"github.com/spf13/cobra"
 )
@@ -105,7 +105,17 @@ func execRun(cmd *cobra.Command, args []string) error {
 		AssumeRoleDuration: assumeRoleTTL,
 	}
 
-	kr, err := keyring.Open("aws-okta", backend)
+	var allowedBackends []keyring.BackendType
+	if backend != "" {
+		allowedBackends = append(allowedBackends, keyring.BackendType(backend))
+	}
+
+	kr, err := keyring.Open(keyring.Config{
+		AllowedBackends: allowedBackends,
+		// this keychain name is for backwards compatibility
+		ServiceName:  "awsvault",
+		KeychainName: "awsvault",
+	})
 	if err != nil {
 		return err
 	}
