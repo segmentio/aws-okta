@@ -61,8 +61,9 @@ func loginRun(cmd *cobra.Command, args []string) error {
 	kr, err := keyring.Open(keyring.Config{
 		AllowedBackends: allowedBackends,
 		// this keychain name is for backwards compatibility
-		ServiceName:  "awsvault",
-		KeychainName: "awsvault",
+		ServiceName:             "aws-okta",
+		KeychainName:            "aws-okta",
+		LibSecretCollectionName: "awsvault",
 	})
 
 	p, err := lib.NewProvider(kr, profile, opts)
