@@ -36,6 +36,8 @@ type OktaClient struct {
 	SessionToken    string
 	Expiration      time.Time
 	OktaAwsSAMLUrl  string
+	CookieJar       *cookiejar.Jar
+	BaseURL         *url.URL
 }
 
 type SAMLAssertion struct {
@@ -49,63 +51,89 @@ type OktaCreds struct {
 	Password     string
 }
 
-func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string) *OktaClient {
+func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string) (*OktaClient, error) {
+	base, err := url.Parse(fmt.Sprintf(
+		"https://%s.%s", creds.Organization, OktaServer,
+	))
+	if err != nil {
+		return nil, err
+	}
+
+	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+	if err != nil {
+		return nil, err
+	}
+
+	if sessionCookie != "" {
+		jar.SetCookies(base, []*http.Cookie{
+			{
+				Name:  "sid",
+				Value: sessionCookie,
+			},
+		})
+	}
+
 	return &OktaClient{
 		Organization:   creds.Organization,
 		Username:       creds.Username,
 		Password:       creds.Password,
 		OktaAwsSAMLUrl: oktaAwsSAMLUrl,
-	}
+		CookieJar:      jar,
+		BaseURL:        base,
+	}, nil
 }
 
-func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, error) {
-	var payload []byte
+func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, string, error) {
 	var oktaUserAuthn OktaUserAuthn
+
+	// Attempt to reuse session cookie
 	var assertion SAMLAssertion
-
-	// Step 1 : Basic authentication
-	user := OktaUser{
-		Username: o.Username,
-		Password: o.Password,
-	}
-
-	payload, err := json.Marshal(user)
+	err := o.Get("GET", o.OktaAwsSAMLUrl, nil, &assertion, "saml")
 	if err != nil {
-		return sts.Credentials{}, err
-	}
-
-	log.Debug("Step: 1")
-	err = o.Get("POST", "api/v1/authn", payload, &oktaUserAuthn, "json")
-	if err != nil {
-		return sts.Credentials{}, errors.New("Failed to authenticate with okta.  Please check that your credentials have been set correctly with `aws-okta add`")
-	}
-
-	o.UserAuth = &oktaUserAuthn
-
-	// Step 2 : Challenge MFA if needed
-	log.Debug("Step: 2")
-	if o.UserAuth.Status == "MFA_REQUIRED" {
-		log.Info("Sending push notification...")
-		if err = o.challengeMFA(); err != nil {
-			return sts.Credentials{}, err
+		log.Debug("Failed to reuse session token, starting flow from start")
+		// Step 1 : Basic authentication
+		user := OktaUser{
+			Username: o.Username,
+			Password: o.Password,
 		}
-	}
 
-	if o.UserAuth.SessionToken == "" {
-		return sts.Credentials{}, fmt.Errorf("authentication failed for %s", o.Username)
-	}
+		payload, err := json.Marshal(user)
+		if err != nil {
+			return sts.Credentials{}, "", err
+		}
 
-	// Step 3 : Get SAML Assertion and retrieve IAM Roles
-	log.Debug("Step: 3")
-	assertion = SAMLAssertion{}
-	if err = o.Get("GET", o.OktaAwsSAMLUrl+"?onetimetoken="+o.UserAuth.SessionToken,
-		nil, &assertion, "saml"); err != nil {
-		return sts.Credentials{}, err
+		log.Debug("Step: 1")
+		err = o.Get("POST", "api/v1/authn", payload, &oktaUserAuthn, "json")
+		if err != nil {
+			return sts.Credentials{}, "", errors.New("Failed to authenticate with okta.  Please check that your credentials have been set correctly with `aws-okta add`")
+		}
+
+		o.UserAuth = &oktaUserAuthn
+
+		// Step 2 : Challenge MFA if needed
+		log.Debug("Step: 2")
+		if o.UserAuth.Status == "MFA_REQUIRED" {
+			log.Info("Sending push notification...")
+			if err = o.challengeMFA(); err != nil {
+				return sts.Credentials{}, "", err
+			}
+		}
+
+		if o.UserAuth.SessionToken == "" {
+			return sts.Credentials{}, "", fmt.Errorf("authentication failed for %s", o.Username)
+		}
+
+		// Step 3 : Get SAML Assertion and retrieve IAM Roles
+		log.Debug("Step: 3")
+		if err = o.Get("GET", o.OktaAwsSAMLUrl+"?onetimetoken="+o.UserAuth.SessionToken,
+			nil, &assertion, "saml"); err != nil {
+			return sts.Credentials{}, "", err
+		}
 	}
 
 	principal, role, err := GetRoleFromSAML(assertion.Resp, profileARN)
 	if err != nil {
-		return sts.Credentials{}, err
+		return sts.Credentials{}, "", err
 	}
 
 	// Step 4 : Assume Role with SAML
@@ -123,10 +151,18 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 	if err != nil {
 		log.WithField("role", role).Errorf(
 			"error assuming role with SAML: %s", err.Error())
-		return sts.Credentials{}, err
+		return sts.Credentials{}, "", err
 	}
 
-	return *samlResp.Credentials, nil
+	var sessionCookie string
+	cookies := o.CookieJar.Cookies(o.BaseURL)
+	for _, cookie := range cookies {
+		if cookie.Name == "sid" {
+			sessionCookie = cookie.Value
+		}
+	}
+
+	return *samlResp.Credentials, sessionCookie, nil
 }
 
 func (o *OktaClient) challengeMFA() (err error) {
@@ -210,14 +246,12 @@ func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
 }
 
 func (o *OktaClient) Get(method string, path string, data []byte, recv interface{}, format string) (err error) {
-	var url *url.URL
 	var res *http.Response
 	var body []byte
 	var header http.Header
 	var client http.Client
-	var jar *cookiejar.Jar
 
-	url, err = url.Parse(fmt.Sprintf(
+	url, err := url.Parse(fmt.Sprintf(
 		"https://%s.%s/%s", o.Organization, OktaServer, path,
 	))
 	if err != nil {
@@ -230,14 +264,12 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 			"Content-Type":  []string{"application/json"},
 			"Cache-Control": []string{"no-cache"},
 		}
+	} else {
+		header = http.Header{}
 	}
 
-	jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	if err != nil {
-		return
-	}
 	client = http.Client{
-		Jar: jar,
+		Jar: o.CookieJar,
 	}
 	req := &http.Request{
 		Method:        method,
@@ -296,11 +328,31 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 		return sts.Credentials{}, "", errors.New("Failed to get okta credentials from your keyring.  Please make sure you have added okta credentials with `aws-okta add`")
 	}
 
-	oktaClient := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl)
+	// Check for stored session cookie
+	var sessionCookie string
+	cookieItem, err := p.Keyring.Get("okta-session-cookie")
+	if err == nil {
+		sessionCookie = string(cookieItem.Data)
+	}
 
-	creds, err := oktaClient.AuthenticateProfile(p.ProfileARN, p.SessionDuration)
+	oktaClient, err := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
+
+	creds, newSessionCookie, err := oktaClient.AuthenticateProfile(p.ProfileARN, p.SessionDuration)
+	if err != nil {
+		return sts.Credentials{}, "", err
+	}
+
+	newCookieItem := keyring.Item{
+		Key:   "okta-session-cookie",
+		Data:  []byte(newSessionCookie),
+		Label: "okta session cookie",
+		KeychainNotTrustApplication: false,
+	}
+
+	p.Keyring.Set(newCookieItem)
+
 	return creds, oktaCreds.Username, err
 }
