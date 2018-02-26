@@ -36,7 +36,7 @@ type OktaClient struct {
 	SessionToken    string
 	Expiration      time.Time
 	OktaAwsSAMLUrl  string
-	CookieJar       *cookiejar.Jar
+	CookieJar       http.CookieJar
 	BaseURL         *url.URL
 }
 
