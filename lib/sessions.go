@@ -66,7 +66,7 @@ func (s *KeyringSessions) Store(profile string, session sts.Credentials, duratio
 	log.Debugf("Writing session for %s to keyring", profile)
 	s.Keyring.Set(keyring.Item{
 		Key:   s.key(profile, duration),
-		Label: "aws-vault session for " + profile,
+		Label: "aws session for " + profile,
 		Data:  bytes,
 		KeychainNotTrustApplication: false,
 	})
