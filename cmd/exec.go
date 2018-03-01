@@ -111,10 +111,10 @@ func execRun(cmd *cobra.Command, args []string) error {
 	}
 
 	kr, err := keyring.Open(keyring.Config{
-		AllowedBackends: allowedBackends,
+		AllowedBackends:          allowedBackends,
+		KeychainTrustApplication: true,
 		// this keychain name is for backwards compatibility
 		ServiceName:             "aws-okta",
-		KeychainName:            "aws-okta",
 		LibSecretCollectionName: "awsvault",
 	})
 	if err != nil {
