@@ -145,6 +145,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 
 	env.Set("AWS_ACCESS_KEY_ID", creds.AccessKeyID)
 	env.Set("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey)
+	env.Set("AWS_PROFILE", profile)
 
 	if creds.SessionToken != "" {
 		env.Set("AWS_SESSION_TOKEN", creds.SessionToken)
