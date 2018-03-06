@@ -184,6 +184,16 @@ func (o *OktaClient) challengeMFA() (err error) {
 		return
 	}
 
+	if o.UserAuth.Embedded.Factor.FactorType == "token:software:totp" {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter 2 Factor Code: ")
+		mfaCode, err := reader.ReadString('\n')
+		if err != nil {
+			return
+		}
+		payload.PassCode = mfaCode
+	}
+
 	err = o.Get("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify",
 		payload, &o.UserAuth, "json",
 	)
@@ -239,7 +249,10 @@ func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
 	switch f.FactorType {
 	case "web":
 		id = f.Id
+	case "token:software:totp":
+		id = f.Id
 	default:
+		fmt.Print("what's up")
 		err = fmt.Errorf("factor %s not supported", f.FactorType)
 	}
 	return

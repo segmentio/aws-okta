@@ -8,6 +8,7 @@ type OktaUser struct {
 
 type OktaStateToken struct {
 	StateToken string `json:"stateToken"`
+	PassCode   string `json:"passCode"`
 }
 
 type OktaUserAuthn struct {
