@@ -192,7 +192,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 			return err
 		}
 	} else {
-		if o.UserAuth.Embedded.Factors != nil {
+		if o.UserAuth.Embedded.Factors[0] != nil {
 			oktaFactorId, err = GetFactorId(&o.UserAuth.Embedded.Factors[0])
 			oktaFactorType = o.UserAuth.Embedded.Factors[0].FactorType
 		}
