@@ -188,14 +188,34 @@ func selectMFADevice(factors []OktaUserAuthnFactor) (*OktaUserAuthnFactor, error
 	return nil, errors.New("Failed to select MFA device")
 }
 
-func (o *OktaClient) preChallenge(oktaFactorType string) ([]byte, error) {
+func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, error) {
 	var mfaCode string
 	var err error
 	//Software and Hardware based OTP Tokens
 	if strings.Contains(oktaFactorType, "token") {
+		log.Debugf("Token 2FA\n")
 		mfaCode, err = Prompt("Enter 2FA Code", false)
 		if err != nil {
 			return nil, err
+		}
+	} else if strings.Contains(oktaFactorType, "sms") {
+		log.Debugf("SMS 2FA\n")
+		payload, err := json.Marshal(OktaStateToken{
+			StateToken: o.UserAuth.StateToken,
+		})
+		if err != nil {
+			return nil, err
+		}
+		var sms interface{}
+		err = o.Get("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify",
+			payload, &sms, "json",
+		)
+		if err != nil {
+			return nil, err
+		}
+		mfaCode, err = Prompt("Enter 2FA Code from SMS", false)
+		if err != nil {
+			return err
 		}
 	}
 	payload, err := json.Marshal(OktaStateToken{
@@ -261,9 +281,13 @@ func (o *OktaClient) challengeMFA() (err error) {
 
 	factor, err := selectMFADevice(o.UserAuth.Embedded.Factors)
 	if err != nil {
+		log.Debugf("Failed to select 2FA device\n")
 		return
 	}
-	oktaFactorId, _ = GetFactorId(factor)
+	oktaFactorId, err = GetFactorId(factor)
+	if err != nil {
+		return
+	}
 	oktaFactorType = factor.FactorType
 	if oktaFactorId == "" {
 		return
@@ -271,7 +295,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 	log.Debugf("Okta Factor ID: %s\n", oktaFactorId)
 	log.Debugf("Okta Factor Type: %s\n", oktaFactorType)
 
-	payload, err = o.preChallenge(oktaFactorType)
+	payload, err = o.preChallenge(oktaFactorId, oktaFactorType)
 
 	err = o.Get("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify",
 		payload, &o.UserAuth, "json",
@@ -295,6 +319,8 @@ func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
 	case "token:software:totp":
 		id = f.Id
 	case "token:hardware":
+		id = f.Id
+	case "sms":
 		id = f.Id
 	default:
 		err = fmt.Errorf("factor %s not supported", f.FactorType)
