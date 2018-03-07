@@ -167,14 +167,10 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 	return *samlResp.Credentials, sessionCookie, nil
 }
 
-func (o *OktaClient) challengeMFA() (err error) {
-	var oktaFactorId string
-	var payload []byte
-	var oktaFactorType string
-
-	if len(o.UserAuth.Embedded.Factors) > 1 {
+func selectMFADevice(factors []OktaUserAuthnFactor) OktaUserAuthnFactor {
+	if len(factors) > 1 {
 		log.Infof("Select a 2FA from the following list\n")
-		for i, f := range o.UserAuth.Embedded.Factors {
+		for i, f := range factors {
 			oktaFactorId, err = GetFactorId(&f)
 			log.Infof("%d: %s\n", i, f.Provider)
 		}
@@ -186,17 +182,23 @@ func (o *OktaClient) challengeMFA() (err error) {
 		if err != nil {
 			return err
 		}
-		oktaFactorId, err = GetFactorId(&o.UserAuth.Embedded.Factors[factor])
-		oktaFactorType = o.UserAuth.Embedded.Factors[factor].FactorType
-		if err != nil {
-			return err
-		}
-	} else {
-		if o.UserAuth.Embedded.Factors[0] != nil {
-			oktaFactorId, err = GetFactorId(&o.UserAuth.Embedded.Factors[0])
-			oktaFactorType = o.UserAuth.Embedded.Factors[0].FactorType
-		}
+		return factors[factor]
+	} else if len(factors) == 1 {
+		return factors[0]
 	}
+}
+
+func (o *OktaClient) challengeMFA() (err error) {
+	var oktaFactorId string
+	var payload []byte
+	var oktaFactorType string
+
+	factor, err := selectMFADevice(o.UserAuth.Embedded.Factors)
+	if err != nil {
+		return
+	}
+	oktaFactorId, err = GetFactorId(&factor)
+	oktaFactorType = factor.FactorType
 	if oktaFactorId == "" {
 		return
 	}
