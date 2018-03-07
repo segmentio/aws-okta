@@ -201,6 +201,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 		return
 	}
 	log.Debugf("Okta Factor ID: %s\n", oktaFactorId)
+	log.Debugf("Okta Factor Type: %s\n", oktaFactorType)
 
 	var mfaCode string
 	if strings.Contains(oktaFactorType, "token") {
@@ -278,9 +279,8 @@ func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
 	case "token:hardware":
 		id = f.Id
 	default:
-		err = fmt.Errorf("factor %s supported", f.FactorType)
+		err = fmt.Errorf("factor %s not supported", f.FactorType)
 	}
-	log.Debugf("Okta Factor Type: %s\n", f.FactorType)
 	return
 }
 
