@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/net/publicsuffix"
@@ -168,30 +170,52 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 func (o *OktaClient) challengeMFA() (err error) {
 	var oktaFactorId string
 	var payload []byte
+	var oktaFactorType string
 
-	for _, f := range o.UserAuth.Embedded.Factors {
-		oktaFactorId, err = GetFactorId(&f)
+	if len(o.UserAuth.Embedded.Factors) > 1 {
+		log.Infof("Select a 2FA from the following list\n")
+		for i, f := range o.UserAuth.Embedded.Factors {
+			oktaFactorId, err = GetFactorId(&f)
+			log.Infof("%d: %s\n", i, f.Provider)
+		}
+		i, err := Prompt("Select 2FA method", false)
+		if err != nil {
+			return err
+		}
+		factor, err := strconv.Atoi(i)
+		if err != nil {
+			return err
+		}
+		oktaFactorId, err = GetFactorId(&o.UserAuth.Embedded.Factors[factor])
+		oktaFactorType = o.UserAuth.Embedded.Factors[factor].FactorType
+		if err != nil {
+			return err
+		}
+	} else {
+		if o.UserAuth.Embedded.Factors != nil {
+			oktaFactorId, err = GetFactorId(&o.UserAuth.Embedded.Factors[0])
+			oktaFactorType = o.UserAuth.Embedded.Factors[0].FactorType
+		}
 	}
 	if oktaFactorId == "" {
 		return
 	}
 	log.Debugf("Okta Factor ID: %s\n", oktaFactorId)
 
-	payload, err = json.Marshal(OktaStateToken{
-		StateToken: o.UserAuth.StateToken,
-	})
-	if err != nil {
-		return
-	}
-
-	if o.UserAuth.Embedded.Factor.FactorType == "token:software:totp" {
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("Enter 2 Factor Code: ")
-		mfaCode, err := reader.ReadString('\n')
+	var mfaCode string
+	if strings.Contains(oktaFactorType, "token") {
+		mfaCode, err = Prompt("Enter 2FA Code", false)
 		if err != nil {
 			return
 		}
-		payload.PassCode = mfaCode
+	}
+
+	payload, err = json.Marshal(OktaStateToken{
+		StateToken: o.UserAuth.StateToken,
+		PassCode:   mfaCode,
+	})
+	if err != nil {
+		return
 	}
 
 	err = o.Get("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify",
@@ -251,10 +275,12 @@ func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
 		id = f.Id
 	case "token:software:totp":
 		id = f.Id
+	case "token:hardware":
+		id = f.Id
 	default:
-		fmt.Print("what's up")
-		err = fmt.Errorf("factor %s not supported", f.FactorType)
+		err = fmt.Errorf("factor %s supported", f.FactorType)
 	}
+	log.Debugf("Okta Factor Type: %s\n", f.FactorType)
 	return
 }
 
