@@ -115,7 +115,7 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 		// Step 2 : Challenge MFA if needed
 		log.Debug("Step: 2")
 		if o.UserAuth.Status == "MFA_REQUIRED" {
-			log.Info("Sending push notification...")
+			log.Info("Requesting MFA")
 			if err = o.challengeMFA(); err != nil {
 				return sts.Credentials{}, "", err
 			}
@@ -169,11 +169,11 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 
 func selectMFADevice(factors []OktaUserAuthnFactor) (*OktaUserAuthnFactor, error) {
 	if len(factors) > 1 {
-		log.Infof("Select a 2FA from the following list\n")
+		log.Info("Select a MFA from the following list")
 		for i, f := range factors {
-			log.Infof("%d: %s\n", i, f.Provider)
+			log.Infof("%d: %s", i, f.Provider)
 		}
-		i, err := Prompt("Select 2FA method", false)
+		i, err := Prompt("Select MFA method", false)
 		if err != nil {
 			return nil, err
 		}
@@ -193,13 +193,13 @@ func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, 
 	var err error
 	//Software and Hardware based OTP Tokens
 	if strings.Contains(oktaFactorType, "token") {
-		log.Debugf("Token 2FA\n")
-		mfaCode, err = Prompt("Enter 2FA Code", false)
+		log.Debug("Token MFA")
+		mfaCode, err = Prompt("Enter MFA Code", false)
 		if err != nil {
 			return nil, err
 		}
 	} else if strings.Contains(oktaFactorType, "sms") {
-		log.Debugf("SMS 2FA\n")
+		log.Debug("SMS MFA")
 		payload, err := json.Marshal(OktaStateToken{
 			StateToken: o.UserAuth.StateToken,
 		})
@@ -207,15 +207,16 @@ func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, 
 			return nil, err
 		}
 		var sms interface{}
+		log.Debug("Requesting SMS Code")
 		err = o.Get("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify",
 			payload, &sms, "json",
 		)
 		if err != nil {
 			return nil, err
 		}
-		mfaCode, err = Prompt("Enter 2FA Code from SMS", false)
+		mfaCode, err = Prompt("Enter MFA Code from SMS", false)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	payload, err := json.Marshal(OktaStateToken{
@@ -247,6 +248,7 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorId string) error {
 		errChan := make(chan error, 1)
 		go func() {
 			log.Debug("challenge u2f")
+			log.Info("Sending Push Notification...")
 			err := o.DuoClient.ChallengeU2f()
 			if err != nil {
 				errChan <- err
@@ -279,9 +281,10 @@ func (o *OktaClient) challengeMFA() (err error) {
 	var payload []byte
 	var oktaFactorType string
 
+	log.Debugf("%s", o.UserAuth.StateToken)
 	factor, err := selectMFADevice(o.UserAuth.Embedded.Factors)
 	if err != nil {
-		log.Debugf("Failed to select 2FA device\n")
+		log.Debug("Failed to select MFA device")
 		return
 	}
 	oktaFactorId, err = GetFactorId(factor)
@@ -292,8 +295,8 @@ func (o *OktaClient) challengeMFA() (err error) {
 	if oktaFactorId == "" {
 		return
 	}
-	log.Debugf("Okta Factor ID: %s\n", oktaFactorId)
-	log.Debugf("Okta Factor Type: %s\n", oktaFactorType)
+	log.Debugf("Okta Factor ID: %s", oktaFactorId)
+	log.Debugf("Okta Factor Type: %s", oktaFactorType)
 
 	payload, err = o.preChallenge(oktaFactorId, oktaFactorType)
 
