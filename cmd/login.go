@@ -20,8 +20,12 @@ var loginCmd = &cobra.Command{
 	RunE:  loginRun,
 }
 
+// Stdout is the bool for -stdout
+var Stdout bool
+
 func init() {
 	RootCmd.AddCommand(loginCmd)
+	loginCmd.Flags().BoolVarP(&Stdout, "stdout", "", false, "Print login URL to stdout instead of opening in default browser")
 }
 
 func loginRun(cmd *cobra.Command, args []string) error {
@@ -135,8 +139,11 @@ func loginRun(cmd *cobra.Command, args []string) error {
 		url.QueryEscape(signinToken),
 	)
 
-	if err = open.Run(loginURL); err != nil {
+	if Stdout {
+		fmt.Println(loginURL)
+	} else if err = open.Run(loginURL); err != nil {
 		return err
 	}
+
 	return nil
 }
