@@ -21,9 +21,25 @@ func GetRoleFromSAML(resp *saml.Response, profileARN string) (string, string, er
 					continue
 				}
 
-				principalARN, profile := tokens[0], tokens[1]
-				if profile == profileARN {
-					return principalARN, profile, nil
+				// Amazon's documentation suggests that the
+				// Role ARN should appear first in the comma-delimited
+				// set in the Role Attribute that SAML IdP returns.
+				//
+				// See the section titled "An Attribute element with the Name attribute set
+				// to https://aws.amazon.com/SAML/Attributes/Role" on this page:
+				// https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_saml_assertions.html
+				//
+				// In practice, though, Okta SAML integrations with AWS will succeed
+				// with either the role or principal ARN first, and these `if` statements
+				// allow that behavior in this program.
+				if tokens[0] == profileARN {
+					// if true, Role attribute is formatted like:
+					// arn:aws:iam::account:role/roleName,arn:aws:iam::ACCOUNT:saml-provider/provider
+					return tokens[1], tokens[0], nil
+				} else if tokens[1] == profileARN {
+					// if true, Role attribute is formatted like:
+					// arn:aws:iam::ACCOUNT:saml-provider/provider,arn:aws:iam::account:role/roleName
+					return tokens[0], tokens[1], nil
 				}
 			}
 		}
