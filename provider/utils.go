@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/segmentio/aws-okta/lib/saml"
+	"github.com/mulesoft-labs/aws-keycloak/lib/saml"
 	"golang.org/x/net/html"
 )
 
 //TODO: Move those functions into saml package
 
-func GetRoleFromSAML(resp *saml.Response, profileARN string) (string, string, error) {
+func GetRolesFromSAML(resp *saml.Response) (roles []string, principals []string, n int, err error) {
 	for _, a := range resp.Assertion.AttributeStatement.Attributes {
 		if strings.HasSuffix(a.Name, "SAML/Attributes/Role") {
 			for _, v := range a.AttributeValues {
@@ -20,16 +20,16 @@ func GetRoleFromSAML(resp *saml.Response, profileARN string) (string, string, er
 				if len(tokens) != 2 {
 					continue
 				}
-
-				principalARN, profile := tokens[0], tokens[1]
-				if profile == profileARN {
-					return principalARN, profile, nil
-				}
+				roles = append(roles, tokens[0])
+				principals = append(principals, tokens[1])
+				n++
 			}
 		}
 	}
-
-	return "", "", fmt.Errorf("Role '%s' not authorized by Okta.  Contact Okta admin to make sure that the AWS app is configured properly.", profileARN)
+	if n == 0 {
+		err = fmt.Errorf("No roles not authorized by Keycloak. Contact keycloak admin to make sure that the AWS app is configured properly.")
+	}
+	return
 }
 
 func ParseSAML(body []byte, resp *SAMLAssertion) (err error) {

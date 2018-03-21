@@ -1,6 +1,6 @@
 package main
 
-import "github.com/segmentio/aws-okta/cmd"
+import "github.com/mulesoft-labs/aws-keycloak/cmd"
 
 func main() {
 	cmd.Execute()

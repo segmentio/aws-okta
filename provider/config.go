@@ -1,27 +1,49 @@
-package lib
+package provider
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	log "github.com/Sirupsen/logrus"
-
-	"github.com/mitchellh/go-homedir"
-	"github.com/vaughan0/go-ini"
+	homedir "github.com/mitchellh/go-homedir"
+	ini "github.com/vaughan0/go-ini"
 )
 
-type profiles map[string]map[string]string
+type sections ini.File
 
 type config interface {
-	Parse() (profiles, error)
+	Parse() (sections, error)
 }
 
 type fileConfig struct {
 	file string
 }
 
+const (
+	defaultConf = "/.aws/keycloak-config"
+)
+
+func EnvFileOrDefault(envFile string) (string, error) {
+	file := os.Getenv(envFile)
+	if file == "" {
+		home, err := homedir.Dir()
+		if err != nil {
+			return "", err
+		}
+		file = filepath.Join(home, defaultConf)
+	}
+	return file, nil
+}
+
+func NewConfigFromFile(file string) (config, error) {
+	if _, err := os.Stat(file); err != nil {
+		return nil, err
+	}
+	return &fileConfig{file: file}, nil
+}
+
+/*
 func NewConfigFromEnv() (config, error) {
 	file := os.Getenv("AWS_CONFIG_FILE")
 	if file == "" {
@@ -36,8 +58,9 @@ func NewConfigFromEnv() (config, error) {
 	}
 	return &fileConfig{file: file}, nil
 }
+*/
 
-func (c *fileConfig) Parse() (profiles, error) {
+func (c *fileConfig) Parse() (sections, error) {
 	if c.file == "" {
 		return nil, nil
 	}
@@ -48,14 +71,10 @@ func (c *fileConfig) Parse() (profiles, error) {
 		return nil, fmt.Errorf("Error parsing config file %q: %v", c.file, err)
 	}
 
-	profiles := profiles{"okta": map[string]string{}}
-	for sectionName, section := range f {
-		profiles[strings.TrimPrefix(sectionName, "profile ")] = section
-	}
-
-	return profiles, nil
+	return sections(f), nil
 }
 
+/*
 // sourceProfile returns either the defined source_profile or p if none exists
 func sourceProfile(p string, from profiles) string {
 	if conf, ok := from[p]; ok {
@@ -65,3 +84,4 @@ func sourceProfile(p string, from profiles) string {
 	}
 	return p
 }
+*/
