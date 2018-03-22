@@ -171,7 +171,7 @@ func selectMFADevice(factors []OktaUserAuthnFactor) (*OktaUserAuthnFactor, error
 	if len(factors) > 1 {
 		log.Info("Select a MFA from the following list")
 		for i, f := range factors {
-			log.Infof("%d: %s", i, f.Provider)
+			log.Infof("%d: %s (%s)", i, f.Provider, f.FactorType)
 		}
 		i, err := Prompt("Select MFA method", false)
 		if err != nil {
