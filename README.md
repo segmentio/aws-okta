@@ -65,6 +65,32 @@ region = <region>
 
 Your setup may require additional roles to be configured if your admin has set up a more complicated role scheme like cross account roles.  For more details on the authentication process, see the internals section.
 
+#### A more complex example
+
+The `aws_saml_url` can be set in the "okta" ini section, or on a per profile basis. This is useful if, for example, your organization has several Okta Apps (i.e. one for dev/qa and one for prod, or one for internal use and one for integrations with third party providers). For example:
+
+```ini
+[okta]
+# This is the "default" Okta App
+aws_saml_url = home/amazon_aws/cuZGoka9dAIFcyG0UllG/214
+
+[profile dev]
+# This profile uses the default Okta app
+role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
+
+[profile integrations-auth]
+# This is a distinct Okta App
+aws_saml_url = home/amazon_aws/woezQTbGWUaLSrYDvINU/214
+arn:aws:iam::<account-id>:role/<okta-role-name>
+
+[profile vendor]
+# This profile uses the "integrations-auth" Okta app combined with secondary role assumption
+source = integrations-auth
+role_arn = arn:aws:iam::<account-id>:role/<secondary-role-name>
+```
+
+The configuration above means that you can use multiple Okta Apps at the same time and switch between them easily.
+
 ## Backends
 
 We use 99design's keyring package that they use in `aws-vault`.  Because of this, you can choose between different pluggable secret storage backends just like in `aws-vault`.  You can either set your backend from the command line as a flag, or set the `AWS_OKTA_BACKEND` environment variable.

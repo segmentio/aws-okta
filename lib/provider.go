@@ -132,11 +132,23 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	return value, nil
 }
 
+func (p *Provider) getSamlURL(source string) (string, error) {
+	haystack := []string{p.profile, source, "okta"}
+	for _, profile := range haystack {
+		oktaAwsSAMLUrl, ok := p.profiles[profile]["aws_saml_url"]
+		if ok {
+			log.Debugf("Using aws_saml_url from profile: %s", profile)
+			return oktaAwsSAMLUrl, nil
+		}
+	}
+	return "", errors.New("aws_saml_url missing from ~/.aws/config")
+}
+
 func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	source := sourceProfile(p.profile, p.profiles)
-	oktaAwsSAMLUrl, ok := p.profiles["okta"]["aws_saml_url"]
-	if !ok {
-		return sts.Credentials{}, errors.New("aws_saml_url missing from ~/.aws/config")
+	oktaAwsSAMLUrl, err := p.getSamlURL(source)
+	if err != nil {
+		return sts.Credentials{}, err
 	}
 
 	profileARN, ok := p.profiles[source]["role_arn"]
