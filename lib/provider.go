@@ -90,13 +90,14 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	}
 
 	source := sourceProfile(p.profile, p.profiles)
-	session, err := p.sessions.Retrieve(source, p.SessionDuration)
+	session, name, err := p.sessions.Retrieve(source, p.SessionDuration)
+	p.defaultRoleSessionName = name
 	if err != nil {
 		session, err = p.getSamlSessionCreds()
 		if err != nil {
 			return credentials.Value{}, err
 		}
-		p.sessions.Store(source, session, p.SessionDuration)
+		p.sessions.Store(source, p.roleSessionName(), session, p.SessionDuration)
 	}
 
 	log.Debugf(" Using session %s, expires in %s",

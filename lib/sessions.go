@@ -15,6 +15,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 )
 
+type awsSession struct {
+	sts.Credentials
+	Name string
+}
+
 type KeyringSessions struct {
 	Keyring  keyring.Keyring
 	Profiles profiles
@@ -40,24 +45,26 @@ func (s *KeyringSessions) key(profile string, duration time.Duration) string {
 	return fmt.Sprintf("%s session (%x)", source, hex.EncodeToString(hasher.Sum(nil))[0:10])
 }
 
-func (s *KeyringSessions) Retrieve(profile string, duration time.Duration) (session sts.Credentials, err error) {
+func (s *KeyringSessions) Retrieve(profile string, duration time.Duration) (sts.Credentials, string, error) {
+	var session awsSession
 	item, err := s.Keyring.Get(s.key(profile, duration))
 	if err != nil {
-		return session, err
+		return session.Credentials, session.Name, err
 	}
 
 	if err = json.Unmarshal(item.Data, &session); err != nil {
-		return session, err
+		return session.Credentials, session.Name, err
 	}
 
 	if session.Expiration.Before(time.Now()) {
-		return session, errors.New("Session is expired")
+		return session.Credentials, session.Name, errors.New("Session is expired")
 	}
 
-	return
+	return session.Credentials, session.Name, nil
 }
 
-func (s *KeyringSessions) Store(profile string, session sts.Credentials, duration time.Duration) error {
+func (s *KeyringSessions) Store(profile string, sessionName string, creds sts.Credentials, duration time.Duration) error {
+	session := awsSession{Credentials: creds, Name: sessionName}
 	bytes, err := json.Marshal(session)
 	if err != nil {
 		return err
