@@ -49,19 +49,19 @@ func executeAwsCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Error finding `aws`. Is it installed and in your PATH? %s", err)
 	}
 
-	p, err := provider.NewKeycloakProvider(kr, kcprofile, section)
+	k, err := provider.NewKeycloakProvider(kr, kcprofile, section)
 	if err != nil {
 		return err
 	}
 	a := &provider.AwsProvider{
 		Keyring: kr,
 	}
-	c := provider.Provider{
+	p := provider.Provider{
 		A: a,
-		P: p,
+		K: k,
 	}
 
-	stscreds, _, err := c.Retrieve(awsrole)
+	stscreds, _, err := p.Retrieve(awsrole)
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func prerun(cmd *cobra.Command, args []string) error {
 	}
 
 	if !cmd.Flags().Lookup("config").Changed {
-		configFile, err = provider.EnvFileOrDefault("KEYCLOAK_CONFIG_FILE")
+		configFile, err = provider.EnvFileOrDefault()
 		if err != nil {
 			return err
 		}

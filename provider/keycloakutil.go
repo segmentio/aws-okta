@@ -68,10 +68,10 @@ func NewKeycloakProvider(kr keyring.Keyring, profile string, kcConf map[string]s
 	} else {
 		return nil, errors.New("Config must specify aws_client_id")
 	}
-	if v, e := kcConf["aws_cliend_secret"]; e {
+	if v, e := kcConf["aws_client_secret"]; e {
 		p.AwsClientSecret = v
 	} else {
-		return nil, errors.New("Config must specify aws_cliend_secret")
+		return nil, errors.New("Config must specify aws_client_secret")
 	}
 	return &p, nil
 }

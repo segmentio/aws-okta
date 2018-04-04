@@ -21,12 +21,13 @@ type fileConfig struct {
 }
 
 const (
+	DefaultEnv     = "KEYCLOAK_CONFIG_FILE"
 	DefaultConf    = "/.aws/keycloak-config"
 	DefaultSection = "id"
 )
 
-func EnvFileOrDefault(envFile string) (string, error) {
-	file := os.Getenv(envFile)
+func EnvFileOrDefault() (string, error) {
+	file := os.Getenv(DefaultEnv)
 	if file == "" {
 		home, err := homedir.Dir()
 		if err != nil {

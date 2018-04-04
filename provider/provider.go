@@ -9,7 +9,7 @@ import (
 )
 
 type Provider struct {
-	P *KeycloakProvider
+	K *KeycloakProvider
 	A *AwsProvider
 }
 
@@ -18,24 +18,24 @@ type SAMLAssertion struct {
 	RawData []byte
 }
 
-func (c *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
+func (p *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
 	log.Debug("Step 0: Checking existing AWS session")
-	creds, err := c.A.checkAlreadyAuthd(awsrole)
+	creds, err := p.A.checkAlreadyAuthd(awsrole)
 	if err == nil {
 		log.Debugf("AWS session already valid for %s", awsrole)
 		return creds, awsrole, nil
 	}
 
-	newCreds := c.P.retrieveKeycloakCreds()
+	newCreds := p.K.retrieveKeycloakCreds()
 
 	log.Debug("Step 1: Auth to Keycloak")
-	err = c.P.basicAuth()
+	err = p.K.basicAuth()
 	if err != nil {
 		return sts.Credentials{}, "", fmt.Errorf("Failed to authenticate with keycloak: %s", err)
 	}
 
 	log.Debug("Step 2: Get SAML form Keycloak")
-	assertion, err := c.P.getSamlAssertion()
+	assertion, err := p.K.getSamlAssertion()
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
@@ -48,7 +48,7 @@ func (c *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
 
 	log.Debug("Step 3: Use SAML to assume AWS role")
 	fmt.Printf("Assuming role '%s' (you can use this with the --profile flag to automatically select the role)\n", awsshortrole)
-	creds, err = c.A.assumeRoleWithSAML(principals[n], roles[n], string(assertion.RawData))
+	creds, err = p.A.assumeRoleWithSAML(principals[n], roles[n], string(assertion.RawData))
 	if err != nil {
 		log.WithField("role", awsshortrole).Errorf("error assuming role with SAML: %s", err.Error())
 		return sts.Credentials{}, "", err
@@ -58,10 +58,10 @@ func (c *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
 
 	// Save keycloak creds since auth was successful
 	if newCreds {
-		c.P.storeKeycloakCreds()
+		p.K.storeKeycloakCreds()
 	}
 
-	c.A.storeAwsCreds(creds, awsshortrole)
+	p.A.storeAwsCreds(creds, awsshortrole)
 
 	return creds, awsshortrole, err
 }

@@ -16,19 +16,19 @@ func init() {
 }
 
 func checkRun(cmd *cobra.Command, args []string) error {
-	p, err := provider.NewKeycloakProvider(kr, kcprofile, section)
+	k, err := provider.NewKeycloakProvider(kr, kcprofile, section)
 	if err != nil {
 		return err
 	}
 	a := &provider.AwsProvider{
 		Keyring: kr,
 	}
-	c := provider.Provider{
+	p := provider.Provider{
 		A: a,
-		P: p,
+		K: k,
 	}
 
-	_, _, err = c.Retrieve(awsrole)
+	_, _, err = p.Retrieve(awsrole)
 	if err != nil {
 		return err
 	}

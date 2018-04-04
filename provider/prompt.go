@@ -58,7 +58,7 @@ func PromptMultiMatch(choices []string, match matcher) (string, int) {
 }
 
 func PromptMultiMatchRole(choices []string, opt string) (string, int) {
-	re, err := regexp.Compile("role/(keycloak-)?(" + opt + ")")
+	re, err := regexp.Compile("role/(keycloak-)?(" + opt + ")$")
 	if err != nil {
 		fmt.Printf("Error interpreting requested role: %s", opt)
 		return PromptMulti(choices)
