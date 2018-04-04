@@ -34,8 +34,9 @@ var (
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:               "aws-keycloak",
+	Use:               "aws-keycloak [flags] -- <aws command>",
 	Short:             "aws-keycloak allows you to authenticate with AWS using your keycloak credentials",
+	Example:           "  aws-keycloak -p power-devx -- sts get-caller-identity",
 	SilenceUsage:      true,
 	SilenceErrors:     true,
 	PersistentPreRunE: prerun,
@@ -61,7 +62,7 @@ func executeAwsCmd(cmd *cobra.Command, args []string) error {
 		K: k,
 	}
 
-	stscreds, _, err := p.Retrieve(awsrole)
+	stscreds, awsshortrole, err := p.Retrieve(awsrole)
 	if err != nil {
 		return err
 	}
@@ -71,6 +72,10 @@ func executeAwsCmd(cmd *cobra.Command, args []string) error {
 		fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", *stscreds.AccessKeyId),
 		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", *stscreds.SecretAccessKey),
 		fmt.Sprintf("AWS_SESSION_TOKEN=%s", *stscreds.SessionToken),
+		fmt.Sprintf("AWS_PROFILE=%s", awsshortrole),
+	}
+	if region, found := os.LookupEnv("AWS_DEFAULT_REGION"); found {
+		awsenv = append(awsenv, fmt.Sprintf("AWS_DEFAULT_REGION=%s", region))
 	}
 	awscmd.Env = awsenv
 
@@ -101,12 +106,17 @@ func Execute() {
 func prerun(cmd *cobra.Command, args []string) error {
 	if debug {
 		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.ErrorLevel)
+	}
+
+	if cmd.Name() == "help" {
+		return nil
 	}
 
 	// Load backend from env var if not set as a flag
 	if !cmd.Flags().Lookup("backend").Changed {
-		backendFromEnv, ok := os.LookupEnv("AWS_KEYCLOAK_BACKEND")
-		if ok {
+		if backendFromEnv, ok := os.LookupEnv("AWS_KEYCLOAK_BACKEND"); ok {
 			backend = backendFromEnv
 		}
 	}

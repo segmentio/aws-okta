@@ -47,7 +47,9 @@ func (p *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
 	awsshortrole, n := PromptMultiMatchRole(roles, awsrole)
 
 	log.Debug("Step 3: Use SAML to assume AWS role")
-	fmt.Printf("Assuming role '%s' (you can use this with the --profile flag to automatically select the role)\n", awsshortrole)
+	fmt.Printf("Assuming role '%s'\n", awsshortrole)
+	fmt.Printf("  You can specify this role with the --profile flag if you also put it in your aws config.\n")
+	fmt.Printf("  Run `aws --profile %s configure` and don't enter any Key ID or Secret Key.\n", awsshortrole)
 	creds, err = p.A.assumeRoleWithSAML(principals[n], roles[n], string(assertion.RawData))
 	if err != nil {
 		log.WithField("role", awsshortrole).Errorf("error assuming role with SAML: %s", err.Error())

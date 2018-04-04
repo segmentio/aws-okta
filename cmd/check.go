@@ -7,7 +7,7 @@ import (
 
 var checkCmd = &cobra.Command{
 	Use:   "check",
-	Short: "check will authenticate you through keycloak and store session.",
+	Short: "Check will authenticate you through keycloak and store session.",
 	RunE:  checkRun,
 }
 
