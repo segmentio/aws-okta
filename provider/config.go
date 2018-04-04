@@ -21,7 +21,8 @@ type fileConfig struct {
 }
 
 const (
-	defaultConf = "/.aws/keycloak-config"
+	DefaultConf    = "/.aws/keycloak-config"
+	DefaultSection = "id"
 )
 
 func EnvFileOrDefault(envFile string) (string, error) {
@@ -31,7 +32,7 @@ func EnvFileOrDefault(envFile string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		file = filepath.Join(home, defaultConf)
+		file = filepath.Join(home, DefaultConf)
 	}
 	return file, nil
 }

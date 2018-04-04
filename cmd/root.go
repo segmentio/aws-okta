@@ -23,12 +23,13 @@ var (
 
 // global flags
 var (
-	backend   string
-	kr        keyring.Keyring
-	debug     bool
-	kcprofile string
-	awsrole   string
-	section   map[string]string
+	backend    string
+	kr         keyring.Keyring
+	debug      bool
+	configFile string
+	kcprofile  string
+	awsrole    string
+	section    map[string]string
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -39,9 +40,15 @@ var RootCmd = &cobra.Command{
 	SilenceErrors:     true,
 	PersistentPreRunE: prerun,
 	RunE:              executeAwsCmd,
+	Version:           "1.0.0",
 }
 
 func executeAwsCmd(cmd *cobra.Command, args []string) error {
+	aws_binary, err := exec.LookPath("aws")
+	if err != nil {
+		return fmt.Errorf("Error finding `aws`. Is it installed and in your PATH? %s", err)
+	}
+
 	p, err := provider.NewKeycloakProvider(kr, kcprofile, section)
 	if err != nil {
 		return err
@@ -54,15 +61,28 @@ func executeAwsCmd(cmd *cobra.Command, args []string) error {
 		P: p,
 	}
 
-	_, _, err = c.Retrieve(awsrole)
+	stscreds, _, err := c.Retrieve(awsrole)
 	if err != nil {
 		return err
 	}
 
-	// TODO
-	shcmd := exec.Command()
+	awscmd := exec.Command(aws_binary, args...)
+	awsenv := []string{
+		fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", *stscreds.AccessKeyId),
+		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", *stscreds.SecretAccessKey),
+		fmt.Sprintf("AWS_SESSION_TOKEN=%s", *stscreds.SessionToken),
+	}
+	awscmd.Env = awsenv
 
-	return nil
+	awscmd.Stdout = os.Stdout
+	awscmd.Stderr = os.Stderr
+
+	awsStartErr := awscmd.Start()
+	if awsStartErr != nil {
+		return awsStartErr
+	}
+
+	return awscmd.Wait()
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -106,9 +126,11 @@ func prerun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	configFile, err := provider.EnvFileOrDefault("KEYCLOAK_CONFIG_FILE")
-	if err != nil {
-		return err
+	if !cmd.Flags().Lookup("config").Changed {
+		configFile, err = provider.EnvFileOrDefault("KEYCLOAK_CONFIG_FILE")
+		if err != nil {
+			return err
+		}
 	}
 
 	config, err := provider.NewConfigFromFile(configFile)
@@ -133,8 +155,9 @@ func init() {
 	for _, backendType := range keyring.AvailableBackends() {
 		backendsAvailable = append(backendsAvailable, string(backendType))
 	}
+	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", provider.DefaultConf, "Keycloak provider configuration")
 	RootCmd.PersistentFlags().StringVarP(&backend, "backend", "b", "", fmt.Sprintf("Secret backend to use %s", backendsAvailable))
 	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
-	RootCmd.PersistentFlags().StringVarP(&kcprofile, "keycloak-profile", "k", "id", "Keycloak system to auth to")
+	RootCmd.PersistentFlags().StringVarP(&kcprofile, "keycloak-profile", "k", provider.DefaultSection, "Keycloak system to auth to")
 	RootCmd.PersistentFlags().StringVarP(&awsrole, "profile", "p", "", "AWS profile to run against (optional)")
 }
