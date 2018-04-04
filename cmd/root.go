@@ -4,12 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/99designs/keyring"
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/mulesoft-labs/aws-keycloak/lib"
+	"github.com/mulesoft-labs/aws-keycloak/provider"
 )
 
 // Errors returned from frontend commands
@@ -37,6 +38,31 @@ var RootCmd = &cobra.Command{
 	SilenceUsage:      true,
 	SilenceErrors:     true,
 	PersistentPreRunE: prerun,
+	RunE:              executeAwsCmd,
+}
+
+func executeAwsCmd(cmd *cobra.Command, args []string) error {
+	p, err := provider.NewKeycloakProvider(kr, kcprofile, section)
+	if err != nil {
+		return err
+	}
+	a := &provider.AwsProvider{
+		Keyring: kr,
+	}
+	c := provider.Provider{
+		A: a,
+		P: p,
+	}
+
+	_, _, err = c.Retrieve(awsrole)
+	if err != nil {
+		return err
+	}
+
+	// TODO
+	shcmd := exec.Command()
+
+	return nil
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -80,12 +106,12 @@ func prerun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	configFile, err := lib.EnvFileOrDefault("KEYCLOAK_CONFIG_FILE")
+	configFile, err := provider.EnvFileOrDefault("KEYCLOAK_CONFIG_FILE")
 	if err != nil {
 		return err
 	}
 
-	config, err := lib.NewConfigFromFile(configFile)
+	config, err := provider.NewConfigFromFile(configFile)
 	if err != nil {
 		return err
 	}

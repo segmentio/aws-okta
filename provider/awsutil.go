@@ -53,6 +53,7 @@ func (a *AwsProvider) checkAlreadyAuthd(awsrole string) (sts.Credentials, error)
 	}
 
 	if time.Now().After(*creds.Expiration) {
+		log.Debug("aws credentials exist, but expired")
 		return sts.Credentials{}, errors.New("Credentials exist, but expired")
 	}
 	return creds, nil

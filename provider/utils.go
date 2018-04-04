@@ -1,4 +1,4 @@
-package lib
+package provider
 
 import (
 	"encoding/base64"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mulesoft-labs/aws-keycloak/lib/saml"
+	"github.com/mulesoft-labs/aws-keycloak/provider/saml"
 	"golang.org/x/net/html"
 )
 
