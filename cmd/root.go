@@ -81,10 +81,10 @@ func executeAwsCmd(cmd *cobra.Command, args []string) error {
 			if strings.Contains(stderr, errStr) {
 				// Command used `-p`, but there isn't any aws config for that.
 				// Explain and run anyway.
-				log.Warnf("--profile argument expects aws config to already exist so it can use the default region.\n")
-				log.Warnf("Use `aws configure --profile %s`\n", awsshortrole)
-				log.Warnf("  but leave Access Key and Secret blank.\n")
-				log.Warnf("Continuing without aws profile.\n")
+				log.Warnf("--profile argument expects aws config to already exist so it can use the default region.")
+				log.Warnf("Use `aws configure --profile %s`", awsshortrole)
+				log.Warnf("  but leave Access Key and Secret blank.")
+				log.Warnf("Continuing without aws profile.")
 				stderr, runErr = runAwsCommand(awsenv, args...)
 			}
 		}

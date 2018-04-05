@@ -57,9 +57,9 @@ func (p *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
 	awsshortrole, n := PromptMultiMatchRole(roles, awsrole)
 
 	log.Debug("Step 3: Use SAML to assume AWS role")
-	fmt.Fprintf(ProviderOut, "Assuming role '%s'\n", awsshortrole)
-	fmt.Fprintf(ProviderOut, "  You can specify this role with the --profile flag if you also put it in your aws config.\n")
-	fmt.Fprintf(ProviderOut, "  Hint: use `aws configure --profile %s` and don't enter any Key ID or Secret Key.\n", awsshortrole)
+	log.Infof("Assuming role '%s'", awsshortrole)
+	log.Infof("  You can specify this role with the --profile flag if you also put it in your aws config.")
+	log.Infof("  Hint: use `aws configure --profile %s` and don't enter any Key ID or Secret Key.", awsshortrole)
 	creds, err = p.A.AssumeRoleWithSAML(principals[n], roles[n], string(assertion.RawData))
 	if err != nil {
 		if err.(awserr.Error).Code() == sts.ErrCodeExpiredTokenException {

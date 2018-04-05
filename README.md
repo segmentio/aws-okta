@@ -44,6 +44,25 @@ Flags:
 
 Use "aws-keycloak [command] --help" for more information about a command.
 ```
+
+### Configuring
+
+You need a configuration file that describes how to talk to the keycloak server. This is an ini file at `~/.aws/keycloak-config`, or can be specified using `--config`.
+
+The default keycloak profile is `id`. This can be specified with the `--keycloak-profile` flag. The section must contain:
+```ini
+[id]
+keycloak_base = https://keycloak
+aws_saml_path = /auth/realms/<realm>/protocol/saml/clients/amazon-aws
+aws_oidc_path = /auth/realms/<realm>/protocol/openid-connect/token
+aws_client_id = urn:amazon:webservices
+aws_client_secret = <client secret from keycloak>
+```
+
+## Backends
+
+We use 99design's keyring package that they use in `aws-vault`.  Because of this, you can choose between different pluggable secret storage backends just like in `aws-vault`.  You can either set your backend from the command line as a flag, or set the `AWS_KEYCLOAK_BACKEND` environment variable.
+
 #### Examples
 
 ```bash
@@ -78,23 +97,26 @@ DEBU[0000] AWS session already valid for power-devx
 
 ```bash
 $ aws-keycloak -p power-devx -- sts get-caller-identity
+WARN[0003] --profile argument expects aws config to already exist so it can use the default region.
+WARN[0003] Use `aws configure --profile power-devx`
+WARN[0003]   but leave Access Key and Secret blank.
+WARN[0003] Continuing without aws profile.
+{
+    "UserId": "AROAIC5ECYBOX4KG2CIK4:chris.byron",
+    "Account": "073815667418",
+    "Arn": "arn:aws:sts::073815667418:assumed-role/keycloak-power-devx/chris.byron"
+}
+
+$ aws configure --profile power-devx
+AWS Access Key ID [None]:
+AWS Secret Access Key [None]:
+Default region name [None]: us-east-1
+Default output format [None]:
+
+$ aws-keycloak -p power-devx -- sts get-caller-identity
+{
+    "UserId": "AROAIC5ECYBOX4KG2CIK4:chris.byron",
+    "Account": "073815667418",
+    "Arn": "arn:aws:sts::073815667418:assumed-role/keycloak-power-devx/chris.byron"
+}
 ```
-
-
-### Configuring
-
-You need a configuration file that describes how to talk to the keycloak server. This is an ini file at `~/.aws/keycloak-config`, or can be specified using `--config`.
-
-The default keycloak profile is `id`. This can be specified with the `--keycloak-profile` flag. The section must contain:
-```ini
-[id]
-keycloak_base = https://keycloak
-aws_saml_path = /auth/realms/<realm>/protocol/saml/clients/amazon-aws
-aws_oidc_path = /auth/realms/<realm>/protocol/openid-connect/token
-aws_client_id = urn:amazon:webservices
-aws_client_secret = <client secret from keycloak>
-```
-
-## Backends
-
-We use 99design's keyring package that they use in `aws-vault`.  Because of this, you can choose between different pluggable secret storage backends just like in `aws-vault`.  You can either set your backend from the command line as a flag, or set the `AWS_KEYCLOAK_BACKEND` environment variable.
