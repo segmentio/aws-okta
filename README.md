@@ -44,6 +44,42 @@ Flags:
 
 Use "aws-keycloak [command] --help" for more information about a command.
 ```
+#### Examples
+
+```bash
+$ aws-keycloak check
+Enter username/password for keycloak (env: id)
+Username: chris.byron
+Password:
+[  0] arn:aws:iam::003617316831:role/keycloak-admin-identity
+[  1] arn:aws:iam::906852541812:role/keycloak-power-stgxdr
+[  2] arn:aws:iam::055970264539:role/keycloak-admin-sandbox
+[  3] arn:aws:iam::732333100769:role/keycloak-ro-build
+[  4] arn:aws:iam::053047940888:role/keycloak-power-kdev
+[  5] arn:aws:iam::055970264539:role/keycloak-power-sandbox
+[  6] arn:aws:iam::675448719222:role/keycloak-power-kqa
+[  7] arn:aws:iam::700982990415:role/keycloak-power-kstg
+[  8] arn:aws:iam::645983395287:role/keycloak-power-stgx
+[  9] arn:aws:iam::073815667418:role/keycloak-power-devx
+[ 10] arn:aws:iam::008119339527:role/keycloak-power-qax
+Choice: 9
+Assuming role 'power-devx'
+  You can specify this role with the --profile flag if you also put it in your aws config.
+  Run `aws --profile power-devx configure` and don't enter any Key ID or Secret Key.
+```
+
+```bash
+$ aws-keycloak --debug --profile power-devx check
+DEBU[0000] Parsing config file /Users/chrisbyron/.aws/keycloak-config
+DEBU[0000] Step 0: Checking existing AWS session
+DEBU[0000] found aws session in keyring
+DEBU[0000] AWS session already valid for power-devx
+```
+
+```bash
+$ aws-keycloak -p power-devx -- sts get-caller-identity
+```
+
 
 ### Configuring
 
