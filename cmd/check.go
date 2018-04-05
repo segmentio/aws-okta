@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/mulesoft-labs/aws-keycloak/provider"
 	"github.com/spf13/cobra"
 )
@@ -28,10 +30,12 @@ func checkRun(cmd *cobra.Command, args []string) error {
 		K: k,
 	}
 
-	_, _, err = p.Retrieve(awsrole)
+	_, awsshortrole, err := p.Retrieve(awsrole)
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("Successfully connected to AWS with role %s.", awsshortrole)
 
 	return nil
 }

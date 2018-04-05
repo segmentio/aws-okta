@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/99designs/keyring"
 	log "github.com/Sirupsen/logrus"
@@ -41,15 +43,10 @@ var RootCmd = &cobra.Command{
 	SilenceErrors:     true,
 	PersistentPreRunE: prerun,
 	RunE:              executeAwsCmd,
-	Version:           "1.0.0-beta",
+	Version:           "1.0.1-beta",
 }
 
 func executeAwsCmd(cmd *cobra.Command, args []string) error {
-	aws_binary, err := exec.LookPath("aws")
-	if err != nil {
-		return fmt.Errorf("Error finding `aws`. Is it installed and in your PATH? %s", err)
-	}
-
 	k, err := provider.NewKeycloakProvider(kr, kcprofile, section)
 	if err != nil {
 		return err
@@ -67,27 +64,56 @@ func executeAwsCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	awscmd := exec.Command(aws_binary, args...)
 	awsenv := []string{
 		fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", *stscreds.AccessKeyId),
 		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", *stscreds.SecretAccessKey),
 		fmt.Sprintf("AWS_SESSION_TOKEN=%s", *stscreds.SessionToken),
-		fmt.Sprintf("AWS_PROFILE=%s", awsshortrole),
 	}
 	if region, found := os.LookupEnv("AWS_DEFAULT_REGION"); found {
 		awsenv = append(awsenv, fmt.Sprintf("AWS_DEFAULT_REGION=%s", region))
 	}
-	awscmd.Env = awsenv
+	awsprofileenv := fmt.Sprintf("AWS_PROFILE=%s", awsshortrole)
 
-	awscmd.Stdout = os.Stdout
-	awscmd.Stderr = os.Stderr
-
-	awsStartErr := awscmd.Start()
-	if awsStartErr != nil {
-		return awsStartErr
+	stderr, runErr := runAwsCommand(append(awsenv, awsprofileenv), args...)
+	if runErr != nil {
+		if _, ok := runErr.(*exec.ExitError); ok {
+			errStr := fmt.Sprintf("The config profile (%s) could not be found", awsshortrole)
+			if strings.Contains(stderr, errStr) {
+				// Command used `-p`, but there isn't any aws config for that.
+				// Explain and run anyway.
+				log.Warnf("--profile argument expects aws config to already exist so it can use the default region.\n")
+				log.Warnf("Use `aws configure --profile %s`\n", awsshortrole)
+				log.Warnf("  but leave Access Key and Secret blank.\n")
+				log.Warnf("Continuing without aws profile.\n")
+				stderr, runErr = runAwsCommand(awsenv, args...)
+			}
+		}
 	}
 
-	return awscmd.Wait()
+	if runErr != nil {
+		fmt.Fprintf(os.Stderr, stderr)
+	}
+
+	return runErr
+}
+
+// Always returns stderr as a string as well as any errors
+func runAwsCommand(env []string, arg ...string) (string, error) {
+	aws_binary, err := exec.LookPath("aws")
+	if err != nil {
+		return "", fmt.Errorf("Error finding `aws`. Is it installed and in your PATH? %s", err)
+	}
+
+	awscmd := exec.Command(aws_binary, arg...)
+	awscmd.Env = env
+
+	awscmd.Stdout = os.Stdout
+	//awscmd.Stderr = os.Stderr
+	var stderr bytes.Buffer
+	awscmd.Stderr = &stderr
+
+	runErr := awscmd.Run()
+	return stderr.String(), runErr
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -107,7 +133,7 @@ func prerun(cmd *cobra.Command, args []string) error {
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	} else {
-		log.SetLevel(log.ErrorLevel)
+		log.SetLevel(log.WarnLevel)
 	}
 
 	if cmd.Name() == "help" {
