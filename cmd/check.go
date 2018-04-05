@@ -35,7 +35,7 @@ func checkRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("Successfully connected to AWS with role %s.", awsshortrole)
+	fmt.Printf("Successfully connected to AWS with role %s.\n", awsshortrole)
 
 	return nil
 }
