@@ -42,7 +42,7 @@ func ParseSAML(body []byte, resp *SAMLAssertion) (err error) {
 		return
 	}
 
-	val, _ = GetNode(doc)
+	val, _ = getNode(doc)
 	if val != "" {
 		resp.RawData = []byte(val)
 		val = strings.Replace(val, "&#x2b;", "+", -1)
@@ -58,7 +58,7 @@ func ParseSAML(body []byte, resp *SAMLAssertion) (err error) {
 	return
 }
 
-func GetNode(n *html.Node) (val string, node *html.Node) {
+func getNode(n *html.Node) (val string, node *html.Node) {
 	var isSAML bool
 	if n.Type == html.ElementNode && n.Data == "input" {
 		for _, a := range n.Attr {
@@ -73,7 +73,7 @@ func GetNode(n *html.Node) (val string, node *html.Node) {
 
 	if node == nil || val == "" {
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			val, node = GetNode(c)
+			val, node = getNode(c)
 			if val != "" {
 				return
 			}

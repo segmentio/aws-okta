@@ -2,15 +2,24 @@ package provider
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/mulesoft-labs/aws-keycloak/provider/saml"
 )
 
+// Package level vars
+var (
+	ProviderIn  io.Reader = os.Stdin
+	ProviderOut io.Writer = os.Stdout
+	ProviderErr io.Writer = os.Stderr
+)
+
 type Provider struct {
-	K *KeycloakProvider
-	A *AwsProvider
+	K KeycloakProviderIf
+	A AwsProviderIf
 }
 
 type SAMLAssertion struct {
@@ -20,22 +29,22 @@ type SAMLAssertion struct {
 
 func (p *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
 	log.Debug("Step 0: Checking existing AWS session")
-	creds, err := p.A.checkAlreadyAuthd(awsrole)
+	creds, err := p.A.CheckAlreadyAuthd(awsrole)
 	if err == nil {
 		log.Debugf("AWS session already valid for %s", awsrole)
 		return creds, awsrole, nil
 	}
 
-	newCreds := p.K.retrieveKeycloakCreds()
+	newCreds := p.K.RetrieveKeycloakCreds()
 
 	log.Debug("Step 1: Auth to Keycloak")
-	err = p.K.basicAuth()
+	err = p.K.BasicAuth()
 	if err != nil {
 		return sts.Credentials{}, "", fmt.Errorf("Failed to authenticate with keycloak: %s", err)
 	}
 
 	log.Debug("Step 2: Get SAML form Keycloak")
-	assertion, err := p.K.getSamlAssertion()
+	assertion, err := p.K.GetSamlAssertion()
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
@@ -47,10 +56,10 @@ func (p *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
 	awsshortrole, n := PromptMultiMatchRole(roles, awsrole)
 
 	log.Debug("Step 3: Use SAML to assume AWS role")
-	fmt.Printf("Assuming role '%s'\n", awsshortrole)
-	fmt.Printf("  You can specify this role with the --profile flag if you also put it in your aws config.\n")
-	fmt.Printf("  Run `aws --profile %s configure` and don't enter any Key ID or Secret Key.\n", awsshortrole)
-	creds, err = p.A.assumeRoleWithSAML(principals[n], roles[n], string(assertion.RawData))
+	fmt.Fprintf(ProviderOut, "Assuming role '%s'\n", awsshortrole)
+	fmt.Fprintf(ProviderOut, "  You can specify this role with the --profile flag if you also put it in your aws config.\n")
+	fmt.Fprintf(ProviderOut, "  Run `aws --profile %s configure` and don't enter any Key ID or Secret Key.\n", awsshortrole)
+	creds, err = p.A.AssumeRoleWithSAML(principals[n], roles[n], string(assertion.RawData))
 	if err != nil {
 		log.WithField("role", awsshortrole).Errorf("error assuming role with SAML: %s", err.Error())
 		return sts.Credentials{}, "", err
@@ -60,10 +69,10 @@ func (p *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
 
 	// Save keycloak creds since auth was successful
 	if newCreds {
-		p.K.storeKeycloakCreds()
+		p.K.StoreKeycloakCreds()
 	}
 
-	p.A.storeAwsCreds(creds, awsshortrole)
+	p.A.StoreAwsCreds(creds, awsshortrole)
 
 	return creds, awsshortrole, err
 }

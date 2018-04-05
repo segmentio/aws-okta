@@ -17,6 +17,13 @@ const (
 	keycloakCookie = "KEYCLOAK_IDENTITY"
 )
 
+type KeycloakProviderIf interface {
+	RetrieveKeycloakCreds() bool
+	BasicAuth() error
+	GetSamlAssertion() (assertion SAMLAssertion, err error)
+	StoreKeycloakCreds()
+}
+
 type KeycloakProvider struct {
 	Keyring         keyring.Keyring
 	ProfileName     string
@@ -44,73 +51,73 @@ type KeycloakUserAuthn struct {
 }
 
 func NewKeycloakProvider(kr keyring.Keyring, profile string, kcConf map[string]string) (*KeycloakProvider, error) {
-	p := KeycloakProvider{
+	k := KeycloakProvider{
 		Keyring:     kr,
 		ProfileName: profile,
 	}
 	if v, e := kcConf["keycloak_base"]; e {
-		p.ApiBase = v
+		k.ApiBase = v
 	} else {
 		return nil, errors.New("Config must specify keycloak_base")
 	}
 	if v, e := kcConf["aws_saml_path"]; e {
-		p.AwsSAMLPath = v
+		k.AwsSAMLPath = v
 	} else {
 		return nil, errors.New("Config must specify aws_saml_path")
 	}
 	if v, e := kcConf["aws_oidc_path"]; e {
-		p.AwsOIDCPath = v
+		k.AwsOIDCPath = v
 	} else {
 		return nil, errors.New("Config must specify aws_oidc_path")
 	}
 	if v, e := kcConf["aws_client_id"]; e {
-		p.AwsClient = v
+		k.AwsClient = v
 	} else {
 		return nil, errors.New("Config must specify aws_client_id")
 	}
 	if v, e := kcConf["aws_client_secret"]; e {
-		p.AwsClientSecret = v
+		k.AwsClientSecret = v
 	} else {
 		return nil, errors.New("Config must specify aws_client_secret")
 	}
-	return &p, nil
+	return &k, nil
 }
 
 // return bool is whether the creds should be stored in keyring if they work
-func (p *KeycloakProvider) retrieveKeycloakCreds() bool {
+func (k *KeycloakProvider) RetrieveKeycloakCreds() bool {
 	var keycloakCreds KeycloakCreds
-	keyName := p.keycloakkeyname()
+	keyName := k.keycloakkeyname()
 
-	item, err := p.Keyring.Get(keyName)
+	item, err := k.Keyring.Get(keyName)
 	if err == nil {
 		log.Debug("found creds in keyring")
 		if err = json.Unmarshal(item.Data, &keycloakCreds); err != nil {
 			log.Error("could not unmarshal keycloak creds")
 		} else {
-			p.kcCreds = keycloakCreds
+			k.kcCreds = keycloakCreds
 			return false
 		}
 	} else {
 		log.Debugf("couldnt get keycloak creds from keyring: %s", keyName)
-		p.kcCreds = p.promptUsernamePassword()
+		k.kcCreds = k.promptUsernamePassword()
 	}
 	return true
 }
 
-func (p *KeycloakProvider) storeKeycloakCreds() {
-	encoded, err := json.Marshal(p.kcCreds)
+func (k *KeycloakProvider) StoreKeycloakCreds() {
+	encoded, err := json.Marshal(k.kcCreds)
 	// failure would be surprising, but jsut dont save
 	if err != nil {
 		log.Debugf("Couldn't marshal keycloak creds... %s", err)
 	} else {
-		keyName := p.keycloakkeyname()
+		keyName := k.keycloakkeyname()
 		newKeycloakItem := keyring.Item{
 			Key:   keyName,
 			Data:  encoded,
 			Label: keyName + " credentials",
 			KeychainNotTrustApplication: false,
 		}
-		if err := p.Keyring.Set(newKeycloakItem); err != nil {
+		if err := k.Keyring.Set(newKeycloakItem); err != nil {
 			log.Debugf("Failed to write keycloak creds to keyring!")
 		} else {
 			log.Debugf("Successfully stored keycloak creds to keyring!")
@@ -118,12 +125,12 @@ func (p *KeycloakProvider) storeKeycloakCreds() {
 	}
 }
 
-func (p *KeycloakProvider) promptUsernamePassword() (creds KeycloakCreds) {
-	fmt.Printf("Enter username/password for keycloak (env: %s)\n", p.ProfileName)
+func (k *KeycloakProvider) promptUsernamePassword() (creds KeycloakCreds) {
+	fmt.Fprintf(ProviderOut, "Enter username/password for keycloak (env: %s)\n", k.ProfileName)
 	for creds.Username == "" {
 		u, err := Prompt("Username", false)
 		if err != nil {
-			fmt.Printf("Invalid username: %s\n", creds.Username)
+			fmt.Fprintf(ProviderOut, "Invalid username: %s\n", creds.Username)
 		} else {
 			creds.Username = u
 		}
@@ -131,25 +138,25 @@ func (p *KeycloakProvider) promptUsernamePassword() (creds KeycloakCreds) {
 	for creds.Password == "" {
 		x, err := Prompt("Password", true)
 		if err != nil {
-			fmt.Printf("Invalid password: %s\n", creds.Username)
+			fmt.Fprintf(ProviderOut, "Invalid password: %s\n", creds.Username)
 		} else {
 			creds.Password = x
 		}
 	}
-	fmt.Println("")
+	fmt.Fprint(ProviderOut, "\n")
 	return
 }
 
-func (p *KeycloakProvider) keycloakkeyname() string {
-	return "keycloak-creds-" + p.ProfileName
+func (k *KeycloakProvider) keycloakkeyname() string {
+	return "keycloak-creds-" + k.ProfileName
 }
 
-func (p *KeycloakProvider) basicAuth() error {
+func (k *KeycloakProvider) BasicAuth() error {
 	payload := url.Values{}
-	payload.Set("username", p.kcCreds.Username)
-	payload.Set("password", p.kcCreds.Password)
-	payload.Set("client_id", p.AwsClient)
-	payload.Set("client_secret", p.AwsClientSecret)
+	payload.Set("username", k.kcCreds.Username)
+	payload.Set("password", k.kcCreds.Password)
+	payload.Set("client_id", k.AwsClient)
+	payload.Set("client_secret", k.AwsClientSecret)
 	payload.Set("grant_type", "password")
 
 	header := http.Header{
@@ -157,7 +164,7 @@ func (p *KeycloakProvider) basicAuth() error {
 		"Content-Type": []string{"application/x-www-form-urlencoded"},
 	}
 
-	body, err := p.doHttp("POST", p.AwsOIDCPath, header, []byte(payload.Encode()))
+	body, err := k.doHttp("POST", k.AwsOIDCPath, header, []byte(payload.Encode()))
 	if err != nil {
 		return nil
 	}
@@ -168,27 +175,27 @@ func (p *KeycloakProvider) basicAuth() error {
 		return err
 	}
 	log.Debug("successfully authenticated to keycloak")
-	p.kcToken = userAuthn.AccessToken
+	k.kcToken = userAuthn.AccessToken
 	return nil
 }
 
-func (p *KeycloakProvider) getSamlAssertion() (assertion SAMLAssertion, err error) {
+func (k *KeycloakProvider) GetSamlAssertion() (assertion SAMLAssertion, err error) {
 	header := http.Header{
-		"Cookie": []string{fmt.Sprintf("%s=%s", keycloakCookie, p.kcToken)},
+		"Cookie": []string{fmt.Sprintf("%s=%s", keycloakCookie, k.kcToken)},
 	}
-	body, err := p.doHttp("GET", p.AwsSAMLPath, header, nil)
+	body, err := k.doHttp("GET", k.AwsSAMLPath, header, nil)
 	if err != nil {
 		return
 	}
 
 	if err = ParseSAML(body, &assertion); err != nil {
-		err = fmt.Errorf("Couldn't access SAML app; is the user %s in a group that has access to AWS? (%s)", p.kcCreds.Username, err)
+		err = fmt.Errorf("Couldn't access SAML app; is the user %s in a group that has access to AWS? (%s)", k.kcCreds.Username, err)
 	}
 	return
 }
 
-func (p *KeycloakProvider) doHttp(method, path string, header http.Header, data []byte) (body []byte, err error) {
-	url, err := url.Parse(fmt.Sprintf("%s/%s", p.ApiBase, path))
+func (k *KeycloakProvider) doHttp(method, path string, header http.Header, data []byte) (body []byte, err error) {
+	url, err := url.Parse(fmt.Sprintf("%s/%s", k.ApiBase, path))
 	if err != nil {
 		return
 	}

@@ -16,11 +16,17 @@ const (
 	awsDuration = 3600
 )
 
+type AwsProviderIf interface {
+	AssumeRoleWithSAML(string, string, string) (sts.Credentials, error)
+	CheckAlreadyAuthd(string) (sts.Credentials, error)
+	StoreAwsCreds(sts.Credentials, string)
+}
+
 type AwsProvider struct {
 	Keyring keyring.Keyring
 }
 
-func (a *AwsProvider) assumeRoleWithSAML(principal, role, assertion string) (sts.Credentials, error) {
+func (a *AwsProvider) AssumeRoleWithSAML(principal, role, assertion string) (sts.Credentials, error) {
 	samlSess := session.Must(session.NewSession())
 	svc := sts.New(samlSess)
 
@@ -39,7 +45,7 @@ func (a *AwsProvider) assumeRoleWithSAML(principal, role, assertion string) (sts
 	return *samlResp.Credentials, nil
 }
 
-func (a *AwsProvider) checkAlreadyAuthd(awsrole string) (sts.Credentials, error) {
+func (a *AwsProvider) CheckAlreadyAuthd(awsrole string) (sts.Credentials, error) {
 	awsSessionKeyName := awskeyname(awsrole)
 	item, err := a.Keyring.Get(awsSessionKeyName)
 	if err != nil {
@@ -59,7 +65,7 @@ func (a *AwsProvider) checkAlreadyAuthd(awsrole string) (sts.Credentials, error)
 	return creds, nil
 }
 
-func (a *AwsProvider) storeAwsCreds(creds sts.Credentials, awsrole string) {
+func (a *AwsProvider) StoreAwsCreds(creds sts.Credentials, awsrole string) {
 	awsSessionKeyName := awskeyname(awsrole)
 	encoded, err := json.Marshal(creds)
 	if err != nil {

@@ -41,7 +41,7 @@ var RootCmd = &cobra.Command{
 	SilenceErrors:     true,
 	PersistentPreRunE: prerun,
 	RunE:              executeAwsCmd,
-	Version:           "1.0.0",
+	Version:           "0.1.0",
 }
 
 func executeAwsCmd(cmd *cobra.Command, args []string) error {

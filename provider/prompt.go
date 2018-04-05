@@ -3,7 +3,6 @@ package provider
 import (
 	"bufio"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -13,7 +12,7 @@ import (
 type matcher func(string) bool
 
 func Prompt(prompt string, sensitive bool) (string, error) {
-	fmt.Printf("%s: ", prompt)
+	fmt.Fprintf(ProviderOut, "%s: ", prompt)
 	if sensitive {
 		var input []byte
 		input, err := terminal.ReadPassword(1)
@@ -22,7 +21,7 @@ func Prompt(prompt string, sensitive bool) (string, error) {
 		}
 		return strings.TrimSpace(string(input)), nil
 	}
-	reader := bufio.NewReader(os.Stdin)
+	reader := bufio.NewReader(ProviderIn)
 	value, err := reader.ReadString('\n')
 	if err != nil {
 		return "", err
@@ -51,16 +50,16 @@ func PromptMultiMatch(choices []string, match matcher) (string, int) {
 		// not the optimal way to biuld a string, I know
 		str = fmt.Sprintf("%s[%3d] %s\n", str, i, c)
 	}
-	fmt.Printf("%sChoice: ", str)
+	fmt.Fprintf(ProviderOut, "%sChoice: ", str)
 	var selection int
-	fmt.Scanf("%d", &selection)
+	fmt.Fscanf(ProviderIn, "%d", &selection)
 	return choices[selection], selection
 }
 
 func PromptMultiMatchRole(choices []string, opt string) (string, int) {
 	re, err := regexp.Compile("role/(keycloak-)?(" + opt + ")$")
 	if err != nil {
-		fmt.Printf("Error interpreting requested role: %s", opt)
+		fmt.Fprintf(ProviderErr, "Error interpreting requested role: %s", opt)
 		return PromptMulti(choices)
 	}
 	match := func(c string) bool {
