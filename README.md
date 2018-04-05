@@ -82,9 +82,7 @@ Password:
 [  9] arn:aws:iam::073815667418:role/keycloak-power-devx
 [ 10] arn:aws:iam::008119339527:role/keycloak-power-qax
 Choice: 9
-Assuming role 'power-devx'
-  You can specify this role with the --profile flag if you also put it in your aws config.
-  Run `aws --profile power-devx configure` and don't enter any Key ID or Secret Key.
+Successfully connected to AWS with role power-dev.
 ```
 
 ```bash
