@@ -7,6 +7,7 @@ package mock_provider
 import (
 	sts "github.com/aws/aws-sdk-go/service/sts"
 	gomock "github.com/golang/mock/gomock"
+	saml "github.com/mulesoft-labs/aws-keycloak/provider/saml"
 	reflect "reflect"
 )
 
@@ -34,16 +35,16 @@ func (m *MockAwsProviderIf) EXPECT() *MockAwsProviderIfMockRecorder {
 }
 
 // AssumeRoleWithSAML mocks base method
-func (m *MockAwsProviderIf) AssumeRoleWithSAML(arg0, arg1, arg2 string) (sts.Credentials, error) {
-	ret := m.ctrl.Call(m, "AssumeRoleWithSAML", arg0, arg1, arg2)
+func (m *MockAwsProviderIf) AssumeRoleWithSAML(arg0 saml.RolePrincipal, arg1 string) (sts.Credentials, error) {
+	ret := m.ctrl.Call(m, "AssumeRoleWithSAML", arg0, arg1)
 	ret0, _ := ret[0].(sts.Credentials)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AssumeRoleWithSAML indicates an expected call of AssumeRoleWithSAML
-func (mr *MockAwsProviderIfMockRecorder) AssumeRoleWithSAML(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AssumeRoleWithSAML", reflect.TypeOf((*MockAwsProviderIf)(nil).AssumeRoleWithSAML), arg0, arg1, arg2)
+func (mr *MockAwsProviderIfMockRecorder) AssumeRoleWithSAML(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AssumeRoleWithSAML", reflect.TypeOf((*MockAwsProviderIf)(nil).AssumeRoleWithSAML), arg0, arg1)
 }
 
 // CheckAlreadyAuthd mocks base method

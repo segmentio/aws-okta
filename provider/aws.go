@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/mulesoft-labs/aws-keycloak/provider/saml"
 )
 
 const (
@@ -17,7 +18,7 @@ const (
 )
 
 type AwsProviderIf interface {
-	AssumeRoleWithSAML(string, string, string) (sts.Credentials, error)
+	AssumeRoleWithSAML(saml.RolePrincipal, string) (sts.Credentials, error)
 	CheckAlreadyAuthd(string) (sts.Credentials, error)
 	StoreAwsCreds(sts.Credentials, string)
 }
@@ -26,13 +27,13 @@ type AwsProvider struct {
 	Keyring keyring.Keyring
 }
 
-func (a *AwsProvider) AssumeRoleWithSAML(principal, role, assertion string) (sts.Credentials, error) {
+func (a *AwsProvider) AssumeRoleWithSAML(rp saml.RolePrincipal, assertion string) (sts.Credentials, error) {
 	samlSess := session.Must(session.NewSession())
 	svc := sts.New(samlSess)
 
 	samlParams := &sts.AssumeRoleWithSAMLInput{
-		PrincipalArn:    aws.String(principal),
-		RoleArn:         aws.String(role),
+		PrincipalArn:    aws.String(rp.Principal),
+		RoleArn:         aws.String(rp.Role),
 		SAMLAssertion:   aws.String(assertion),
 		DurationSeconds: aws.Int64(awsDuration),
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/mulesoft-labs/aws-keycloak/provider"
 	"github.com/mulesoft-labs/aws-keycloak/provider/mock_provider"
+	"github.com/mulesoft-labs/aws-keycloak/provider/saml"
 )
 
 var (
@@ -31,8 +32,8 @@ func TestRetrieve(t *testing.T) {
 	defer ctrl.Finish()
 
 	awsrole := "admin-identity"
-	var assertion provider.SAMLAssertion
-	if err := provider.ParseSAML([]byte(GoodSaml), &assertion); err != nil {
+	var samlStruct saml.SAMLStruct
+	if err := saml.Parse([]byte(GoodSaml), &samlStruct); err != nil {
 		t.Error("Couldn't parse saml")
 	}
 
@@ -44,12 +45,12 @@ func TestRetrieve(t *testing.T) {
 	k := mock_provider.NewMockKeycloakProviderIf(ctrl)
 	k.EXPECT().RetrieveKeycloakCreds().Return(true)
 	k.EXPECT().BasicAuth().Return(nil)
-	k.EXPECT().GetSamlAssertion().Return(assertion, nil)
+	k.EXPECT().GetSamlAssertion().Return(samlStruct, nil)
 	k.EXPECT().StoreKeycloakCreds()
 
 	a := mock_provider.NewMockAwsProviderIf(ctrl)
 	a.EXPECT().CheckAlreadyAuthd(awsrole).Return(sts.Credentials{}, errors.New("not authd"))
-	a.EXPECT().AssumeRoleWithSAML("arn:aws:iam::003617316831:saml-provider/keycloak-provider", "arn:aws:iam::003617316831:role/keycloak-admin-identity", gomock.Any()).Return(goodcreds, nil)
+	a.EXPECT().AssumeRoleWithSAML(saml.RolePrincipal{"arn:aws:iam::003617316831:role/keycloak-admin-identity", "arn:aws:iam::003617316831:saml-provider/keycloak-provider"}, gomock.Any()).Return(goodcreds, nil)
 	a.EXPECT().StoreAwsCreds(goodcreds, awsrole)
 
 	p := provider.Provider{
@@ -113,8 +114,8 @@ func TestDontStoreKeycloakCredsAgain(t *testing.T) {
 	defer ctrl.Finish()
 
 	awsrole := "admin-identity"
-	var assertion provider.SAMLAssertion
-	if err := provider.ParseSAML([]byte(GoodSaml), &assertion); err != nil {
+	var samlStruct saml.SAMLStruct
+	if err := saml.Parse([]byte(GoodSaml), &samlStruct); err != nil {
 		t.Error("Couldn't parse saml")
 	}
 
@@ -126,12 +127,12 @@ func TestDontStoreKeycloakCredsAgain(t *testing.T) {
 	k := mock_provider.NewMockKeycloakProviderIf(ctrl)
 	k.EXPECT().RetrieveKeycloakCreds().Return(false)
 	k.EXPECT().BasicAuth().Return(nil)
-	k.EXPECT().GetSamlAssertion().Return(assertion, nil)
+	k.EXPECT().GetSamlAssertion().Return(samlStruct, nil)
 	//k.EXPECT().StoreKeycloakCreds()
 
 	a := mock_provider.NewMockAwsProviderIf(ctrl)
 	a.EXPECT().CheckAlreadyAuthd(awsrole).Return(sts.Credentials{}, errors.New("not authd"))
-	a.EXPECT().AssumeRoleWithSAML(gomock.Any(), gomock.Any(), gomock.Any()).Return(goodcreds, nil)
+	a.EXPECT().AssumeRoleWithSAML(gomock.Any(), gomock.Any()).Return(goodcreds, nil)
 	a.EXPECT().StoreAwsCreds(goodcreds, awsrole)
 
 	p := provider.Provider{

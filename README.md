@@ -71,17 +71,16 @@ Enter username/password for keycloak (env: id)
 Username: chris.byron
 Password:
 [  0] arn:aws:iam::003617316831:role/keycloak-admin-identity
-[  1] arn:aws:iam::906852541812:role/keycloak-power-stgxdr
-[  2] arn:aws:iam::055970264539:role/keycloak-admin-sandbox
-[  3] arn:aws:iam::732333100769:role/keycloak-ro-build
-[  4] arn:aws:iam::053047940888:role/keycloak-power-kdev
-[  5] arn:aws:iam::055970264539:role/keycloak-power-sandbox
+[  1] arn:aws:iam::008119339527:role/keycloak-power-qax
+[  2] arn:aws:iam::053047940888:role/keycloak-power-kdev
+[  3] arn:aws:iam::055970264539:role/keycloak-power-sandbox
+[  4] arn:aws:iam::073815667418:role/keycloak-power-devx
+[  5] arn:aws:iam::645983395287:role/keycloak-power-stgx
 [  6] arn:aws:iam::675448719222:role/keycloak-power-kqa
 [  7] arn:aws:iam::700982990415:role/keycloak-power-kstg
-[  8] arn:aws:iam::645983395287:role/keycloak-power-stgx
-[  9] arn:aws:iam::073815667418:role/keycloak-power-devx
-[ 10] arn:aws:iam::008119339527:role/keycloak-power-qax
-Choice: 9
+[  8] arn:aws:iam::732333100769:role/keycloak-ro-build
+[  9] arn:aws:iam::906852541812:role/keycloak-power-stgxdr
+Choice: 4
 Successfully connected to AWS with role power-dev.
 ```
 

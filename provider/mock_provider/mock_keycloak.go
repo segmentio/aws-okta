@@ -6,7 +6,7 @@ package mock_provider
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	provider "github.com/mulesoft-labs/aws-keycloak/provider"
+	saml "github.com/mulesoft-labs/aws-keycloak/provider/saml"
 	reflect "reflect"
 )
 
@@ -46,9 +46,9 @@ func (mr *MockKeycloakProviderIfMockRecorder) BasicAuth() *gomock.Call {
 }
 
 // GetSamlAssertion mocks base method
-func (m *MockKeycloakProviderIf) GetSamlAssertion() (provider.SAMLAssertion, error) {
+func (m *MockKeycloakProviderIf) GetSamlAssertion() (saml.SAMLStruct, error) {
 	ret := m.ctrl.Call(m, "GetSamlAssertion")
-	ret0, _ := ret[0].(provider.SAMLAssertion)
+	ret0, _ := ret[0].(saml.SAMLStruct)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

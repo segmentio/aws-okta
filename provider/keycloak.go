@@ -11,6 +11,7 @@ import (
 
 	"github.com/99designs/keyring"
 	log "github.com/Sirupsen/logrus"
+	"github.com/mulesoft-labs/aws-keycloak/provider/saml"
 )
 
 const (
@@ -20,7 +21,7 @@ const (
 type KeycloakProviderIf interface {
 	RetrieveKeycloakCreds() bool
 	BasicAuth() error
-	GetSamlAssertion() (assertion SAMLAssertion, err error)
+	GetSamlAssertion() (saml.SAMLStruct, error)
 	StoreKeycloakCreds()
 }
 
@@ -179,7 +180,7 @@ func (k *KeycloakProvider) BasicAuth() error {
 	return nil
 }
 
-func (k *KeycloakProvider) GetSamlAssertion() (assertion SAMLAssertion, err error) {
+func (k *KeycloakProvider) GetSamlAssertion() (samlStruct saml.SAMLStruct, err error) {
 	header := http.Header{
 		"Cookie": []string{fmt.Sprintf("%s=%s", keycloakCookie, k.kcToken)},
 	}
@@ -188,7 +189,7 @@ func (k *KeycloakProvider) GetSamlAssertion() (assertion SAMLAssertion, err erro
 		return
 	}
 
-	if err = ParseSAML(body, &assertion); err != nil {
+	if err = saml.Parse(body, &samlStruct); err != nil {
 		err = fmt.Errorf("Couldn't access SAML app; is the user %s in a group that has access to AWS? (%s)", k.kcCreds.Username, err)
 	}
 	return
