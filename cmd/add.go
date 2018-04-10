@@ -27,13 +27,7 @@ func add(cmd *cobra.Command, args []string) error {
 	if backend != "" {
 		allowedBackends = append(allowedBackends, keyring.BackendType(backend))
 	}
-	kr, err := keyring.Open(keyring.Config{
-		AllowedBackends:          allowedBackends,
-		KeychainTrustApplication: true,
-		// this keychain name is for backwards compatibility
-		ServiceName:             "aws-okta-login",
-		LibSecretCollectionName: "awsvault",
-	})
+	kr, err := lib.OpenKeyring(allowedBackends)
 
 	if err != nil {
 		log.Fatal(err)
