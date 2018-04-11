@@ -10,6 +10,14 @@ You can install with:
 $ go get github.com/segmentio/aws-okta
 ```
 
+You may have to update the vendor packages if you get errors in build. If you don't have govendor installed, please install it.
+
+``` bash
+$ cd $GOPATH/src/github.com/segmentio/aws-okta
+$ govendor sync
+$ go install
+```
+
 ## Usage
 
 ### Adding Okta credentials
