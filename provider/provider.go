@@ -31,10 +31,12 @@ func (p *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
 		return creds, awsrole, nil
 	}
 
-	newCreds := p.K.RetrieveKeycloakCreds()
-
 	log.Debug("Step 1: Auth to Keycloak")
+	err = p.K.BrowserAuth()
+	/** Basic auth is deprecated
+	newCreds := p.K.RetrieveKeycloakCreds()
 	err = p.K.BasicAuth()
+	*/
 	if err != nil {
 		return sts.Credentials{}, "", fmt.Errorf("Failed to authenticate with keycloak: %s", err)
 	}
@@ -67,10 +69,12 @@ func (p *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
 		log.WithField("role", awsshortrole).Info("Successfully assumed role with SAML")
 	}
 
+	/** Used when doing BasicAuth
 	// Save keycloak creds since auth was successful
 	if newCreds {
 		p.K.StoreKeycloakCreds()
 	}
+	*/
 
 	p.A.StoreAwsCreds(creds, awsshortrole)
 
