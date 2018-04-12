@@ -5,21 +5,27 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
 	"github.com/99designs/keyring"
 	log "github.com/Sirupsen/logrus"
+	"github.com/lordbyron/oauth2-auth-cli"
 	"github.com/mulesoft-labs/aws-keycloak/provider/saml"
 )
 
 const (
-	keycloakCookie = "KEYCLOAK_IDENTITY"
+	keycloakCookie    = "KEYCLOAK_IDENTITY"
+	keycloakSamlPath  = "/auth/realms/Mulesoft/protocol/saml/clients/amazon-aws"
+	keycloakAuthPath  = "/auth/realms/Mulesoft/protocol/openid-connect/auth"
+	keycloakTokenPath = "/auth/realms/Mulesoft/protocol/openid-connect/token"
 )
 
 type KeycloakProviderIf interface {
 	RetrieveKeycloakCreds() bool
+	BrowserAuth() error
 	BasicAuth() error
 	GetSamlAssertion() (saml.SAMLStruct, error)
 	StoreKeycloakCreds()
@@ -29,8 +35,6 @@ type KeycloakProvider struct {
 	Keyring         keyring.Keyring
 	ProfileName     string
 	ApiBase         string
-	AwsSAMLPath     string
-	AwsOIDCPath     string
 	AwsClient       string
 	AwsClientSecret string
 	kcToken         string
@@ -61,16 +65,6 @@ func NewKeycloakProvider(kr keyring.Keyring, profile string, kcConf map[string]s
 	} else {
 		return nil, errors.New("Config must specify keycloak_base")
 	}
-	if v, e := kcConf["aws_saml_path"]; e {
-		k.AwsSAMLPath = v
-	} else {
-		return nil, errors.New("Config must specify aws_saml_path")
-	}
-	if v, e := kcConf["aws_oidc_path"]; e {
-		k.AwsOIDCPath = v
-	} else {
-		return nil, errors.New("Config must specify aws_oidc_path")
-	}
 	if v, e := kcConf["aws_client_id"]; e {
 		k.AwsClient = v
 	} else {
@@ -84,7 +78,9 @@ func NewKeycloakProvider(kr keyring.Keyring, profile string, kcConf map[string]s
 	return &k, nil
 }
 
-// return bool is whether the creds should be stored in keyring if they work
+/**
+ * return bool is whether the creds should be stored in keyring if they work
+ */
 func (k *KeycloakProvider) RetrieveKeycloakCreds() bool {
 	var keycloakCreds KeycloakCreds
 	keyName := k.keycloakkeyname()
@@ -107,7 +103,7 @@ func (k *KeycloakProvider) RetrieveKeycloakCreds() bool {
 
 func (k *KeycloakProvider) StoreKeycloakCreds() {
 	encoded, err := json.Marshal(k.kcCreds)
-	// failure would be surprising, but jsut dont save
+	// failure would be surprising, but just dont save
 	if err != nil {
 		log.Debugf("Couldn't marshal keycloak creds... %s", err)
 	} else {
@@ -152,6 +148,33 @@ func (k *KeycloakProvider) keycloakkeyname() string {
 	return "keycloak-creds-" + k.ProfileName
 }
 
+/**
+ * Initiate OAuth2 Authorization Grant flow
+ */
+func (k *KeycloakProvider) BrowserAuth() error {
+	oauth := &oauth2.Config{
+		ClientID:     k.AwsClient,
+		ClientSecret: k.AwsClientSecret,
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  fmt.Sprintf("%s%s", k.ApiBase, keycloakAuthPath),
+			TokenURL: fmt.Sprintf("%s%s", k.ApiBase, keycloakTokenPath),
+		},
+	}
+	o := o2cli.Oauth2CLI{
+		Conf: oauth,
+		Log:  log.StandardLogger(),
+	}
+	token, err := o.Authorize()
+	if err == nil {
+		k.kcToken = token.AccessToken
+	}
+	return err
+}
+
+/**
+ * Deprecated
+ * Must populate kcCreds before calling (eg. by calling RetrieveKeycloakCreds)
+ */
 func (k *KeycloakProvider) BasicAuth() error {
 	payload := url.Values{}
 	payload.Set("username", k.kcCreds.Username)
@@ -165,7 +188,7 @@ func (k *KeycloakProvider) BasicAuth() error {
 		"Content-Type": []string{"application/x-www-form-urlencoded"},
 	}
 
-	body, err := k.doHttp("POST", k.AwsOIDCPath, header, []byte(payload.Encode()))
+	body, err := k.doHttp("POST", keycloakTokenPath, header, []byte(payload.Encode()))
 	if err != nil {
 		return nil
 	}
@@ -184,7 +207,7 @@ func (k *KeycloakProvider) GetSamlAssertion() (samlStruct saml.SAMLStruct, err e
 	header := http.Header{
 		"Cookie": []string{fmt.Sprintf("%s=%s", keycloakCookie, k.kcToken)},
 	}
-	body, err := k.doHttp("GET", k.AwsSAMLPath, header, nil)
+	body, err := k.doHttp("GET", keycloakSamlPath, header, nil)
 	if err != nil {
 		return
 	}

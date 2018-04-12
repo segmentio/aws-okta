@@ -43,10 +43,8 @@ func TestRetrieve(t *testing.T) {
 	}
 
 	k := mock_provider.NewMockKeycloakProviderIf(ctrl)
-	k.EXPECT().RetrieveKeycloakCreds().Return(true)
-	k.EXPECT().BasicAuth().Return(nil)
+	k.EXPECT().BrowserAuth().Return(nil)
 	k.EXPECT().GetSamlAssertion().Return(samlStruct, nil)
-	k.EXPECT().StoreKeycloakCreds()
 
 	a := mock_provider.NewMockAwsProviderIf(ctrl)
 	a.EXPECT().CheckAlreadyAuthd(awsrole).Return(sts.Credentials{}, errors.New("not authd"))
@@ -82,10 +80,8 @@ func TestAlreadyAuthd(t *testing.T) {
 	}
 
 	k := mock_provider.NewMockKeycloakProviderIf(ctrl)
-	//k.EXPECT().RetrieveKeycloakCreds
-	//k.EXPECT().BasicAuth
+	//k.EXPECT().BrowserAuth
 	//k.EXPECT().GetSamlAssertion
-	//k.EXPECT().StoreKeycloakCreds
 
 	a := mock_provider.NewMockAwsProviderIf(ctrl)
 	a.EXPECT().CheckAlreadyAuthd(awsrole).Return(goodcreds, nil)
@@ -125,10 +121,8 @@ func TestDontStoreKeycloakCredsAgain(t *testing.T) {
 	}
 
 	k := mock_provider.NewMockKeycloakProviderIf(ctrl)
-	k.EXPECT().RetrieveKeycloakCreds().Return(false)
-	k.EXPECT().BasicAuth().Return(nil)
+	k.EXPECT().BrowserAuth().Return(nil)
 	k.EXPECT().GetSamlAssertion().Return(samlStruct, nil)
-	//k.EXPECT().StoreKeycloakCreds()
 
 	a := mock_provider.NewMockAwsProviderIf(ctrl)
 	a.EXPECT().CheckAlreadyAuthd(awsrole).Return(sts.Credentials{}, errors.New("not authd"))

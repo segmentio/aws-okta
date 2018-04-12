@@ -45,6 +45,18 @@ func (mr *MockKeycloakProviderIfMockRecorder) BasicAuth() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BasicAuth", reflect.TypeOf((*MockKeycloakProviderIf)(nil).BasicAuth))
 }
 
+// BrowserAuth mocks base method
+func (m *MockKeycloakProviderIf) BrowserAuth() error {
+	ret := m.ctrl.Call(m, "BrowserAuth")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BrowserAuth indicates an expected call of BrowserAuth
+func (mr *MockKeycloakProviderIfMockRecorder) BrowserAuth() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BrowserAuth", reflect.TypeOf((*MockKeycloakProviderIf)(nil).BrowserAuth))
+}
+
 // GetSamlAssertion mocks base method
 func (m *MockKeycloakProviderIf) GetSamlAssertion() (saml.SAMLStruct, error) {
 	ret := m.ctrl.Call(m, "GetSamlAssertion")

@@ -50,6 +50,7 @@ func (a *AwsProvider) CheckAlreadyAuthd(awsrole string) (sts.Credentials, error)
 	awsSessionKeyName := awskeyname(awsrole)
 	item, err := a.Keyring.Get(awsSessionKeyName)
 	if err != nil {
+		log.Debug("did not find aws session in keyring")
 		return sts.Credentials{}, err
 	}
 
