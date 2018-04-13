@@ -47,6 +47,13 @@ func TestPromptMulti(t *testing.T) {
 			sel:     "two",
 			n:       1,
 		},
+		multiTest{
+			name:    "empty",
+			choices: []string{"one", "two", "three"},
+			input:   "\n\n\n\n1\n", // no default selection
+			sel:     "two",
+			n:       1,
+		},
 	}
 
 	for _, tc := range tests {

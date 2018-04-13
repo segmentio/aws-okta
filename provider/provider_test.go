@@ -19,6 +19,7 @@ var (
 	inputBuffer = bytes.Buffer{}
 )
 
+// Shared by all tests in this package
 func TestMain(m *testing.M) {
 	log.SetLevel(log.PanicLevel)
 	provider.ProviderIn = &inputBuffer
