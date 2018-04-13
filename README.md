@@ -1,48 +1,82 @@
 # aws-keycloak
 
-`aws-keycloak` allows you to authenticate with AWS using your Keycloak credentials.
+`aws-keycloak` allows you to authenticate with AWS using your Keycloak credentials. It runs any commands with the 3 AWS euth nvironment variables set.
+```
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_SESSION_TOKEN
+```
 
 ## Installing
 
 You can install with:
 
-```bash
+```
 $ go get github.com/mulesoft-labs/aws-keycloak
 ```
 
 ## Usage
 
-`aws-keycloak --` behaves just like `aws`, except that it may ask for keycloak credentials if it can't find any in the keychain.
-
-```bash
-$ aws-keycloak -- <command>
 ```
+aws-keycloak allows you to authenticate with AWS using your keycloak credentials
 
-After authenticating to Keycloak, user will be presented with the roles available across all AWS accounts. User can also select a role with `--profile`.
-
-```bash
+$aws-keycloak --help
 aws-keycloak allows you to authenticate with AWS using your keycloak credentials
 
 Usage:
-  aws-keycloak [flags] -- <aws command>
+  aws-keycloak [flags] -- <command>
   aws-keycloak [command]
 
 Examples:
-  aws-keycloak -p power-devx -- sts get-caller-identity
+  aws-keycloak -p power-devx -- aws sts get-caller-identity
 
 Available Commands:
+  aws         Invoke aws subcommands (always use -- before subcommand and flags)
   check       Check will authenticate you through keycloak and store session.
+  env         Invokes `printenv`. Takes var names or prints all env
   help        Help about any command
 
 Flags:
   -b, --backend string            Secret backend to use [keychain file]
   -c, --config string             Keycloak provider configuration (default "/.aws/keycloak-config")
-  -d, --debug                     Enable debug logging
+  -d, --debug                     Enable debug output
   -h, --help                      help for aws-keycloak
   -k, --keycloak-profile string   Keycloak system to auth to (default "id")
-  -p, --profile string            AWS profile to run against (optional)
+  -p, --profile string            AWS profile to run against (recommended)
+  -q, --quiet                     Minimize output
+      --version                   version for aws-keycloak
 
 Use "aws-keycloak [command] --help" for more information about a command.
+```
+
+`aws-keycloak --` sets 3 (or 4 if `AWS_DEFAULT_REGION` is set) environment vars and runs the command that comes after it.
+
+```
+$ aws-keycloak -- printenv
+AWS_ACCESS_KEY_ID=ASIAJWCS7CRTZC3XTQ4A
+AWS_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+AWS_SESSION_TOKEN=xxxxxxxxxxxxxxxxxxxx....
+```
+
+`aws-keycloak` also has some helper subcommands for the `aws` CLI tool and getting env vars.
+```
+$ aws-keycloak -- printenv [name]
+ # is the same as
+$ aws-keycloak env [name]
+
+$ aws-keycloak -- aws <subcomand>
+ # is the same as
+$ aws-keycloak aws -- <subcomand>
+
+$ aws-keycloak check
+ # is the same as
+$ aws-keycloak -- aws sts get-caller-identity
+```
+
+When invoked, user will be asked to authenticate to keycloak and will be prompted with the roles available across all AWS accounts. To avoid this, use the `--profile` flag.
+```
+$ aws-keycloak -p power-devx check
+ # this will not prompt for role
 ```
 
 ### Configuring
@@ -53,8 +87,6 @@ The default keycloak profile is `id`. This can be specified with the `--keycloak
 ```ini
 [id]
 keycloak_base = https://keycloak
-aws_saml_path = /auth/realms/<realm>/protocol/saml/clients/amazon-aws
-aws_oidc_path = /auth/realms/<realm>/protocol/openid-connect/token
 aws_client_id = urn:amazon:webservices
 aws_client_secret = <client secret from keycloak>
 ```
@@ -65,55 +97,54 @@ We use 99design's keyring package that they use in `aws-vault`.  Because of this
 
 ### Examples
 
-```bash
-$ aws-keycloak check
-Enter username/password for keycloak (env: id)
-Username: chris.byron
-Password:
+```
+$aws-keycloak check
+INFO[0000] If browser window does not open automatically, open it by clicking on the link:
+ https://keycloak.prod.identity.msap.io/auth/realms/Mulesoft/protocol/openid-connect/auth?client_id=urn%3Aamazon%3Awebservices&redirect_uri=http%3A%2F%2F127.0.0.1%3A55451%2Fcallback&response_type=code&state=3mZh2vR7
+INFO[0000] Waiting for response on: http://127.0.0.1:55451
+INFO[0024] Successfully exchanged for Access Token
 [  0] arn:aws:iam::003617316831:role/keycloak-admin-identity
 [  1] arn:aws:iam::008119339527:role/keycloak-power-qax
 [  2] arn:aws:iam::053047940888:role/keycloak-power-kdev
 [  3] arn:aws:iam::055970264539:role/keycloak-power-sandbox
 [  4] arn:aws:iam::073815667418:role/keycloak-power-devx
-[  5] arn:aws:iam::645983395287:role/keycloak-power-stgx
-[  6] arn:aws:iam::675448719222:role/keycloak-power-kqa
-[  7] arn:aws:iam::700982990415:role/keycloak-power-kstg
-[  8] arn:aws:iam::732333100769:role/keycloak-ro-build
-[  9] arn:aws:iam::906852541812:role/keycloak-power-stgxdr
+[  5] arn:aws:iam::379287829376:role/keycloak-power-kprod
+[  6] arn:aws:iam::494141260463:role/keycloak-power-prod
+[  7] arn:aws:iam::645983395287:role/keycloak-power-stgx
+[  8] arn:aws:iam::655988475869:role/keycloak-power-prod-eu-rt
+[  9] arn:aws:iam::675448719222:role/keycloak-power-kqa
 Choice: 4
-Successfully connected to AWS with role power-dev.
+INFO[0034] Assuming role 'power-devx'. You can specify this with the --profile flag
+{
+    "UserId": "AROAIC5ECYBOX4KG2CIK4:chris.byron",
+    "Account": "073815667418",
+    "Arn": "arn:aws:sts::073815667418:assumed-role/keycloak-power-devx/chris.byron"
+}
 ```
 
-```bash
-$ aws-keycloak --debug --profile power-devx check
+```
+$aws-keycloak --debug --profile power-devx check
 DEBU[0000] Parsing config file /Users/chrisbyron/.aws/keycloak-config
 DEBU[0000] Step 0: Checking existing AWS session
 DEBU[0000] found aws session in keyring
 DEBU[0000] AWS session already valid for power-devx
+DEBU[0000] Running command `aws sts get-caller-identity` with AWS env vars set
+{
+    "UserId": "AROAIC5ECYBOX4KG2CIK4:chris.byron",
+    "Account": "073815667418",
+    "Arn": "arn:aws:sts::073815667418:assumed-role/keycloak-power-devx/chris.byron"
+}
 ```
 
-```bash
-$ aws-keycloak -p power-devx -- sts get-caller-identity
-WARN[0003] --profile argument expects aws config to already exist so it can use the default region.
-WARN[0003] Use `aws configure --profile power-devx`
-WARN[0003]   but leave Access Key and Secret blank.
-WARN[0003] Continuing without aws profile.
+```
+$aws-keycloak -p power-devx aws -- sts get-caller-identity
 {
     "UserId": "AROAIC5ECYBOX4KG2CIK4:chris.byron",
     "Account": "073815667418",
     "Arn": "arn:aws:sts::073815667418:assumed-role/keycloak-power-devx/chris.byron"
 }
 
-$ aws configure --profile power-devx
-AWS Access Key ID [None]:
-AWS Secret Access Key [None]:
-Default region name [None]: us-east-1
-Default output format [None]:
-
-$ aws-keycloak -p power-devx -- sts get-caller-identity
-{
-    "UserId": "AROAIC5ECYBOX4KG2CIK4:chris.byron",
-    "Account": "073815667418",
-    "Arn": "arn:aws:sts::073815667418:assumed-role/keycloak-power-devx/chris.byron"
-}
+$ export KEY_ID=$(aws-keycloak -p power-devx env AWS_ACCESS_KEY_ID)
+$ echo $KEY_ID
+ASIAJWCS7CRTZC3XTQ4A
 ```
