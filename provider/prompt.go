@@ -51,9 +51,15 @@ func PromptMultiMatch(choices []string, match matcher) (string, int) {
 		str = fmt.Sprintf("%s[%3d] %s\n", str, i, c)
 	}
 	fmt.Fprintf(ProviderOut, "%sChoice: ", str)
-	var selection int
-	fmt.Fscanf(ProviderIn, "%d", &selection)
-	return choices[selection], selection
+	for {
+		var selection int = -1
+		fmt.Fscanf(ProviderIn, "%d", &selection)
+		if selection < 0 || selection >= len(choices) {
+			fmt.Fprintf(ProviderOut, "Invalid choice, try again\n")
+		} else {
+			return choices[selection], selection
+		}
+	}
 }
 
 func PromptMultiMatchRole(choices []string, opt string) (string, int) {

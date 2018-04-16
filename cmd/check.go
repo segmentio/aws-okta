@@ -1,41 +1,22 @@
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/mulesoft-labs/aws-keycloak/provider"
 	"github.com/spf13/cobra"
 )
 
 var checkCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Check will authenticate you through keycloak and store session.",
-	RunE:  checkRun,
+	RunE:  runCheck,
 }
 
 func init() {
 	RootCmd.AddCommand(checkCmd)
 }
 
-func checkRun(cmd *cobra.Command, args []string) error {
-	k, err := provider.NewKeycloakProvider(kr, kcprofile, section)
-	if err != nil {
-		return err
+func runCheck(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return ErrTooManyArguments
 	}
-	a := &provider.AwsProvider{
-		Keyring: kr,
-	}
-	p := provider.Provider{
-		A: a,
-		K: k,
-	}
-
-	_, awsshortrole, err := p.Retrieve(awsrole)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Successfully connected to AWS with role %s.\n", awsshortrole)
-
-	return nil
+	return runWithAwsEnv("aws", "sts", "get-caller-identity")
 }
