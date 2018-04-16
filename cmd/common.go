@@ -11,6 +11,9 @@ import (
 	"github.com/mulesoft-labs/aws-keycloak/provider"
 )
 
+/**
+ * Appends AWS env vars to existing env
+ */
 func runWithAwsEnv(name string, arg ...string) error {
 	k, err := provider.NewKeycloakProvider(kr, kcprofile, section)
 	if err != nil {
@@ -39,7 +42,7 @@ func runWithAwsEnv(name string, arg ...string) error {
 	}
 
 	log.Debugf("Running command `%s %s` with AWS env vars set", name, strings.Join(arg, " "))
-	return runWithEnv(name, env, arg...)
+	return runWithEnv(name, append(os.Environ(), env...), arg...)
 
 }
 
