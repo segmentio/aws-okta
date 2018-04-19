@@ -229,33 +229,38 @@ func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, 
 	return payload, nil
 }
 
-func (o *OktaClient) postChallenge(payload []byte, oktaFactorId string) error {
-	//Initiate Duo Push Notification
+func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, oktaFactorId string) error {
+	//Initiate Push Notification
 	if o.UserAuth.Status == "MFA_CHALLENGE" {
 		f := o.UserAuth.Embedded.Factor
+		errChan := make(chan error, 1)
 
-		o.DuoClient = &DuoClient{
-			Host:       f.Embedded.Verification.Host,
-			Signature:  f.Embedded.Verification.Signature,
-			Callback:   f.Embedded.Verification.Links.Complete.Href,
-			StateToken: o.UserAuth.StateToken,
+		if oktaFactorProvider == "DUO" {
+			// Contact the Duo to initiate Push notification
+			if f.Embedded.Verification.Host != "" {
+				o.DuoClient = &DuoClient{
+					Host:       f.Embedded.Verification.Host,
+					Signature:  f.Embedded.Verification.Signature,
+					Callback:   f.Embedded.Verification.Links.Complete.Href,
+					StateToken: o.UserAuth.StateToken,
+				}
+
+				log.Debugf("Host:%s\nSignature:%s\nStateToken:%s\n",
+					f.Embedded.Verification.Host, f.Embedded.Verification.Signature,
+					o.UserAuth.StateToken)
+
+				go func() {
+					log.Debug("challenge u2f")
+					log.Info("Sending Push Notification...")
+					err := o.DuoClient.ChallengeU2f()
+					if err != nil {
+						errChan <- err
+					}
+				}()
+			}
 		}
 
-		log.Debugf("Host:%s\nSignature:%s\nStateToken:%s\n",
-			f.Embedded.Verification.Host, f.Embedded.Verification.Signature,
-			o.UserAuth.StateToken)
-
-		errChan := make(chan error, 1)
-		go func() {
-			log.Debug("challenge u2f")
-			log.Info("Sending Push Notification...")
-			err := o.DuoClient.ChallengeU2f()
-			if err != nil {
-				errChan <- err
-			}
-		}()
-
-		// Poll Okta until Duo authentication has been completed
+		// Poll Okta until authentication has been completed
 		for o.UserAuth.Status != "SUCCESS" {
 			select {
 			case duoErr := <-errChan:
@@ -277,6 +282,7 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorId string) error {
 }
 
 func (o *OktaClient) challengeMFA() (err error) {
+	var oktaFactorProvider string
 	var oktaFactorId string
 	var payload []byte
 	var oktaFactorType string
@@ -287,6 +293,10 @@ func (o *OktaClient) challengeMFA() (err error) {
 		log.Debug("Failed to select MFA device")
 		return
 	}
+	oktaFactorProvider = factor.Provider
+	if oktaFactorProvider == "" {
+		return
+	}
 	oktaFactorId, err = GetFactorId(factor)
 	if err != nil {
 		return
@@ -295,6 +305,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 	if oktaFactorId == "" {
 		return
 	}
+	log.Debugf("Okta Factor Provider: %s", oktaFactorProvider)
 	log.Debugf("Okta Factor ID: %s", oktaFactorId)
 	log.Debugf("Okta Factor Type: %s", oktaFactorType)
 
@@ -307,8 +318,8 @@ func (o *OktaClient) challengeMFA() (err error) {
 		return
 	}
 
-	//Handle Duo Push Notification
-	err = o.postChallenge(payload, oktaFactorId)
+	//Handle Push Notification
+	err = o.postChallenge(payload, oktaFactorProvider, oktaFactorId)
 	if err != nil {
 		return err
 	}
@@ -325,6 +336,12 @@ func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
 		id = f.Id
 	case "sms":
 		id = f.Id
+	case "push":
+		if f.Provider == "OKTA" || f.Provider == "DUO" {
+			id = f.Id
+		} else {
+			err = fmt.Errorf("provider %s with factor push not supported", f.Provider)
+		}
 	default:
 		err = fmt.Errorf("factor %s not supported", f.FactorType)
 	}
