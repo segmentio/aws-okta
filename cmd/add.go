@@ -7,6 +7,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/99designs/keyring"
+	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
 	"github.com/spf13/cobra"
 )
@@ -27,16 +28,21 @@ func add(cmd *cobra.Command, args []string) error {
 	if backend != "" {
 		allowedBackends = append(allowedBackends, keyring.BackendType(backend))
 	}
-	kr, err := keyring.Open(keyring.Config{
-		AllowedBackends:          allowedBackends,
-		KeychainTrustApplication: true,
-		// this keychain name is for backwards compatibility
-		ServiceName:             "aws-okta-login",
-		LibSecretCollectionName: "awsvault",
-	})
+	kr, err := lib.OpenKeyring(allowedBackends)
 
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if analyticsEnabled && analyticsClient != nil {
+		analyticsClient.Enqueue(analytics.Track{
+			UserId: username,
+			Event:  "Ran Command",
+			Properties: analytics.NewProperties().
+				Set("backend", backend).
+				Set("aws-okta-version", version).
+				Set("command", "add"),
+		})
 	}
 
 	// Ask username password from prompt

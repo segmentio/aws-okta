@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/99designs/keyring"
+	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
 	"github.com/spf13/cobra"
 )
@@ -110,15 +111,21 @@ func execRun(cmd *cobra.Command, args []string) error {
 		allowedBackends = append(allowedBackends, keyring.BackendType(backend))
 	}
 
-	kr, err := keyring.Open(keyring.Config{
-		AllowedBackends:          allowedBackends,
-		KeychainTrustApplication: true,
-		// this keychain name is for backwards compatibility
-		ServiceName:             "aws-okta-login",
-		LibSecretCollectionName: "awsvault",
-	})
+	kr, err := lib.OpenKeyring(allowedBackends)
 	if err != nil {
 		return err
+	}
+
+	if analyticsEnabled && analyticsClient != nil {
+		analyticsClient.Enqueue(analytics.Track{
+			UserId: username,
+			Event:  "Ran Command",
+			Properties: analytics.NewProperties().
+				Set("backend", backend).
+				Set("aws-okta-version", version).
+				Set("profile", profile).
+				Set("command", "exec"),
+		})
 	}
 
 	p, err := lib.NewProvider(kr, profile, opts)
@@ -145,7 +152,6 @@ func execRun(cmd *cobra.Command, args []string) error {
 
 	env.Set("AWS_ACCESS_KEY_ID", creds.AccessKeyID)
 	env.Set("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey)
-	env.Set("AWS_PROFILE", profile)
 
 	if creds.SessionToken != "" {
 		env.Set("AWS_SESSION_TOKEN", creds.SessionToken)

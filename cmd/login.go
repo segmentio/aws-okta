@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	"github.com/99designs/keyring"
+	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
@@ -20,8 +21,12 @@ var loginCmd = &cobra.Command{
 	RunE:  loginRun,
 }
 
+// Stdout is the bool for -stdout
+var Stdout bool
+
 func init() {
 	RootCmd.AddCommand(loginCmd)
+	loginCmd.Flags().BoolVarP(&Stdout, "stdout", "", false, "Print login URL to stdout instead of opening in default browser")
 }
 
 func loginRun(cmd *cobra.Command, args []string) error {
@@ -58,13 +63,22 @@ func loginRun(cmd *cobra.Command, args []string) error {
 	if backend != "" {
 		allowedBackends = append(allowedBackends, keyring.BackendType(backend))
 	}
-	kr, err := keyring.Open(keyring.Config{
-		AllowedBackends:          allowedBackends,
-		KeychainTrustApplication: true,
-		// this keychain name is for backwards compatibility
-		ServiceName:             "aws-okta-login",
-		LibSecretCollectionName: "awsvault",
-	})
+	kr, err := lib.OpenKeyring(allowedBackends)
+	if err != nil {
+		return err
+	}
+
+	if analyticsEnabled && analyticsClient != nil {
+		analyticsClient.Enqueue(analytics.Track{
+			UserId: username,
+			Event:  "Ran Command",
+			Properties: analytics.NewProperties().
+				Set("backend", backend).
+				Set("aws-okta-version", version).
+				Set("profile", profile).
+				Set("command", "login"),
+		})
+	}
 
 	p, err := lib.NewProvider(kr, profile, opts)
 	if err != nil {
@@ -135,8 +149,11 @@ func loginRun(cmd *cobra.Command, args []string) error {
 		url.QueryEscape(signinToken),
 	)
 
-	if err = open.Run(loginURL); err != nil {
+	if Stdout {
+		fmt.Println(loginURL)
+	} else if err = open.Run(loginURL); err != nil {
 		return err
 	}
+
 	return nil
 }

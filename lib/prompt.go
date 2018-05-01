@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"syscall"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -13,7 +14,7 @@ func Prompt(prompt string, sensitive bool) (string, error) {
 	fmt.Printf("%s: ", prompt)
 	if sensitive {
 		var input []byte
-		input, err := terminal.ReadPassword(1)
+		input, err := terminal.ReadPassword(int(syscall.Stdin))
 		if err != nil {
 			return "", err
 		}

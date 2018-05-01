@@ -90,13 +90,14 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	}
 
 	source := sourceProfile(p.profile, p.profiles)
-	session, err := p.sessions.Retrieve(source, p.SessionDuration)
+	session, name, err := p.sessions.Retrieve(source, p.SessionDuration)
+	p.defaultRoleSessionName = name
 	if err != nil {
 		session, err = p.getSamlSessionCreds()
 		if err != nil {
 			return credentials.Value{}, err
 		}
-		p.sessions.Store(source, session, p.SessionDuration)
+		p.sessions.Store(source, p.roleSessionName(), session, p.SessionDuration)
 	}
 
 	log.Debugf(" Using session %s, expires in %s",
@@ -132,11 +133,23 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	return value, nil
 }
 
+func (p *Provider) getSamlURL(source string) (string, error) {
+	haystack := []string{p.profile, source, "okta"}
+	for _, profile := range haystack {
+		oktaAwsSAMLUrl, ok := p.profiles[profile]["aws_saml_url"]
+		if ok {
+			log.Debugf("Using aws_saml_url from profile: %s", profile)
+			return oktaAwsSAMLUrl, nil
+		}
+	}
+	return "", errors.New("aws_saml_url missing from ~/.aws/config")
+}
+
 func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	source := sourceProfile(p.profile, p.profiles)
-	oktaAwsSAMLUrl, ok := p.profiles["okta"]["aws_saml_url"]
-	if !ok {
-		return sts.Credentials{}, errors.New("aws_saml_url missing from ~/.aws/config")
+	oktaAwsSAMLUrl, err := p.getSamlURL(source)
+	if err != nil {
+		return sts.Credentials{}, err
 	}
 
 	profileARN, ok := p.profiles[source]["role_arn"]
