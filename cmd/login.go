@@ -16,9 +16,10 @@ import (
 
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
-	Use:   "login <profile>",
-	Short: "login will authenticate you through okta and allow you to access your AWS environment through a browser",
-	RunE:  loginRun,
+	Use:    "login <profile>",
+	Short:  "login will authenticate you through okta and allow you to access your AWS environment through a browser",
+	RunE:   loginRun,
+	PreRun: loginPre,
 }
 
 // Stdout is the bool for -stdout
@@ -27,6 +28,16 @@ var Stdout bool
 func init() {
 	RootCmd.AddCommand(loginCmd)
 	loginCmd.Flags().BoolVarP(&Stdout, "stdout", "", false, "Print login URL to stdout instead of opening in default browser")
+}
+
+func loginPre(cmd *cobra.Command, args []string) {
+	if err := loadDurationFlagFromEnv(cmd, "session-ttl", "AWS_SESSION_TTL", &sessionTTL); err != nil {
+		fmt.Fprintln(os.Stderr, "warning: failed to parse duration from AWS_SESSION_TTL")
+	}
+
+	if err := loadDurationFlagFromEnv(cmd, "assume-role-ttl", "AWS_ASSUME_ROLE_TTL", &assumeRoleTTL); err != nil {
+		fmt.Fprintln(os.Stderr, "warning: failed to parse duration from AWS_ASSUME_ROLE_TTL")
+	}
 }
 
 func loginRun(cmd *cobra.Command, args []string) error {
