@@ -6,6 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	uniformResourceLocator "net/url"
+
+	"golang.org/x/net/html"
 )
 
 type DuoClient struct {
@@ -64,7 +68,7 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 
 	tx = strings.Split(d.Signature, ":")[0]
 
-	sid, err = d.DoAuth(tx)
+	sid, err = d.DoAuth(tx, "", "")
 	if err != nil {
 		return
 	}
@@ -96,9 +100,13 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 // DoAuth sends a POST request to the Duo /frame/web/v1/auth endpoint.
 // The request will not follow the redirect and retrieve the location from the HTTP header.
 // From the Location we get the Duo Session ID (sid) required for the rest of the communication.
+// In some integrations of Duo, an empty POST to the Duo /frame/web/v1/auth endpoint will return
+// StatusOK with a form of hidden inputs. In that case, we redo the POST with data from the
+// hidden inputs, which triggers the usual redirect/location flow and allows for a successful
+// authentication.
 //
 // The function will return the sid
-func (d *DuoClient) DoAuth(tx string) (sid string, err error) {
+func (d *DuoClient) DoAuth(tx string, inputSid string, inputCertsURL string) (sid string, err error) {
 	var req *http.Request
 	var location string
 
@@ -113,7 +121,13 @@ func (d *DuoClient) DoAuth(tx string) (sid string, err error) {
 		},
 	}
 
-	req, err = http.NewRequest("POST", url, nil)
+	data := uniformResourceLocator.Values{}
+	if inputSid != "" && inputCertsURL != "" {
+		data.Set("sid", inputSid)
+		data.Set("certs_url", inputCertsURL)
+	}
+
+	req, err = http.NewRequest("POST", url, strings.NewReader(data.Encode()))
 	if err != nil {
 		return
 	}
@@ -134,6 +148,14 @@ func (d *DuoClient) DoAuth(tx string) (sid string, err error) {
 		} else {
 			err = fmt.Errorf("Location not part of the auth header. Authentication failed ?")
 		}
+	} else if res.StatusCode == http.StatusOK && inputCertsURL == "" && inputSid == "" {
+		doc, err := html.Parse(res.Body)
+		if err != nil {
+			err = fmt.Errorf("Can't parse response")
+		}
+		sid, _ = GetNode(doc, "sid")
+		certsURL, _ := GetNode(doc, "certs_url")
+		sid, err = d.DoAuth(tx, sid, certsURL)
 	} else {
 		err = fmt.Errorf("Request failed or followed redirect: %d", res.StatusCode)
 	}
