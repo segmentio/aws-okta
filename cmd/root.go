@@ -41,7 +41,7 @@ var RootCmd = &cobra.Command{
 	SilenceErrors:     true,
 	PersistentPreRunE: prerun,
 	RunE:              runCommand,
-	Version:           "1.2.1",
+	Version:           "1.2.2",
 }
 
 func runCommand(cmd *cobra.Command, args []string) error {

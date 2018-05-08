@@ -12,9 +12,10 @@ import (
 )
 
 var openCmd = &cobra.Command{
-	Use:   "open",
-	Short: "Open a AWS console logged into a given profile",
-	RunE:  runOpenCmd,
+	Use:     "open",
+	Aliases: []string{"login"},
+	Short:   "Open a AWS console logged into a given profile",
+	RunE:    runOpenCmd,
 }
 
 func init() {
@@ -22,6 +23,13 @@ func init() {
 }
 
 func runOpenCmd(cmd *cobra.Command, args []string) error {
+	if len(args) > 1 {
+		return ErrTooManyArguments
+	}
+	if len(args) == 1 {
+		awsrole = args[0]
+	}
+
 	stscreds, err := getAwsStsCreds()
 	if err != nil {
 		return err
