@@ -7,17 +7,15 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/aws/aws-sdk-go/service/sts"
 
 	"github.com/mulesoft-labs/aws-keycloak/provider"
 )
 
-/**
- * Appends AWS env vars to existing env
- */
-func runWithAwsEnv(name string, arg ...string) error {
+func getAwsStsCreds() (sts.Credentials, error) {
 	k, err := provider.NewKeycloakProvider(kr, kcprofile, section)
 	if err != nil {
-		return err
+		return sts.Credentials{}, err
 	}
 	a := &provider.AwsProvider{
 		Keyring: kr,
@@ -28,6 +26,14 @@ func runWithAwsEnv(name string, arg ...string) error {
 	}
 
 	stscreds, _, err := p.Retrieve(awsrole)
+	return stscreds, err
+}
+
+/**
+ * Appends AWS env vars to existing env
+ */
+func runWithAwsEnv(name string, arg ...string) error {
+	stscreds, err := getAwsStsCreds()
 	if err != nil {
 		return err
 	}
