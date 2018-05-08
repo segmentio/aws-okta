@@ -81,11 +81,11 @@ role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
 [profile integrations-auth]
 # This is a distinct Okta App
 aws_saml_url = home/amazon_aws/woezQTbGWUaLSrYDvINU/214
-arn:aws:iam::<account-id>:role/<okta-role-name>
+role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
 
 [profile vendor]
 # This profile uses the "integrations-auth" Okta app combined with secondary role assumption
-source = integrations-auth
+source_profile = integrations-auth
 role_arn = arn:aws:iam::<account-id>:role/<secondary-role-name>
 ```
 
