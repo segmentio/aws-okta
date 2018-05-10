@@ -63,6 +63,7 @@ func runWithEnv(name string, env []string, arg ...string) error {
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
 
 	err = cmd.Run()
 	return err
