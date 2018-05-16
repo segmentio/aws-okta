@@ -95,7 +95,7 @@ The configuration above means that you can use multiple Okta Apps at the same ti
 
 We use 99design's keyring package that they use in `aws-vault`.  Because of this, you can choose between different pluggable secret storage backends just like in `aws-vault`.  You can either set your backend from the command line as a flag, or set the `AWS_OKTA_BACKEND` environment variable.
 
-For Ubuntu add the following to your bash config / zshrc etc:
+For Linux / Ubuntu add the following to your bash config / zshrc etc:
 ```
 export AWS_OKTA_BACKEND=secret-service
 ```
