@@ -13,7 +13,7 @@ import (
 )
 
 func getAwsStsCreds() (sts.Credentials, error) {
-	k, err := provider.NewKeycloakProvider(kr, kcprofile, section)
+	k, err := provider.NewKeycloakProvider(kr, kcprofile, kcConf)
 	if err != nil {
 		return sts.Credentials{}, err
 	}
@@ -43,7 +43,9 @@ func runWithAwsEnv(name string, arg ...string) error {
 		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", *stscreds.SecretAccessKey),
 		fmt.Sprintf("AWS_SESSION_TOKEN=%s", *stscreds.SessionToken),
 	}
-	if region, found := os.LookupEnv("AWS_DEFAULT_REGION"); found {
+	if region != "" {
+		env = append(env, fmt.Sprintf("AWS_DEFAULT_REGION=%s", region))
+	} else if region, found := os.LookupEnv("AWS_DEFAULT_REGION"); found {
 		env = append(env, fmt.Sprintf("AWS_DEFAULT_REGION=%s", region))
 	}
 

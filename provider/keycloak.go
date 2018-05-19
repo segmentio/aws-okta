@@ -18,7 +18,7 @@ import (
 
 const (
 	keycloakCookie    = "KEYCLOAK_IDENTITY"
-	keycloakSamlPath  = "/auth/realms/Mulesoft/protocol/saml/clients/amazon-aws"
+	keycloakSamlPath  = "/auth/realms/Mulesoft/protocol/saml/clients/"
 	keycloakAuthPath  = "/auth/realms/Mulesoft/protocol/openid-connect/auth"
 	keycloakTokenPath = "/auth/realms/Mulesoft/protocol/openid-connect/token"
 )
@@ -35,6 +35,7 @@ type KeycloakProvider struct {
 	Keyring         keyring.Keyring
 	ProfileName     string
 	ApiBase         string
+	SamlPath        string
 	AwsClient       string
 	AwsClientSecret string
 	kcToken         string
@@ -55,10 +56,10 @@ type KeycloakUserAuthn struct {
 	SessionState          string `json:"session_state"`
 }
 
-func NewKeycloakProvider(kr keyring.Keyring, profile string, kcConf map[string]string) (*KeycloakProvider, error) {
+func NewKeycloakProvider(kr keyring.Keyring, kcprofile string, kcConf map[string]string) (*KeycloakProvider, error) {
 	k := KeycloakProvider{
 		Keyring:     kr,
-		ProfileName: profile,
+		ProfileName: kcprofile,
 	}
 	if v, e := kcConf["keycloak_base"]; e {
 		k.ApiBase = v
@@ -207,7 +208,7 @@ func (k *KeycloakProvider) GetSamlAssertion() (samlStruct saml.SAMLStruct, err e
 	header := http.Header{
 		"Cookie": []string{fmt.Sprintf("%s=%s", keycloakCookie, k.kcToken)},
 	}
-	body, err := k.doHttp("GET", keycloakSamlPath, header, nil)
+	body, err := k.doHttp("GET", keycloakSamlPath+k.AwsClient, header, nil)
 	if err != nil {
 		return
 	}

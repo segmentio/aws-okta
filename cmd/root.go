@@ -29,7 +29,8 @@ var (
 	configFile string
 	kcprofile  string
 	awsrole    string
-	section    map[string]string
+	region     string
+	kcConf     map[string]string
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -41,7 +42,7 @@ var RootCmd = &cobra.Command{
 	SilenceErrors:     true,
 	PersistentPreRunE: prerun,
 	RunE:              runCommand,
-	Version:           "1.2.3",
+	Version:           "1.3.0",
 }
 
 func runCommand(cmd *cobra.Command, args []string) error {
@@ -108,15 +109,23 @@ func prerun(cmd *cobra.Command, args []string) error {
 
 	config, err := provider.NewConfigFromFile(configFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("No configuration found at %s.", configFile)
 	}
 
 	sections, err := config.Parse()
 	if err != nil {
 		return err
 	}
-	section = sections[kcprofile]
-	if len(section) == 0 {
+
+	aliases := provider.Aliases(sections["aliases"])
+	if aliases.Exists(awsrole) {
+		alias := awsrole
+		kcprofile, awsrole, region = aliases.Lookup(alias)
+		log.Debugf("Found alias for %s: %s %s %s", alias, kcprofile, awsrole, region)
+	}
+
+	kcConf = sections[kcprofile]
+	if len(kcConf) == 0 {
 		return fmt.Errorf("No keycloak profile found at %s", kcprofile)
 	}
 
@@ -132,6 +141,6 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&backend, "backend", "b", "", fmt.Sprintf("Secret backend to use %s", backendsAvailable))
 	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug output")
 	RootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Minimize output")
-	RootCmd.PersistentFlags().StringVarP(&kcprofile, "keycloak-profile", "k", provider.DefaultSection, "Keycloak system to auth to")
+	RootCmd.PersistentFlags().StringVarP(&kcprofile, "keycloak-profile", "k", provider.DefaultKeycloak, "Keycloak system to auth to")
 	RootCmd.PersistentFlags().StringVarP(&awsrole, "profile", "p", "", "AWS profile to run against (recommended)")
 }

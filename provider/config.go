@@ -21,9 +21,8 @@ type fileConfig struct {
 }
 
 const (
-	DefaultEnv     = "KEYCLOAK_CONFIG_FILE"
-	DefaultConf    = "/.aws/keycloak-config"
-	DefaultSection = "id"
+	DefaultEnv  = "KEYCLOAK_CONFIG_FILE"
+	DefaultConf = "/.aws/keycloak-config"
 )
 
 func EnvFileOrDefault() (string, error) {
@@ -45,23 +44,6 @@ func NewConfigFromFile(file string) (config, error) {
 	return &fileConfig{file: file}, nil
 }
 
-/*
-func NewConfigFromEnv() (config, error) {
-	file := os.Getenv("AWS_CONFIG_FILE")
-	if file == "" {
-		home, err := homedir.Dir()
-		if err != nil {
-			return nil, err
-		}
-		file = filepath.Join(home, "/.aws/config")
-		if _, err := os.Stat(file); os.IsNotExist(err) {
-			file = ""
-		}
-	}
-	return &fileConfig{file: file}, nil
-}
-*/
-
 func (c *fileConfig) Parse() (sections, error) {
 	if c.file == "" {
 		return nil, nil
@@ -75,15 +57,3 @@ func (c *fileConfig) Parse() (sections, error) {
 
 	return sections(f), nil
 }
-
-/*
-// sourceProfile returns either the defined source_profile or p if none exists
-func sourceProfile(p string, from profiles) string {
-	if conf, ok := from[p]; ok {
-		if source := conf["source_profile"]; source != "" {
-			return source
-		}
-	}
-	return p
-}
-*/
