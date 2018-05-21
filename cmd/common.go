@@ -17,8 +17,16 @@ func getAwsStsCreds() (sts.Credentials, error) {
 	if err != nil {
 		return sts.Credentials{}, err
 	}
+	if region == "" {
+		if v, e := kcConf["default_region"]; e {
+			region = v
+		} else {
+			region = provider.DefaultRegion
+		}
+	}
 	a := &provider.AwsProvider{
 		Keyring: kr,
+		Region:  region,
 	}
 	p := provider.Provider{
 		A: a,

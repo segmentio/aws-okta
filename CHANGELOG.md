@@ -1,3 +1,7 @@
+### 1.3.1
+* Govcloud bugfix
+* Can specify default AWS region in keycloak config (needed for govcloud keycloak)
+
 ### 1.3.0
 * *Breaking changes*
 * Alias support

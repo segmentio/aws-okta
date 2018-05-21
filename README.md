@@ -1,10 +1,11 @@
 # aws-keycloak
 
-`aws-keycloak` allows you to authenticate with AWS using your Keycloak credentials. It runs any commands with the 3 AWS euth nvironment variables set.
+`aws-keycloak` allows you to authenticate with AWS using your Keycloak credentials. It runs any commands with the 4 AWS environment variables set.
 ```
 AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
 AWS_SESSION_TOKEN
+AWS_DEFAULT_REGION
 ```
 
 ## Installing
@@ -20,9 +21,6 @@ $ go get github.com/mulesoft-labs/aws-keycloak
 ```
 aws-keycloak allows you to authenticate with AWS using your keycloak credentials
 
-$aws-keycloak --help
-aws-keycloak allows you to authenticate with AWS using your keycloak credentials
-
 Usage:
   aws-keycloak [flags] -- <command>
   aws-keycloak [command]
@@ -35,6 +33,7 @@ Available Commands:
   check       Check will authenticate you through keycloak and store session.
   env         Invokes `printenv`. Takes var names or prints all env
   help        Help about any command
+  open        Open a AWS console logged into a given profile
 
 Flags:
   -b, --backend string            Secret backend to use [keychain file]
@@ -49,13 +48,14 @@ Flags:
 Use "aws-keycloak [command] --help" for more information about a command.
 ```
 
-`aws-keycloak --` sets 3 (or 4 if `AWS_DEFAULT_REGION` is set) environment vars and runs the command that comes after it.
+`aws-keycloak --` sets 4 environment vars and runs the command that comes after it.
 
 ```
 $ aws-keycloak -- printenv
 AWS_ACCESS_KEY_ID=ASIAJWCS7CRTZC3XTQ4A
 AWS_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 AWS_SESSION_TOKEN=xxxxxxxxxxxxxxxxxxxx....
+AWS_DEFAULT_REGION=us-east-1
 ```
 
 `aws-keycloak` also has some helper subcommands for the `aws` CLI tool and getting env vars.
@@ -79,7 +79,7 @@ $ aws-keycloak -p power-devx check
  # this will not prompt for role
 ```
 
-### Configuring
+## Configuring
 
 You need a configuration file that describes how to talk to the keycloak server. This is an ini file at `~/.aws/keycloak-config`, or can be specified using `--config`.
 
@@ -89,6 +89,25 @@ The default keycloak profile is `id`. This can be specified with the `--keycloak
 keycloak_base = https://keycloak
 aws_client_id = urn:amazon:webservices
 aws_client_secret = <client secret from keycloak>
+```
+
+## Aliases
+
+Within the keycloak config file (above) you can specify aliases to shorten the commands you use. Aliases take the form `alias = keycloak-env:aws-role:region(optional)`.
+```
+[aliases]
+idm     = id:admin-identity:us-west-2
+gbuild  = gov:ro-gbuild:us-gov-west-1
+build   = id:ro-build
+```
+Aliases are invoked with the `--profile|-p` param.
+```
+$ aws-keycloak -p idm check
+{
+    "UserId": "AROAIBQVTFOBLQ5UTU752:chris.byron",
+    "Account": "003617316831",
+    "Arn": "arn:aws:sts::003617316831:assumed-role/keycloak-admin-identity/chris.byron"
+}
 ```
 
 ## Backends

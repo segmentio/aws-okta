@@ -41,7 +41,7 @@ func (p *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
 		return sts.Credentials{}, "", fmt.Errorf("Failed to authenticate with keycloak: %s", err)
 	}
 
-	log.Debug("Step 2: Get SAML form Keycloak")
+	log.Debug("Step 2: Get SAML from Keycloak")
 	assertion, err := p.K.GetSamlAssertion()
 	if err != nil {
 		return sts.Credentials{}, "", err

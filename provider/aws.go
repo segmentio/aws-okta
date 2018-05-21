@@ -25,10 +25,13 @@ type AwsProviderIf interface {
 
 type AwsProvider struct {
 	Keyring keyring.Keyring
+	Region  string
 }
 
 func (a *AwsProvider) AssumeRoleWithSAML(rp saml.RolePrincipal, assertion string) (sts.Credentials, error) {
-	samlSess := session.Must(session.NewSession())
+	samlSess := session.Must(session.NewSession(&aws.Config{
+		Region: aws.String(a.Region),
+	}))
 	svc := sts.New(samlSess)
 
 	samlParams := &sts.AssumeRoleWithSAMLInput{
