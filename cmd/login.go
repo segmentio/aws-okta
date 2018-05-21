@@ -159,7 +159,7 @@ func loginRun(cmd *cobra.Command, args []string) error {
 	}
 
 	loginURL := fmt.Sprintf(
-		"https://signin.aws.amazon.com/federation?Action=login&Issuer=aws-vault&Destination=%s&SigninToken=%s",
+		"https://signin.aws.amazon.com/federation?Action=login&Issuer=aws-okta&Destination=%s&SigninToken=%s",
 		url.QueryEscape(destination),
 		url.QueryEscape(signinToken),
 	)
