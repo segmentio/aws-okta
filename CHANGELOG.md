@@ -1,3 +1,9 @@
+### 1.3.2
+* Improve `open` command to allow `aws-keycloak open <profile>`
+* Fix `open` command for govcloud (different signin URL)
+* Default to less output when when opening browser
+* Set both `AWS_REGION` and `AWS_DEFAULT_REGION` env vars
+
 ### 1.3.1
 * Govcloud bugfix
 * Can specify default AWS region in keycloak config (needed for govcloud keycloak)

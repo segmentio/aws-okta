@@ -11,8 +11,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	govRegion = "us-gov-west-1"
+	awsDomain = "aws.amazon.com"
+	govDomain = "amazonaws-us-gov.com"
+)
+
 var openCmd = &cobra.Command{
-	Use:     "open",
+	Use:     "open [profile]",
 	Aliases: []string{"login"},
 	Short:   "Open a AWS console logged into a given profile",
 	RunE:    runOpenCmd,
@@ -25,9 +31,6 @@ func init() {
 func runOpenCmd(cmd *cobra.Command, args []string) error {
 	if len(args) > 1 {
 		return ErrTooManyArguments
-	}
-	if len(args) == 1 {
-		awsrole = args[0]
 	}
 
 	stscreds, err := getAwsStsCreds()
@@ -45,7 +48,16 @@ func runOpenCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("GET", "https://signin.aws.amazon.com/federation", nil)
+	var domain string
+	if region == govRegion {
+		domain = govDomain
+	} else {
+		domain = awsDomain
+	}
+	signin := fmt.Sprintf("https://signin.%s/federation", domain)
+	destination := fmt.Sprintf("https://console.%s", domain)
+
+	req, err := http.NewRequest("GET", signin, nil)
 	if err != nil {
 		return err
 	}
@@ -80,9 +92,9 @@ func runOpenCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	destination := "https://console.aws.amazon.com/"
 	loginURL := fmt.Sprintf(
-		"https://signin.aws.amazon.com/federation?Action=login&Issuer=aws-vault&Destination=%s&SigninToken=%s",
+		"%s?Action=login&Issuer=aws-vault&Destination=%s&SigninToken=%s",
+		signin,
 		url.QueryEscape(destination),
 		url.QueryEscape(signinToken),
 	)

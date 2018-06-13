@@ -42,7 +42,7 @@ var RootCmd = &cobra.Command{
 	SilenceErrors:     true,
 	PersistentPreRunE: prerun,
 	RunE:              runCommand,
-	Version:           "1.3.1",
+	Version:           "1.3.2",
 }
 
 func runCommand(cmd *cobra.Command, args []string) error {
@@ -115,6 +115,11 @@ func prerun(cmd *cobra.Command, args []string) error {
 	sections, err := config.Parse()
 	if err != nil {
 		return err
+	}
+
+	// So hacky!
+	if cmd == openCmd && len(args) == 1 {
+		awsrole = args[0]
 	}
 
 	aliases := provider.Aliases(sections["aliases"])

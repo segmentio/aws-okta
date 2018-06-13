@@ -53,8 +53,7 @@ func runWithAwsEnv(name string, arg ...string) error {
 	}
 	if region != "" {
 		env = append(env, fmt.Sprintf("AWS_DEFAULT_REGION=%s", region))
-	} else if region, found := os.LookupEnv("AWS_DEFAULT_REGION"); found {
-		env = append(env, fmt.Sprintf("AWS_DEFAULT_REGION=%s", region))
+		env = append(env, fmt.Sprintf("AWS_REGION=%s", region))
 	}
 
 	log.Debugf("Running command `%s %s` with AWS env vars set", name, strings.Join(arg, " "))
