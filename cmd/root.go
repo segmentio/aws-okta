@@ -13,10 +13,11 @@ import (
 
 // Errors returned from frontend commands
 var (
-	ErrCommandMissing         = errors.New("must specify command to run")
-	ErrTooManyArguments       = errors.New("too many arguments")
-	ErrTooFewArguments        = errors.New("too few arguments")
-	ErrFailedToSetCredentials = errors.New("Failed to set credentials in your keyring")
+	ErrCommandMissing              = errors.New("must specify command to run")
+	ErrTooManyArguments            = errors.New("too many arguments")
+	ErrTooFewArguments             = errors.New("too few arguments")
+	ErrFailedToSetCredentials      = errors.New("Failed to set credentials in your keyring")
+	ErrFailedToValidateCredentials = errors.New("Failed to validate credentials")
 )
 
 // global flags

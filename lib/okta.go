@@ -53,6 +53,20 @@ type OktaCreds struct {
 	Password     string
 }
 
+func (c *OktaCreds) Validate() error {
+	// OktaClient assumes we're doing some AWS SAML calls, but Validate doesn't
+	o, err := NewOktaClient(*c, "", "")
+	if err != nil {
+		return err
+	}
+
+	if err := o.AuthenticateUser(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string) (*OktaClient, error) {
 	base, err := url.Parse(fmt.Sprintf(
 		"https://%s.%s", creds.Organization, OktaServer,
@@ -85,44 +99,55 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string)
 	}, nil
 }
 
-func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, string, error) {
+func (o *OktaClient) AuthenticateUser() error {
 	var oktaUserAuthn OktaUserAuthn
+
+	// Step 1 : Basic authentication
+
+	user := OktaUser{
+		Username: o.Username,
+		Password: o.Password,
+	}
+
+	payload, err := json.Marshal(user)
+	if err != nil {
+		return err
+	}
+
+	log.Debug("Step: 1")
+	err = o.Get("POST", "api/v1/authn", payload, &oktaUserAuthn, "json")
+	if err != nil {
+		return fmt.Errorf("Failed to authenticate with okta: %#v", err)
+	}
+
+	o.UserAuth = &oktaUserAuthn
+
+	// Step 2 : Challenge MFA if needed
+	log.Debug("Step: 2")
+	if o.UserAuth.Status == "MFA_REQUIRED" {
+		log.Info("Requesting MFA")
+		if err = o.challengeMFA(); err != nil {
+			return err
+		}
+	}
+
+	if o.UserAuth.SessionToken == "" {
+		return fmt.Errorf("authentication failed for %s", o.Username)
+	}
+
+	return nil
+}
+
+func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, string, error) {
 
 	// Attempt to reuse session cookie
 	var assertion SAMLAssertion
 	err := o.Get("GET", o.OktaAwsSAMLUrl, nil, &assertion, "saml")
 	if err != nil {
 		log.Debug("Failed to reuse session token, starting flow from start")
-		// Step 1 : Basic authentication
-		user := OktaUser{
-			Username: o.Username,
-			Password: o.Password,
-		}
 
-		payload, err := json.Marshal(user)
-		if err != nil {
+		if err := o.AuthenticateUser(); err != nil {
 			return sts.Credentials{}, "", err
-		}
-
-		log.Debug("Step: 1")
-		err = o.Get("POST", "api/v1/authn", payload, &oktaUserAuthn, "json")
-		if err != nil {
-			return sts.Credentials{}, "", errors.New("Failed to authenticate with okta.  Please check that your credentials have been set correctly with `aws-okta add`")
-		}
-
-		o.UserAuth = &oktaUserAuthn
-
-		// Step 2 : Challenge MFA if needed
-		log.Debug("Step: 2")
-		if o.UserAuth.Status == "MFA_REQUIRED" {
-			log.Info("Requesting MFA")
-			if err = o.challengeMFA(); err != nil {
-				return sts.Credentials{}, "", err
-			}
-		}
-
-		if o.UserAuth.SessionToken == "" {
-			return sts.Credentials{}, "", fmt.Errorf("authentication failed for %s", o.Username)
 		}
 
 		// Step 3 : Get SAML Assertion and retrieve IAM Roles

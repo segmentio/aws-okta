@@ -68,6 +68,11 @@ func add(cmd *cobra.Command, args []string) error {
 		Password:     password,
 	}
 
+	if err := creds.Validate(); err != nil {
+		log.Debugf("Failed to validate credentials: %s", err)
+		return ErrFailedToValidateCredentials
+	}
+
 	encoded, err := json.Marshal(creds)
 	if err != nil {
 		return err
@@ -81,6 +86,7 @@ func add(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := kr.Set(item); err != nil {
+		log.Debugf("Failed to add user to keyring: %s", err)
 		return ErrFailedToSetCredentials
 	}
 
