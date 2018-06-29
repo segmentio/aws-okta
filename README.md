@@ -91,6 +91,25 @@ role_arn = arn:aws:iam::<account-id>:role/<secondary-role-name>
 
 The configuration above means that you can use multiple Okta Apps at the same time and switch between them easily.
 
+#### Configuring Okta session and AWS assume role TTLs
+
+The default TTLs for both Okta sessions and AWS assumed roles is 1 hour.  This means that aws-okta will re-authenticate to Okta and AWS credentials will expire every hour.  In addition to specifying the Okta session and AWS assume role TTLs with the command-line flags, they can be set using the `AWS_SESSION_TTL` and `AWS_ASSUME_ROLE_TTL` environment variables respectively.
+
+```bash
+export AWS_SESSION_TTL=1h
+export AWS_ASSUME_ROLE_TTL=1h
+```
+
+The AWS assume role TTL can also be set per-profile in the aws config:
+
+```ini
+# example with a role that's configured with a max session duration of 12 hours
+[profile ttldemo]
+aws_saml_url = home/amazon_aws/cuZGoka9dAIFcyG0UllG/214
+role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
+assume_role_ttl = 12h
+```
+
 ## Backends
 
 We use 99design's keyring package that they use in `aws-vault`.  Because of this, you can choose between different pluggable secret storage backends just like in `aws-vault`.  You can either set your backend from the command line as a flag, or set the `AWS_OKTA_BACKEND` environment variable.
@@ -102,7 +121,7 @@ export AWS_OKTA_BACKEND=secret-service
 
 ## Releasing
 
-Pushing a new tag will cause Circle to automatically create and push a linux release.  After this is done, you shoule run (from a mac):
+Pushing a new tag will cause Circle to automatically create and push a linux release.  After this is done, you should run (from a mac):
 
 ```bash
 $ export CIRCLE_TAG=`git describe --tags`

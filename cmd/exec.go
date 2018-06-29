@@ -49,6 +49,22 @@ func loadDurationFlagFromEnv(cmd *cobra.Command, flagName string, envVar string,
 		return err
 	}
 
+	cmd.Flags().Lookup(flagName).Changed = true
+	*val = dur
+	return nil
+}
+
+func updateDurationFromConfigProfile(profiles map[string]map[string]string, profile string, durationName string, val *time.Duration) error {
+	fromProfile, ok := profiles[profile]["assume_role_ttl"]
+	if !ok {
+		return nil
+	}
+
+	dur, err := time.ParseDuration(fromProfile)
+	if err != nil {
+		return err
+	}
+
 	*val = dur
 	return nil
 }
@@ -98,6 +114,13 @@ func execRun(cmd *cobra.Command, args []string) error {
 
 	if _, ok := profiles[profile]; !ok {
 		return fmt.Errorf("Profile '%s' not found in your aws config", profile)
+	}
+
+	// check for an assume_role_ttl in the profile if we don't have a more explicit one
+	if !cmd.Flags().Lookup("assume-role-ttl").Changed {
+		if err := updateDurationFromConfigProfile(profiles, profile, "assume_role_ttl", &assumeRoleTTL); err != nil {
+			fmt.Fprintln(os.Stderr, "warning: could not parse duration from profile config")
+		}
 	}
 
 	opts := lib.ProviderOptions{
