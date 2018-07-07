@@ -46,6 +46,11 @@ func add(cmd *cobra.Command, args []string) error {
 	}
 
 	// Ask username password from prompt
+	server, err := lib.Prompt("Okta Region (emea/us)", false)
+	if err != nil {
+		return err
+	}
+
 	organization, err := lib.Prompt("Okta organization", false)
 	if err != nil {
 		return err
@@ -63,6 +68,7 @@ func add(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 
 	creds := lib.OktaCreds{
+		Server:       server,
 		Organization: organization,
 		Username:     username,
 		Password:     password,

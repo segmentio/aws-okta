@@ -23,9 +23,10 @@ import (
 	"github.com/segmentio/aws-okta/lib/saml"
 )
 
-const (
-	OktaServer = "okta.com"
-)
+var OktaServer = map[string]string{
+	"emea": "okta-emea.com",
+	"us":   "okta.com",
+}
 
 type OktaClient struct {
 	Organization    string
@@ -40,6 +41,7 @@ type OktaClient struct {
 	OktaAwsSAMLUrl  string
 	CookieJar       http.CookieJar
 	BaseURL         *url.URL
+	OktaRegion      string
 }
 
 type SAMLAssertion struct {
@@ -48,6 +50,7 @@ type SAMLAssertion struct {
 }
 
 type OktaCreds struct {
+	Server       string
 	Organization string
 	Username     string
 	Password     string
@@ -55,7 +58,7 @@ type OktaCreds struct {
 
 func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string) (*OktaClient, error) {
 	base, err := url.Parse(fmt.Sprintf(
-		"https://%s.%s", creds.Organization, OktaServer,
+		"https://%s.%s", creds.Organization, OktaServer[creds.Server],
 	))
 	if err != nil {
 		return nil, err
@@ -82,6 +85,7 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string)
 		OktaAwsSAMLUrl: oktaAwsSAMLUrl,
 		CookieJar:      jar,
 		BaseURL:        base,
+		OktaRegion:     creds.Server,
 	}, nil
 }
 
@@ -355,7 +359,7 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	var client http.Client
 
 	url, err := url.Parse(fmt.Sprintf(
-		"https://%s.%s/%s", o.Organization, OktaServer, path,
+		"https://%s.%s/%s", o.Organization, OktaServer[o.OktaRegion], path,
 	))
 	if err != nil {
 		return err
