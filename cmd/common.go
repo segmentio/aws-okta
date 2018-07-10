@@ -12,10 +12,10 @@ import (
 	"github.com/mulesoft-labs/aws-keycloak/provider"
 )
 
-func getAwsStsCreds() (sts.Credentials, error) {
+func makeProvider() (*provider.Provider, error) {
 	k, err := provider.NewKeycloakProvider(kr, kcprofile, kcConf)
 	if err != nil {
-		return sts.Credentials{}, err
+		return nil, err
 	}
 	if region == "" {
 		if v, e := kcConf["default_region"]; e {
@@ -28,13 +28,27 @@ func getAwsStsCreds() (sts.Credentials, error) {
 		Keyring: kr,
 		Region:  region,
 	}
-	p := provider.Provider{
+	return &provider.Provider{
 		A: a,
 		K: k,
-	}
+	}, nil
+}
 
+func getAwsStsCreds() (sts.Credentials, error) {
+	p, err := makeProvider()
+	if err != nil {
+		return sts.Credentials{}, err
+	}
 	stscreds, _, err := p.Retrieve(awsrole)
 	return stscreds, err
+}
+
+func listRoles() ([]string, error) {
+	p, err := makeProvider()
+	if err != nil {
+		return []string{}, err
+	}
+	return p.List()
 }
 
 /**

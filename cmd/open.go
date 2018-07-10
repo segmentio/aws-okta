@@ -21,6 +21,7 @@ var openCmd = &cobra.Command{
 	Use:     "open [profile]",
 	Aliases: []string{"login"},
 	Short:   "Open a AWS console logged into a given profile",
+	Example: "  aws-keycloak open power-devx",
 	RunE:    runOpenCmd,
 }
 

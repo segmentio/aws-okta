@@ -1,3 +1,8 @@
+### 1.3.3
+* Add `list` subcommand, which displays all available roles
+* Reduce auth success page auto-close timeout to 1 second
+* Remove `aws` subcommand, since it's easier to invoke `aws` after `--` (as with all other commands)
+
 ### 1.3.2
 * Improve `open` command to allow `aws-keycloak open <profile>`
 * Fix `open` command for govcloud (different signin URL)

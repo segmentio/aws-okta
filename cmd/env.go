@@ -5,9 +5,10 @@ import (
 )
 
 var envCmd = &cobra.Command{
-	Use:   "env",
-	Short: "Invokes `printenv`. Takes var names or prints all env",
-	RunE:  runEnvCmd,
+	Use:     "env",
+	Short:   "Invokes `printenv`. Takes var names or prints all env",
+	Example: "  export AWS_ACCESS_KEY_ID=$(aws-keycloak -p power-devx env AWS_ACCESS_KEY_ID)",
+	RunE:    runEnvCmd,
 }
 
 func init() {

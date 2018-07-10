@@ -23,6 +23,27 @@ type Provider struct {
 	A AwsProviderIf
 }
 
+func (p *Provider) List() (roles []string, err error) {
+	log.Debug("Step 1: Auth to Keycloak")
+	err = p.K.BrowserAuth()
+	if err != nil {
+		return
+	}
+
+	log.Debug("Step 2: Get SAML from Keycloak")
+	assertion, err := p.K.GetSamlAssertion()
+	if err != nil {
+		return
+	}
+
+	rps, _, err := saml.GetRolesFromSAML(assertion.Resp)
+	if err != nil {
+		return
+	}
+
+	return saml.RolesOf(rps), nil
+}
+
 func (p *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
 	log.Debug("Step 0: Checking existing AWS session")
 	creds, err := p.A.CheckAlreadyAuthd(awsrole)

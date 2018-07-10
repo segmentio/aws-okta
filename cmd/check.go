@@ -5,9 +5,10 @@ import (
 )
 
 var checkCmd = &cobra.Command{
-	Use:   "check",
-	Short: "Check will authenticate you through keycloak and store session.",
-	RunE:  runCheck,
+	Use:     "check",
+	Short:   "Check will authenticate you through keycloak and store session.",
+	Example: "  aws-keycloak -p power-devx check",
+	RunE:    runCheck,
 }
 
 func init() {
