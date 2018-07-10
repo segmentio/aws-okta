@@ -1,11 +1,12 @@
 # aws-keycloak
 
-`aws-keycloak` allows you to authenticate with AWS using your Keycloak credentials. It runs any commands with the 4 AWS environment variables set.
+`aws-keycloak` allows you to authenticate with AWS using your Keycloak credentials. It runs any commands with the 5 AWS environment variables set.
 ```
 AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
 AWS_SESSION_TOKEN
 AWS_DEFAULT_REGION
+AWS_REGION
 ```
 
 ## Installing
@@ -48,11 +49,11 @@ Flags:
 Use "aws-keycloak [command] --help" for more information about a command.
 ```
 
-`aws-keycloak --` sets 4 environment vars and runs the command that comes after it.
+`aws-keycloak --` sets 5 environment vars and runs the command that comes after it.
 
 ```
 $ aws-keycloak -- printenv
-AWS_ACCESS_KEY_ID=ASIAJWCS7CRTZC3XTQ4A
+AWS_ACCESS_KEY_ID=ASIAJWXXXXXXXX3XTQ4A
 AWS_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 AWS_SESSION_TOKEN=xxxxxxxxxxxxxxxxxxxx....
 AWS_DEFAULT_REGION=us-east-1
@@ -96,17 +97,17 @@ aws_client_secret = <client secret from keycloak>
 Within the keycloak config file (above) you can specify aliases to shorten the commands you use. Aliases take the form `alias = keycloak-env:aws-role:region(optional)`.
 ```
 [aliases]
-idm     = id:admin-identity:us-west-2
-gbuild  = gov:ro-gbuild:us-gov-west-1
+stg     = id:admin-staging:us-west-2
 build   = id:ro-build
+sbox    = id.dev:power-sbox:us-west-1
 ```
 Aliases are invoked with the `--profile|-p` param.
 ```
-$ aws-keycloak -p idm check
+$ aws-keycloak -p stg check
 {
-    "UserId": "AROAIBQVTFOBLQ5UTU752:chris.byron",
-    "Account": "003617316831",
-    "Arn": "arn:aws:sts::003617316831:assumed-role/keycloak-admin-identity/chris.byron"
+    "UserId": "AROAXXXXXXXXXXXXXU752:tobias.funke",
+    "Account": "003XXXXXX831",
+    "Arn": "arn:aws:sts::003XXXXXX831:assumed-role/keycloak-admin-staging/tobias.funke"
 }
 ```
 
@@ -119,51 +120,51 @@ We use 99design's keyring package that they use in `aws-vault`.  Because of this
 ```
 $aws-keycloak check
 INFO[0000] If browser window does not open automatically, open it by clicking on the link:
- https://keycloak.prod.identity.msap.io/auth/realms/Mulesoft/protocol/openid-connect/auth?client_id=urn%3Aamazon%3Awebservices&redirect_uri=http%3A%2F%2F127.0.0.1%3A55451%2Fcallback&response_type=code&state=3mZh2vR7
+ https://keycloak/auth/realms/Company/protocol/openid-connect/auth?client_id=urn%3Aamazon%3Awebservices&redirect_uri=http%3A%2F%2F127.0.0.1%3A55451%2Fcallback&response_type=code&state=3XXXXXX7
 INFO[0000] Waiting for response on: http://127.0.0.1:55451
 INFO[0024] Successfully exchanged for Access Token
-[  0] arn:aws:iam::003617316831:role/keycloak-admin-identity
-[  1] arn:aws:iam::008119339527:role/keycloak-power-qax
-[  2] arn:aws:iam::053047940888:role/keycloak-power-kdev
-[  3] arn:aws:iam::055970264539:role/keycloak-power-sandbox
-[  4] arn:aws:iam::073815667418:role/keycloak-power-devx
-[  5] arn:aws:iam::379287829376:role/keycloak-power-kprod
-[  6] arn:aws:iam::494141260463:role/keycloak-power-prod
-[  7] arn:aws:iam::645983395287:role/keycloak-power-stgx
-[  8] arn:aws:iam::655988475869:role/keycloak-power-prod-eu-rt
-[  9] arn:aws:iam::675448719222:role/keycloak-power-kqa
+[  0] arn:aws:iam::003XXXXXX831:role/keycloak-admin-acct1
+[  1] arn:aws:iam::008XXXXXX527:role/keycloak-power-acct2
+[  2] arn:aws:iam::053XXXXXX888:role/keycloak-power-acct3
+[  3] arn:aws:iam::055XXXXXX539:role/keycloak-power-acct4
+[  4] arn:aws:iam::073XXXXXX418:role/keycloak-power-acct5
+[  5] arn:aws:iam::379XXXXXX376:role/keycloak-power-acct6
+[  6] arn:aws:iam::494XXXXXX463:role/keycloak-power-acct7
+[  7] arn:aws:iam::645XXXXXX287:role/keycloak-power-acct9
+[  8] arn:aws:iam::655XXXXXX869:role/keycloak-power-acct10
+[  9] arn:aws:iam::675XXXXXX222:role/keycloak-power-acct11
 Choice: 4
-INFO[0034] Assuming role 'power-devx'. You can specify this with the --profile flag
+INFO[0034] Assuming role 'power-acct1'. You can specify this with the --profile flag
 {
-    "UserId": "AROAIC5ECYBOX4KG2CIK4:chris.byron",
-    "Account": "073815667418",
-    "Arn": "arn:aws:sts::073815667418:assumed-role/keycloak-power-devx/chris.byron"
+    "UserId": "AROAXXXXXXXXXXXXXCIK4:tobias.funke",
+    "Account": "073XXXXXX418",
+    "Arn": "arn:aws:sts::073XXXXXX418:assumed-role/keycloak-power-acct1/tobias.funke"
 }
 ```
 
 ```
-$aws-keycloak --debug --profile power-devx check
-DEBU[0000] Parsing config file /Users/chrisbyron/.aws/keycloak-config
+$aws-keycloak --debug --profile power-acct1 check
+DEBU[0000] Parsing config file /Users/tobias.funke/.aws/keycloak-config
 DEBU[0000] Step 0: Checking existing AWS session
 DEBU[0000] found aws session in keyring
-DEBU[0000] AWS session already valid for power-devx
+DEBU[0000] AWS session already valid for power-acct1
 DEBU[0000] Running command `aws sts get-caller-identity` with AWS env vars set
 {
-    "UserId": "AROAIC5ECYBOX4KG2CIK4:chris.byron",
-    "Account": "073815667418",
-    "Arn": "arn:aws:sts::073815667418:assumed-role/keycloak-power-devx/chris.byron"
+    "UserId": "AROAIC5ECYBOX4KG2CIK4:tobias.funke",
+    "Account": "073XXXXXX418",
+    "Arn": "arn:aws:sts::073XXXXXX418:assumed-role/keycloak-power-acct1/tobias.funke"
 }
 ```
 
 ```
-$aws-keycloak -p power-devx aws -- sts get-caller-identity
+$aws-keycloak -p power-acct1 aws -- sts get-caller-identity
 {
-    "UserId": "AROAIC5ECYBOX4KG2CIK4:chris.byron",
-    "Account": "073815667418",
-    "Arn": "arn:aws:sts::073815667418:assumed-role/keycloak-power-devx/chris.byron"
+    "UserId": "AROAXXXXXXXXXXXXXCIK4:tobias.funke",
+    "Account": "073XXXXXX418",
+    "Arn": "arn:aws:sts::073XXXXXX418:assumed-role/keycloak-power-acct1/tobias.funke"
 }
 
-$ export KEY_ID=$(aws-keycloak -p power-devx env AWS_ACCESS_KEY_ID)
+$ export KEY_ID=$(aws-keycloak -p power-acct1 env AWS_ACCESS_KEY_ID)
 $ echo $KEY_ID
-ASIAJWCS7CRTZC3XTQ4A
+ASIAXXXXXXXXXXXXTQ4A
 ```
