@@ -19,5 +19,5 @@ func runCheck(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		return ErrTooManyArguments
 	}
-	return runWithAwsEnv("aws", "sts", "get-caller-identity")
+	return runWithAwsEnv(true, "aws", "sts", "get-caller-identity")
 }

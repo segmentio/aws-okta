@@ -7,6 +7,7 @@ import (
 
 	"github.com/99designs/keyring"
 	log "github.com/Sirupsen/logrus"
+	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 
 	"github.com/mulesoft-labs/aws-keycloak/provider"
@@ -18,6 +19,10 @@ var (
 	ErrTooManyArguments       = errors.New("too many arguments")
 	ErrTooFewArguments        = errors.New("too few arguments")
 	ErrFailedToSetCredentials = errors.New("Failed to set credentials in your keyring")
+)
+
+const (
+	KeycloakConfigUrl = "https://wiki.corp.mulesoft.com/download/attachments/53909517/keycloak-config?api=v2"
 )
 
 // global flags
@@ -42,14 +47,14 @@ var RootCmd = &cobra.Command{
 	SilenceErrors:     true,
 	PersistentPreRunE: prerun,
 	RunE:              runCommand,
-	Version:           "1.3.3",
+	Version:           "1.3.4",
 }
 
 func runCommand(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return ErrTooFewArguments
 	}
-	return runWithAwsEnv(args[0], args[1:]...)
+	return runWithAwsEnv(true, args[0], args[1:]...)
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -109,7 +114,9 @@ func prerun(cmd *cobra.Command, args []string) error {
 
 	config, err := provider.NewConfigFromFile(configFile)
 	if err != nil {
-		return fmt.Errorf("No configuration found at %s.", configFile)
+		log.Errorf("No configuration found at %s.", configFile)
+		fetchConfig()
+		return fmt.Errorf("Please install configuration file and try again.")
 	}
 
 	sections, err := config.Parse()
@@ -148,4 +155,14 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Minimize output")
 	RootCmd.PersistentFlags().StringVarP(&kcprofile, "keycloak-profile", "k", provider.DefaultKeycloak, "Keycloak system to auth to")
 	RootCmd.PersistentFlags().StringVarP(&awsrole, "profile", "p", "", "AWS profile to run against (recommended)")
+}
+
+func fetchConfig() {
+	fmt.Print("You need to put a keycloak-config file in your ~/.aws/ directory.\nWould you like to download one? [y/N] ")
+	var choice string
+	fmt.Scanln(&choice)
+	if choice == "y" || choice == "Y" {
+		open.Run(KeycloakConfigUrl)
+	}
+	fmt.Println(KeycloakConfigUrl)
 }

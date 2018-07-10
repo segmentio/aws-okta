@@ -1,3 +1,7 @@
+### 1.3.4
+* Subcommand `env` only display AWS environment vars
+* Running without any keycloak-config will automatically download one
+
 ### 1.3.3
 * Add `list` subcommand, which displays all available roles
 * Reduce auth success page auto-close timeout to 1 second

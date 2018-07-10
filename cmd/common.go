@@ -54,7 +54,7 @@ func listRoles() ([]string, error) {
 /**
  * Appends AWS env vars to existing env
  */
-func runWithAwsEnv(name string, arg ...string) error {
+func runWithAwsEnv(includeFullEnv bool, name string, arg ...string) error {
 	stscreds, err := getAwsStsCreds()
 	if err != nil {
 		return err
@@ -71,8 +71,10 @@ func runWithAwsEnv(name string, arg ...string) error {
 	}
 
 	log.Debugf("Running command `%s %s` with AWS env vars set", name, strings.Join(arg, " "))
-	return runWithEnv(name, append(os.Environ(), env...), arg...)
-
+	if includeFullEnv {
+		env = append(os.Environ(), env...)
+	}
+	return runWithEnv(name, env, arg...)
 }
 
 func runWithEnv(name string, env []string, arg ...string) error {
