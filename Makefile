@@ -7,7 +7,11 @@ GOGET=$(GOCMD) get
 BINARY_NAME=aws-keycloak
 
 .PHONY: all
-all: test build
+all: dep test build
+
+.PHONY: dep
+dep:
+	dep ensure
 
 .PHONY: build
 build:
