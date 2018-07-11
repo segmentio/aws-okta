@@ -144,6 +144,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 	env.Unset("AWS_CREDENTIAL_FILE")
 	env.Unset("AWS_DEFAULT_PROFILE")
 	env.Unset("AWS_PROFILE")
+	env.Unset("AWS_OKTA_PROFILE")
 
 	if region, ok := profiles[profile]["region"]; ok {
 		env.Set("AWS_DEFAULT_REGION", region)
@@ -152,6 +153,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 
 	env.Set("AWS_ACCESS_KEY_ID", creds.AccessKeyID)
 	env.Set("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey)
+	env.Set("AWS_OKTA_PROFILE", profile)
 
 	if creds.SessionToken != "" {
 		env.Set("AWS_SESSION_TOKEN", creds.SessionToken)
