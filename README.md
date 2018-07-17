@@ -94,7 +94,7 @@ aws_client_secret = <client secret from keycloak>
 
 ## Aliases
 
-Within the keycloak config file (above) you can specify aliases to shorten the commands you use. Aliases take the form `alias = keycloak-env:aws-role:region(optional)`.
+Within the keycloak config file (above) you can specify aliases to shorten the commands you use. Aliases take the form `alias = keycloak-env:profile:region(optional)`.
 ```
 [aliases]
 stg     = id:admin-staging:us-west-2
