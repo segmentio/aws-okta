@@ -1,5 +1,4 @@
 # aws-keycloak
-
 `aws-keycloak` allows you to authenticate with AWS using your Keycloak credentials. It runs any commands with the 5 AWS environment variables set.
 ```
 AWS_ACCESS_KEY_ID
@@ -10,15 +9,17 @@ AWS_REGION
 ```
 
 ## Installing
+```
+$ brew tap mulesoft-labs/tap
+$ brew install aws-keycloak
+```
 
-You can install with:
-
+### From source
 ```
 $ go get github.com/mulesoft-labs/aws-keycloak
 ```
 
 ## Usage
-
 ```
 aws-keycloak allows you to authenticate with AWS using your keycloak credentials
 
