@@ -1,0 +1,14 @@
+language: go
+
+install:
+  - go get github.com/kardianos/govendor
+  - govendor status
+
+go:
+  - 1.9
+
+os:
+  - linux
+  - osx
+
+osx_image: xcode7.3
