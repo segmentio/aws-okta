@@ -202,9 +202,15 @@ func selectMFADevice(factors []OktaUserAuthnFactor) (*OktaUserAuthnFactor, error
 		if err != nil {
 			return nil, err
 		}
+		if i == "" {
+			return nil, errors.New("Invalid selection - Please use an option that is listed")
+		}
 		factor, err := strconv.Atoi(i)
 		if err != nil {
 			return nil, err
+		}
+		if factor > (len(factors) - 1) {
+			return nil, errors.New("Invalid selection - Please use an option that is listed")
 		}
 		return &factors[factor], nil
 	} else if len(factors) == 1 {
