@@ -34,6 +34,7 @@ type StatusResp struct {
 		Parent     string `json:"parent"`
 		Cookie     string `json:"cookie"`
 		Result     string `json:"result"`
+		ResultURL  string `json:"result_url"`
 	} `json:"response"`
 	Stat string `json:"stat"`
 }
@@ -241,9 +242,41 @@ func (d *DuoClient) DoStatus(txid, sid string) (auth string, err error) {
 	err = json.NewDecoder(res.Body).Decode(&status)
 
 	if status.Response.Result == "SUCCESS" {
-		auth = status.Response.Cookie
+		auth, err = d.DoRedirect(status.Response.ResultURL, sid)
 	}
 	return
+}
+
+func (d *DuoClient) DoRedirect(url string, sid string) (string, error) {
+	client := http.Client{}
+	statusData := "sid=" + sid
+	url = "https://" + d.Host + url
+	req, err := http.NewRequest("POST", url, bytes.NewReader([]byte(statusData)))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Add("Origin", "https://"+d.Host)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("X-Requested-With", "XMLHttpRequest")
+
+	res, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		err = fmt.Errorf("DUO: bad status from result_url: %d", res.StatusCode)
+		return "", err
+	}
+
+	var status StatusResp
+	err = json.NewDecoder(res.Body).Decode(&status)
+	if err != nil {
+		return "", err
+	}
+	return status.Response.Cookie, nil
 }
 
 // DoCallback send a POST request to the Okta callback url defined in the DuoClient
