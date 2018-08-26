@@ -10,6 +10,14 @@ You can install with:
 $ go get github.com/segmentio/aws-okta
 ```
 
+### MacOS
+
+You can install with `brew`:
+
+```bash
+$ brew install aws-okta
+```
+
 ## Usage
 
 ### Adding Okta credentials
