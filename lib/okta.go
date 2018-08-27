@@ -40,6 +40,7 @@ type OktaClient struct {
 	OktaAwsSAMLUrl  string
 	CookieJar       http.CookieJar
 	BaseURL         *url.URL
+	MFAConfig       MFAConfig
 }
 
 type SAMLAssertion struct {
@@ -55,7 +56,7 @@ type OktaCreds struct {
 
 func (c *OktaCreds) Validate() error {
 	// OktaClient assumes we're doing some AWS SAML calls, but Validate doesn't
-	o, err := NewOktaClient(*c, "", "")
+	o, err := NewOktaClient(*c, "", "", MFAConfig{})
 	if err != nil {
 		return err
 	}
@@ -67,7 +68,7 @@ func (c *OktaCreds) Validate() error {
 	return nil
 }
 
-func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string) (*OktaClient, error) {
+func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string, mfaConfig MFAConfig) (*OktaClient, error) {
 	base, err := url.Parse(fmt.Sprintf(
 		"https://%s.%s", creds.Organization, OktaServer,
 	))
@@ -96,6 +97,7 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string)
 		OktaAwsSAMLUrl: oktaAwsSAMLUrl,
 		CookieJar:      jar,
 		BaseURL:        base,
+		MFAConfig:      mfaConfig,
 	}, nil
 }
 
@@ -192,8 +194,17 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 	return *samlResp.Credentials, sessionCookie, nil
 }
 
-func selectMFADevice(factors []OktaUserAuthnFactor) (*OktaUserAuthnFactor, error) {
+func selectMFADevice(o *OktaClient) (*OktaUserAuthnFactor, error) {
+	var factors = o.UserAuth.Embedded.Factors
+	log.Debugf("MFAConfig: %v\n", o.MFAConfig)
+
 	if len(factors) > 1 {
+		for i, f := range factors {
+			if f.Provider == o.MFAConfig.MFAFactor && f.FactorType == o.MFAConfig.MFAType {
+				log.Debugf("Using matching factor \"%v %v\" from aws config\n", f.Provider, f.FactorType)
+				return &factors[i], nil
+			}
+		}
 		log.Info("Select a MFA from the following list")
 		for i, f := range factors {
 			log.Infof("%d: %s (%s)", i, f.Provider, f.FactorType)
@@ -313,7 +324,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 	var oktaFactorType string
 
 	log.Debugf("%s", o.UserAuth.StateToken)
-	factor, err := selectMFADevice(o.UserAuth.Embedded.Factors)
+	factor, err := selectMFADevice(o)
 	if err != nil {
 		log.Debug("Failed to select MFA device")
 		return
@@ -441,6 +452,12 @@ type OktaProvider struct {
 	ProfileARN      string
 	SessionDuration time.Duration
 	OktaAwsSAMLUrl  string
+	MFAConfig       MFAConfig
+}
+
+type MFAConfig struct {
+	MFAFactor string
+	MFAType   string
 }
 
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
@@ -463,7 +480,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 		sessionCookie = string(cookieItem.Data)
 	}
 
-	oktaClient, err := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie)
+	oktaClient, err := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie, p.MFAConfig)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}

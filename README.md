@@ -55,6 +55,15 @@ Global Flags:
 aws_saml_url = home/amazon_aws/0ac4qfegf372HSvKF6a3/965
 ```
 
+You can optionally specify which MFA type to use, which is useful when multiple are configured, for example:
+```ini
+[okta]
+aws_saml_url = home/amazon_aws/0ac4qfegf372HSvKF6a3/965
+mfa_factor = OKTA
+mfa_type = push
+
+```
+
 Next, you need to set up your base Okta role.  This will be one your admin created while setting up the integration.  It should be specified like any other aws profile:
 
 ```ini
