@@ -3,11 +3,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d937a7ad3ecc9a62355b31143a3f3a316fb1d6440304ec348696ef9fa0a74ed8"
+  digest = "1:0425317432fb6a3f6c94bd5912109e8f1829710f9c218b42bd9402197b8e8dae"
   name = "github.com/99designs/keyring"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ccd0779e6f10beb398c339c6fe4557e709dbf40c"
+  revision = "998b86358ae9d7c8bbbb1d57080a8eaca7ffc47b"
 
 [[projects]]
   digest = "1:9e9193aa51197513b3abcb108970d831fbcf40ef96aa845c4f03276e1fa316d2"
