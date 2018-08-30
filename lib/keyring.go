@@ -1,11 +1,13 @@
 package lib
 
 import (
+	"os"
+
 	"github.com/99designs/keyring"
 )
 
 func keyringPrompt(prompt string) (string, error) {
-	return Prompt(prompt, true)
+	return PromptWithOutput(prompt, true, os.Stderr)
 }
 
 func OpenKeyring(allowedBackends []keyring.BackendType) (kr keyring.Keyring, err error) {
