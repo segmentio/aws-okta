@@ -45,8 +45,9 @@ workflows:
   test-release:
     jobs:
       - build:
-          tags:
-            only: /.*/
+          filters:
+            tags:
+              only: /.*/
       - prerelease:
           requires:
             - build
