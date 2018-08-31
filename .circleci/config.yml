@@ -49,15 +49,14 @@ workflows:
           requires:
             - build
           filters:
-            branches:
-              only: master
+            branches: /nick-release-test/
             tags:
-              only: /v[0-9]+(\.[0-9]+)*-([a-zA-Z0-9-]+)/
+              only: /.*/
       - release:
           requires:
             - build
           filters:
             branches:
-              only: master
+              only: /master/
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
