@@ -44,7 +44,10 @@ workflows:
   version: 2
   test-release:
     jobs:
-      - build
+      - build:
+         filters:
+           tags:
+             only: /.*/
       - prerelease:
           requires:
             - build
@@ -55,5 +58,7 @@ workflows:
           requires:
             - build
           filters:
+            branches:
+              only: /master/
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
