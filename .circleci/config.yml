@@ -51,7 +51,7 @@ workflows:
           requires:
             - build
           filters:
-            branches: 
+            branches:
               only: /nick-release-test/
             tags:
               only: /.*/
