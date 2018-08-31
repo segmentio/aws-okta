@@ -1,0 +1,42 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.10
+    working_directory: /go/src/github.com/segmentio/aws-okta
+    steps:
+      - checkout
+      - run:
+          name: Build
+          command: |
+            make govendor dist
+      - persist_to_workspace:
+          root: .
+          paths: ['dist/*']
+
+  release:
+    docker:
+      - image: circleci/golang:1.10
+    working_directory: /go/src/github.com/segmentio/aws-okta
+    steps:
+      - checkout
+      - attach_workspace: { at: . }
+      - run:
+          name: Release
+          # TODO: cache from build step
+          command: |
+            make release
+
+workflows:
+  version: 2
+  test-deploy:
+    jobs:
+      - build
+      - release:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
