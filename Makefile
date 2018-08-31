@@ -1,5 +1,6 @@
 VERSION := $(shell git describe --tags --always --dirty="-dev")
 LDFLAGS := -ldflags='-X "main.Version=$(VERSION)"'
+GITHUB_RELEASE_FLAGS := ''
 
 release: gh-release govendor clean dist
 	github-release release \
@@ -7,6 +8,7 @@ release: gh-release govendor clean dist
 	--user segmentio \
 	--repo aws-okta \
 	--tag $(VERSION) \
+	$(GITHUB_RELEASE_FLAGS) \
 	--name $(VERSION)
 
 	github-release upload \
@@ -14,6 +16,7 @@ release: gh-release govendor clean dist
 	--user segmentio \
 	--repo aws-okta \
 	--tag $(VERSION) \
+	$(GITHUB_RELEASE_FLAGS) \
 	--name aws-okta-$(VERSION)-linux-amd64 \
 	--file dist/aws-okta-$(VERSION)-linux-amd64
 
@@ -23,6 +26,7 @@ release-mac: gh-release govendor clean dist-mac
 	--user segmentio \
 	--repo aws-okta \
 	--tag $(VERSION) \
+	$(GITHUB_RELEASE_FLAGS) \
 	--name aws-okta-$(VERSION)-darwin-amd64 \
 	--file dist/aws-okta-$(VERSION)-darwin-amd64
 
