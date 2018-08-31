@@ -44,7 +44,7 @@ workflows:
   version: 2
   test-release:
     jobs:
-      - build
+      - build:
           tags:
             only: /.*/
       - prerelease:
@@ -52,7 +52,7 @@ workflows:
             - build
           filters:
             branches: 
-              ignore: /.*/
+              only: /nick-release-test/
             tags:
               only: /.*/
       - release:
