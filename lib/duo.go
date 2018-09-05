@@ -242,7 +242,11 @@ func (d *DuoClient) DoStatus(txid, sid string) (auth string, err error) {
 	err = json.NewDecoder(res.Body).Decode(&status)
 
 	if status.Response.Result == "SUCCESS" {
-		auth, err = d.DoRedirect(status.Response.ResultURL, sid)
+		if status.Response.ResultURL != "" {
+			auth, err = d.DoRedirect(status.Response.ResultURL, sid)
+		} else if status.Response.Cookie != ""  {
+			auth = status.Response.Cookie
+		}
 	}
 	return
 }
