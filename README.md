@@ -18,7 +18,9 @@ $ go get github.com/segmentio/aws-okta
 $ aws-okta add
 ```
 
-This will prompt you for your Okta organization, username, and password.  These credentials will then be stored in your keyring for future use.
+This will prompt you for your Okta organization, username, and password.  These credentials will then be stored in your keyring for future use.   
+Note: Don't append ".okta.com" to your organization name, it is automatically added by `aws-okta`.
+
 
 ### Exec
 
