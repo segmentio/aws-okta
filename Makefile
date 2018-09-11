@@ -1,46 +1,33 @@
+# Goals:
+# - user can build binaries on their system without having to install special tools
+# - user can fork the canonical repo and expect to be able to run CircleCI checks
+#
+# This makefile is meant for humans
+
 VERSION := $(shell git describe --tags --always --dirty="-dev")
 LDFLAGS := -ldflags='-X "main.Version=$(VERSION)"'
 
-release: gh-release govendor clean dist
-	github-release release \
-	--security-token $$GH_LOGIN \
-	--user segmentio \
-	--repo aws-okta \
-	--tag $(VERSION) \
-	--name $(VERSION)
+test: | govendor
+	govendor sync
+	go test -v ./...
 
-	github-release upload \
-	--security-token $$GH_LOGIN \
-	--user segmentio \
-	--repo aws-okta \
-	--tag $(VERSION) \
-	--name aws-okta-$(VERSION)-linux-amd64 \
-	--file dist/aws-okta-$(VERSION)-linux-amd64
-
-release-mac: gh-release govendor clean dist-mac
-	github-release upload \
-	--security-token $$GH_LOGIN \
-	--user segmentio \
-	--repo aws-okta \
-	--tag $(VERSION) \
-	--name aws-okta-$(VERSION)-darwin-amd64 \
-	--file dist/aws-okta-$(VERSION)-darwin-amd64
+all: dist/aws-okta-$(VERSION)-darwin-amd64 dist/aws-okta-$(VERSION)-linux-amd64
 
 clean:
 	rm -rf ./dist
 
-dist:
-	mkdir dist
-	govendor sync
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o dist/aws-okta-$(VERSION)-linux-amd64
+dist/:
+	mkdir -p dist
 
-dist-mac:
-	mkdir dist
+dist/aws-okta-$(VERSION)-darwin-amd64: | govendor dist/
 	govendor sync
-	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o dist/aws-okta-$(VERSION)-darwin-amd64
+	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $@
 
-gh-release:
-	go get -u github.com/aktau/github-release
+dist/aws-okta-$(VERSION)-linux-amd64: | govendor dist/
+	govendor sync
+	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $@
 
 govendor:
 	go get -u github.com/kardianos/govendor
+
+.PHONY: clean all govendor
