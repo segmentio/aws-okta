@@ -11,7 +11,7 @@ jobs:
           command: |
             make test
 
-  dist:
+  dist-linux:
     docker:
       - image: circleci/golang:1.10
     working_directory: /go/src/github.com/segmentio/aws-okta
@@ -24,12 +24,12 @@ jobs:
       - run:
           name: Make distributables
           command: |
-            make -f Makefile.release dist
+            make -f Makefile.release dist-linux
       - persist_to_workspace:
           root: .
           paths: ['dist/*']
 
-  publish:
+  publish-linux:
     docker:
       - image: circleci/golang:1.10
     working_directory: /go/src/github.com/segmentio/aws-okta
@@ -49,21 +49,21 @@ jobs:
       - run:
           name: Release
           command: |
-            make -f Makefile.release publish
+            make -f Makefile.release publish-linux
 
 workflows:
   version: 2
-  test-dist-publish:
+  test-dist-publish-linux:
     jobs:
       - test
-      - dist:
+      - dist-linux:
           # needed to ensure dist happens on tag events
           filters:
             tags:
               only: /.*/
-      - publish:
+      - publish-linux:
           requires:
-            - dist
+            - dist-linux
           filters:
             # never publish from a branch event
             branches:

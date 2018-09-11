@@ -23,7 +23,14 @@ PACKAGECLOUD_RPM_DISTROS := \
 
 publish: publish-github publish-packagecloud
 
-publish-github: publish-github-darwin publish-github-linux publish-github-deb publish-github-rpm publish-github-sha256sums
+# note: this doesn't include sha256sums
+publish-linux: publish-github-linux publish-packagecloud
+
+publish-github: publish-github-darwin publish-github-linux publish-github-sha256sums
+
+publish-github-darwin: publish-github-darwin-bin
+
+publish-github-linux: publish-github-linux-bin publish-github-deb publish-github-rpm
 
 publish-packagecloud: publish-packagecloud-deb publish-packagecloud-rpm
 
@@ -36,7 +43,7 @@ github-release:
 	--tag $(VERSION) \
 	--name $(VERSION)
 
-publish-github-darwin: dist/aws-okta-$(VERSION)-darwin-amd64 | github-release
+publish-github-darwin-bin: dist/aws-okta-$(VERSION)-darwin-amd64 | github-release
 	github-release upload \
 	--security-token $$GH_LOGIN \
 	--user segmentio \
@@ -45,7 +52,7 @@ publish-github-darwin: dist/aws-okta-$(VERSION)-darwin-amd64 | github-release
 	--name aws-okta-$(VERSION)-darwin-amd64 \
 	--file $<
 
-publish-github-linux: dist/aws-okta-$(VERSION)-linux-amd64 | github-release
+publish-github-linux-bin: dist/aws-okta-$(VERSION)-linux-amd64 | github-release
 	github-release upload \
 	--security-token $$GH_LOGIN \
 	--user segmentio \
@@ -99,7 +106,11 @@ publish-packagecloud-rpm: dist/aws-okta_$(VERSION)_amd64.rpm packagecloud.conf.j
 			grep -v 'with token:' ; \
 	done
 
-dist: dist/aws-okta-$(VERSION)-darwin-amd64 dist/aws-okta-$(VERSION)-linux-amd64 dist/aws-okta_$(VERSION)_amd64.deb dist/aws-okta_$(VERSION)_amd64.rpm dist/aws-okta-$(VERSION).sha256sums
+dist: dist-darwin dist-linux dist/aws-okta-$(VERSION).sha256sums
+
+dist-darwin: dist/aws-okta-$(VERSION)-darwin-amd64
+	
+dist-linux: dist/aws-okta-$(VERSION)-linux-amd64 dist/aws-okta_$(VERSION)_amd64.deb dist/aws-okta_$(VERSION)_amd64.rpm
 
 dist/aws-okta-$(VERSION).sha256sums: dist/aws-okta-$(VERSION)-darwin-amd64 dist/aws-okta-$(VERSION)-linux-amd64 dist/aws-okta_$(VERSION)_amd64.deb dist/aws-okta_$(VERSION)_amd64.rpm
 	sha256sum $^ | sed 's|dist/||g' > $@
@@ -114,9 +125,15 @@ dist/aws-okta_$(VERSION)_amd64.rpm: dist/nfpm-$(VERSION).yaml dist/aws-okta-$(VE
 	nfpm -f $< pkg --target $@
 
 .PHONY: \
+	dist \
+	dist-darwin \
+	dist-linux \
+	publish \
 	publish-github \
 	publish-github-linux \
+	publish-github-linux-bin \
 	publish-github-rpm \
 	publish-github-deb \
 	publish-github-darwin \
+	publish-github-darwin-bin \
 	github-release
