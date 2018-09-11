@@ -53,6 +53,9 @@ jobs:
 
 workflows:
   version: 2
+  # currently we only build/publish for linux: macOS builds require non-FOSS
+  # Keychain libs that require a macOS host to build on
+  # https://github.com/segmentio/aws-okta/issues/81
   test-dist-publish-linux:
     jobs:
       - test
