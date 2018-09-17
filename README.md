@@ -153,6 +153,56 @@ If you have a single MFA factor configured, that factor will be automatically se
 * Specify with environment variables `AWS_OKTA_MFA_PROVIDER` and `AWS_OKTA_MFA_FACTOR_TYPE`
 * Specify in your aws config with `mfa_provider` and `mfa_factor_type`
 
+#### Configuring for app-level MFA
+
+Okta's SAML integration will not work if the Okta app has app-level MFA
+requirements. Using an OpenID Connect integration instead enables using
+`aws-okta` with app-level MFA.
+
+This is only recommended for profiles for which you want to enable app-level
+MFA, because it requires opening a browser tab even if MFA is not required.
+
+Follow these steps to use OpenID Connect integration with `aws-okta`.
+
+* Create a **Native** Okta app, with *OpenID Connect* sign on method
+* Specify `http://127.0.0.1:5556/auth/okta/callback` as redirect URI
+* Enable MFA on every sign-on for this Okta app
+* Replace `aws_saml_url` with `oidc_app_id = <ClientID>` in your
+  `~/.aws/config` file, where `<ClientID>` is the *Client ID* of the created
+  Okta app (it is also the app's own ID in Okta).
+* [Create an OpenID Connect Identity Provider for Okta in AWS][1]
+  * Use the same ID that you used for `<ClientID>` before as the *Audience*
+* Modify your existing AWS IAM role's trust relationship to include the
+  statement shown below, or create a new role using the [*Prerequisites for
+  Creating a Role for Web Identity or OIDC* guide][2].
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { .. Your existing statement .. },
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "<Open ID Connect Identity Provider ARN>"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "<Your domain>.okta.com:aud": "<Client/Audience ID>"
+        }
+      }
+    }
+  ]
+}
+```
+
+With this set up, every time your session expires, you'll be directed to your
+browser to complete the login and MFA. Once you've done so, you'll be directed
+back to the terminal (only on macOS) to continue using the CLI. Unfortunately
+Okta APIs do not directly support app-level MFA, which is why opening the
+browser is required.
+
 ## Backends
 
 We use 99design's keyring package that they use in `aws-vault`.  Because of this, you can choose between different pluggable secret storage backends just like in `aws-vault`.  You can either set your backend from the command line as a flag, or set the `AWS_OKTA_BACKEND` environment variable.
@@ -186,3 +236,6 @@ We use the following multiple step authentication:
 - Step 3 : Get AWS SAML assertion from Okta
 - Step 4 : Assume base okta role from profile with the SAML Assertion
 - Step 5 : Assume the requested AWS Role from the targeted AWS account to generate STS credentials
+
+[1]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html
+[2]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-idp_oidc.html#idp_oidc_Prerequisites

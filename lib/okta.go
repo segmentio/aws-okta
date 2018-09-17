@@ -38,6 +38,10 @@ func (c *OktaCreds) Validate(mfaConfig MFAConfig) error {
 	return nil
 }
 
+type OktaClient interface {
+	AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, error)
+}
+
 type OktaProvider struct {
 	Keyring         keyring.Keyring
 	ProfileARN      string
@@ -47,6 +51,7 @@ type OktaProvider struct {
 	// to be stored in the keyring.
 	OktaSessionCookieKey string
 	MFAConfig            MFAConfig
+	OIDCAppID            string
 }
 
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
@@ -62,7 +67,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 		return sts.Credentials{}, "", errors.New("Failed to get okta credentials from your keyring.  Please make sure you have added okta credentials with `aws-okta add`")
 	}
 
-	oktaClient, err := NewOktaSAMLClient(oktaCreds, p.OktaAwsSAMLUrl, p.Keyring, p.MFAConfig, p.OktaSessionCookieKey)
+	oktaClient, err := p.getOktaClient(oktaCreds)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
@@ -109,4 +114,13 @@ func (p *OktaProvider) GetSAMLLoginURL() (*url.URL, error) {
 	}
 
 	return fullSamlURL, nil
+}
+
+func (p *OktaProvider) getOktaClient(oktaCreds OktaCreds) (OktaClient, error) {
+	if p.OIDCAppID != "" {
+		log.Debug("OIDC App ID set. Using OICD client.")
+		return NewOktaOIDCClient(oktaCreds, p.OIDCAppID)
+	}
+	log.Debug("Using SAML client")
+	return NewOktaSAMLClient(oktaCreds, p.OktaAwsSAMLUrl, p.Keyring, p.MFAConfig, p.OktaSessionCookieKey)
 }

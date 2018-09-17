@@ -147,6 +147,12 @@
 			"revisionTime": "2017-03-23T00:38:48Z"
 		},
 		{
+			"checksumSHA1": "M/jcCsaMfdZ077Si1jYroIVYUOw=",
+			"path": "github.com/coreos/go-oidc",
+			"revision": "8ae1da518bd4d9d5a5909090a184af30f336436d",
+			"revisionTime": "2018-06-04T23:26:25Z"
+		},
+		{
 			"checksumSHA1": "vvFDcA+qQlBPrJjKEYQCHVBS9xQ=",
 			"path": "github.com/danieljoos/wincred",
 			"revision": "412b574fb496839b312a75fba146bd32a89001cf",
@@ -275,6 +281,12 @@
 			"revisionTime": "2016-12-03T19:45:07Z"
 		},
 		{
+			"checksumSHA1": "VQ8m0ncYJSbzslI7nVjiAdGEOeQ=",
+			"path": "github.com/pkg/browser",
+			"revision": "c90ca0c84f15f81c982e32665bffd8d7aac8f097",
+			"revisionTime": "2017-05-05T12:59:00Z"
+		},
+		{
 			"checksumSHA1": "8xpFdZVp0QVAhbq20SJEb4qTcEk=",
 			"path": "github.com/segmentio/analytics-go",
 			"revision": "4f08212e9b32c48b4a4d20997d3f90dc0b56eba8",
@@ -337,8 +349,10 @@
 			"revisionTime": "2017-02-26T03:24:21Z"
 		},
 		{
+			"checksumSHA1": "GtamqiJoL7PGHsN454AoffBFMa8=",
 			"path": "golang.org/x/net/context",
-			"revision": ""
+			"revision": "26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2",
+			"revisionTime": "2018-09-11T21:37:47Z"
 		},
 		{
 			"checksumSHA1": "vqc3a+oTUGX8PmD0TS+qQ7gmN8I=",

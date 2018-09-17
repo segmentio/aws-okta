@@ -23,6 +23,9 @@ const (
 
 	DefaultSessionDuration    = time.Hour * 4
 	DefaultAssumeRoleDuration = time.Minute * 15
+
+	OktaAwsSAMLUrlKey = "aws_saml_url"
+	OktaOIDCAppIdKey  = "oidc_app_id"
 )
 
 type ProviderOptions struct {
@@ -135,12 +138,12 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	return value, nil
 }
 
-func (p *Provider) getSamlURL() (string, error) {
-	oktaAwsSAMLUrl, profile, err := p.profiles.GetValue(p.profile, "aws_saml_url")
+func (p *Provider) findFromProfile(key string) (string, error) {
+	oktaAwsSAMLUrl, profile, err := p.profiles.GetValue(p.profile, key)
 	if err != nil {
-		return "", errors.New("aws_saml_url missing from ~/.aws/config")
+		return "", fmt.Errorf("%s missing from ~/.aws/config", key)
 	}
-	log.Debugf("Using aws_saml_url from profile: %s", profile)
+	log.Debugf("Using %s from profile: %s", key, profile)
 	return oktaAwsSAMLUrl, nil
 }
 
@@ -155,15 +158,23 @@ func (p *Provider) getOktaSessionCookieKey() string {
 
 func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	source := sourceProfile(p.profile, p.profiles)
-	oktaAwsSAMLUrl, err := p.getSamlURL()
-	if err != nil {
-		return sts.Credentials{}, err
-	}
 	oktaSessionCookieKey := p.getOktaSessionCookieKey()
-
 	profileARN, ok := p.profiles[source]["role_arn"]
 	if !ok {
 		return sts.Credentials{}, errors.New("Source profile must provide `role_arn`")
+	}
+
+	oktaAwsSAMLUrl, err := p.findFromProfile(OktaAwsSAMLUrlKey)
+	if err != nil {
+		log.Debug(err.Error())
+	}
+	oidcAppID, err := p.findFromProfile(OktaOIDCAppIdKey)
+	if err != nil {
+		log.Debug(err.Error())
+	}
+	if oktaAwsSAMLUrl == "" && oidcAppID == "" {
+		return sts.Credentials{}, fmt.Errorf("Either %s or %s has to be specified",
+			OktaAwsSAMLUrlKey, OktaOIDCAppIdKey)
 	}
 
 	provider := OktaProvider{
@@ -173,6 +184,7 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 		SessionDuration:      p.SessionDuration,
 		OktaAwsSAMLUrl:       oktaAwsSAMLUrl,
 		OktaSessionCookieKey: oktaSessionCookieKey,
+		OIDCAppID:            oidcAppID,
 	}
 
 	creds, oktaUsername, err := provider.Retrieve()
@@ -186,7 +198,7 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 
 func (p *Provider) GetSAMLLoginURL() (*url.URL, error) {
 	source := sourceProfile(p.profile, p.profiles)
-	oktaAwsSAMLUrl, err := p.getSamlURL()
+	oktaAwsSAMLUrl, err := p.findFromProfile(OktaAwsSAMLUrlKey)
 	if err != nil {
 		return &url.URL{}, err
 	}
