@@ -35,7 +35,7 @@ const (
 	Timeout = time.Duration(60 * time.Second)
 )
 
-type OktaClient struct {
+type OktaSAMLClient struct {
 	// Organization will be deprecated in the future
 	Organization    string
 	Username        string
@@ -73,8 +73,8 @@ type OktaCreds struct {
 }
 
 func (c *OktaCreds) Validate(mfaConfig MFAConfig) error {
-	// OktaClient assumes we're doing some AWS SAML calls, but Validate doesn't
-	o, err := NewOktaClient(*c, "", "", mfaConfig)
+	// NewOktaSAMLClient assumes we're doing some AWS SAML calls, but Validate doesn't
+	o, err := NewOktaSAMLClient(*c, "", "", mfaConfig)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func getOktaDomain(region string) (string, error) {
 	return "", fmt.Errorf("invalid region %s", region)
 }
 
-func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string, mfaConfig MFAConfig) (*OktaClient, error) {
+func NewOktaSAMLClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string, mfaConfig MFAConfig) (*OktaSAMLClient, error) {
 	var domain string
 
 	// maintain compatibility for deprecated creds.Organization
@@ -107,7 +107,7 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 	} else if creds.Domain != "" {
 		domain = creds.Domain
 	} else {
-		return &OktaClient{}, errors.New("either creds.Organization (deprecated) or creds.Domain must be set, but not both. To remedy this, re-add your credentials with `aws-okta add`")
+		return &OktaSAMLClient{}, errors.New("either creds.Organization (deprecated) or creds.Domain must be set, but not both. To remedy this, re-add your credentials with `aws-okta add`")
 	}
 
 	// url parse & set base
@@ -132,7 +132,7 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 		})
 	}
 
-	return &OktaClient{
+	return &OktaSAMLClient{
 		// Setting Organization for backwards compatibility
 		Organization:   creds.Organization,
 		Username:       creds.Username,
@@ -145,7 +145,7 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 	}, nil
 }
 
-func (o *OktaClient) AuthenticateUser() error {
+func (o *OktaSAMLClient) AuthenticateUser() error {
 	var oktaUserAuthn OktaUserAuthn
 
 	// Step 1 : Basic authentication
@@ -184,7 +184,7 @@ func (o *OktaClient) AuthenticateUser() error {
 	return nil
 }
 
-func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, string, error) {
+func (o *OktaSAMLClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, string, error) {
 
 	// Attempt to reuse session cookie
 	var assertion SAMLAssertion
@@ -238,7 +238,7 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 	return *samlResp.Credentials, sessionCookie, nil
 }
 
-func selectMFADeviceFromConfig(o *OktaClient) (*OktaUserAuthnFactor, error) {
+func selectMFADeviceFromConfig(o *OktaSAMLClient) (*OktaUserAuthnFactor, error) {
 	log.Debugf("MFAConfig: %v\n", o.MFAConfig)
 	if o.MFAConfig.Provider == "" || o.MFAConfig.FactorType == "" {
 		return nil, nil
@@ -255,7 +255,7 @@ func selectMFADeviceFromConfig(o *OktaClient) (*OktaUserAuthnFactor, error) {
 	return nil, fmt.Errorf("Failed to select MFA device with Provider = \"%s\", FactorType = \"%s\"", o.MFAConfig.Provider, o.MFAConfig.FactorType)
 }
 
-func (o *OktaClient) selectMFADevice() (*OktaUserAuthnFactor, error) {
+func (o *OktaSAMLClient) selectMFADevice() (*OktaUserAuthnFactor, error) {
 	factors := o.UserAuth.Embedded.Factors
 	if len(factors) == 0 {
 		return nil, errors.New("No available MFA Factors")
@@ -287,7 +287,7 @@ func (o *OktaClient) selectMFADevice() (*OktaUserAuthnFactor, error) {
 	return &factors[factorIdx], nil
 }
 
-func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, error) {
+func (o *OktaSAMLClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, error) {
 	var mfaCode string
 	var err error
 	//Software and Hardware based OTP Tokens
@@ -328,7 +328,7 @@ func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, 
 	return payload, nil
 }
 
-func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, oktaFactorId string) error {
+func (o *OktaSAMLClient) postChallenge(payload []byte, oktaFactorProvider string, oktaFactorId string) error {
 	//Initiate Push Notification
 	if o.UserAuth.Status == "MFA_CHALLENGE" {
 		f := o.UserAuth.Embedded.Factor
@@ -382,7 +382,7 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, ok
 	return nil
 }
 
-func (o *OktaClient) challengeMFA() (err error) {
+func (o *OktaSAMLClient) challengeMFA() (err error) {
 	var oktaFactorProvider string
 	var oktaFactorId string
 	var payload []byte
@@ -449,7 +449,7 @@ func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
 	return
 }
 
-func (o *OktaClient) Get(method string, path string, data []byte, recv interface{}, format string) (err error) {
+func (o *OktaSAMLClient) Get(method string, path string, data []byte, recv interface{}, format string) (err error) {
 	var res *http.Response
 	var body []byte
 	var header http.Header
@@ -550,7 +550,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 		sessionCookie = string(cookieItem.Data)
 	}
 
-	oktaClient, err := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie, p.MFAConfig)
+	oktaClient, err := NewOktaSAMLClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie, p.MFAConfig)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
