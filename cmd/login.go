@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/99designs/keyring"
+	"github.com/pkg/browser"
 	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
-	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 )
 
@@ -128,7 +128,7 @@ func oktaLogin(p *lib.Provider) error {
 
 	if Stdout {
 		fmt.Println(loginURL.String())
-	} else if err := open.Run(loginURL.String()); err != nil {
+	} else if err := browser.OpenURL(loginURL.String()); err != nil {
 		return err
 	}
 
@@ -202,7 +202,7 @@ func federatedLogin(p *lib.Provider, profile string, profiles lib.Profiles) erro
 
 	if Stdout {
 		fmt.Println(loginURL)
-	} else if err = open.Run(loginURL); err != nil {
+	} else if err = browser.OpenURL(loginURL); err != nil {
 		return err
 	}
 
