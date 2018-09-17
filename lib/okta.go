@@ -26,7 +26,7 @@ type OktaCreds struct {
 
 func (c *OktaCreds) Validate(mfaConfig MFAConfig) error {
 	// NewOktaSAMLClient assumes we're doing some AWS SAML calls, but Validate doesn't
-	o, err := NewOktaSAMLClient(*c, "", "", mfaConfig)
+	o, err := NewOktaSAMLClient(*c, "", nil, mfaConfig, "")
 	if err != nil {
 		return err
 	}
@@ -62,31 +62,15 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 		return sts.Credentials{}, "", errors.New("Failed to get okta credentials from your keyring.  Please make sure you have added okta credentials with `aws-okta add`")
 	}
 
-	// Check for stored session cookie
-	var sessionCookie string
-	cookieItem, err := p.Keyring.Get(p.OktaSessionCookieKey)
-	if err == nil {
-		sessionCookie = string(cookieItem.Data)
-	}
-
-	oktaClient, err := NewOktaSAMLClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie, p.MFAConfig)
+	oktaClient, err := NewOktaSAMLClient(oktaCreds, p.OktaAwsSAMLUrl, p.Keyring, p.MFAConfig, p.OktaSessionCookieKey)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
 
-	creds, newSessionCookie, err := oktaClient.AuthenticateProfile(p.ProfileARN, p.SessionDuration)
+	creds, err := oktaClient.AuthenticateProfile(p.ProfileARN, p.SessionDuration)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
-
-	newCookieItem := keyring.Item{
-		Key:                         p.OktaSessionCookieKey,
-		Data:                        []byte(newSessionCookie),
-		Label:                       "okta session cookie",
-		KeychainNotTrustApplication: false,
-	}
-
-	p.Keyring.Set(newCookieItem)
 
 	return creds, oktaCreds.Username, err
 }
