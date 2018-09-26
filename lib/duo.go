@@ -244,7 +244,7 @@ func (d *DuoClient) DoStatus(txid, sid string) (auth string, err error) {
 	if status.Response.Result == "SUCCESS" {
 		if status.Response.ResultURL != "" {
 			auth, err = d.DoRedirect(status.Response.ResultURL, sid)
-		} else if status.Response.Cookie != ""  {
+		} else {
 			auth = status.Response.Cookie
 		}
 	}
