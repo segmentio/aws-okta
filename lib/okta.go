@@ -447,7 +447,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	log.Debug("using okta provider")
 	item, err := p.Keyring.Get("okta-creds")
 	if err != nil {
-		log.Debug("couldnt get okta creds from keyring: %s", err)
+		log.Debugf("couldnt get okta creds from keyring: %s", err)
 		return sts.Credentials{}, "", err
 	}
 
