@@ -1,10 +1,12 @@
 package lib
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	uniformResourceLocator "net/url"
@@ -16,6 +18,7 @@ type DuoClient struct {
 	Host       string
 	Signature  string
 	Callback   string
+	Device     string
 	StateToken string
 }
 
@@ -50,6 +53,7 @@ func NewDuoClient(host, signature, callback string) *DuoClient {
 	return &DuoClient{
 		Host:      host,
 		Signature: signature,
+		Device:    "phone1",
 		Callback:  callback,
 	}
 }
@@ -79,22 +83,28 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 		return
 	}
 
-	_, err = d.DoStatus(txid, sid)
+	auth, err = d.DoStatus(txid, sid)
 	if err != nil {
 		return
 	}
 
-	// This one should block untile 2fa completed
-	auth, err = d.DoStatus(txid, sid)
-	if err != nil {
-		return
+	// So, turns out that if you call DoStatus in
+	// Duo's token mode, it will return an auth token
+	// immediately if successful, because it's a single check
+	// but for Push you get empty value and have to
+	// wait on second response post-push
+	if auth == "" {
+		// This one should block untile 2fa completed
+		auth, err = d.DoStatus(txid, sid)
+		if err != nil {
+			return
+		}
 	}
 
 	err = d.DoCallback(auth)
 	if err != nil {
 		return
 	}
-
 	return
 }
 
@@ -169,15 +179,34 @@ func (d *DuoClient) DoAuth(tx string, inputSid string, inputCertsURL string) (si
 // The functions returns the Duo transaction ID which is different from
 // the Okta transaction ID
 func (d *DuoClient) DoPrompt(sid string) (txid string, err error) {
-	var req *http.Request
+	var (
+		req        *http.Request
+		promptData string
+	)
 
 	url := "https://" + d.Host + "/frame/prompt"
 
 	client := &http.Client{}
 
-	//TODO: Here we automatically use Duo Push. The user should be able to choose
-	//between Duo Push and the Yubikey ("&device=u2f_token&factor=U2F+Token")
-	promptData := "sid=" + sid + "&device=phone1&factor=Duo+Push&out_of_date=False"
+	// Pick between device you want to use -- the flow are bit different depending on
+	// whether you want to use a token or a phone of some sort
+	// it may make sense to make a selector in CLI similar to the Okta UI but
+	// I'm not certain that belongs here
+	if d.Device == "token" {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Press button on your hardware token: ")
+		text, err := reader.ReadString('\n')
+		if err != nil {
+			return "", fmt.Errorf("Failed to read the stdin for hardware token auth: %s", err)
+		}
+		text = strings.TrimSpace(text)
+		//fmt.Println(text)
+
+		promptData = "sid=" + sid + "&device=token&factor=Passcode&passcode=" + text + "&out_of_date=False&days_out_of_date=0"
+	} else {
+		promptData = "sid=" + sid + "&device=" + d.Device + "&factor=Duo+Push&out_of_date=False"
+	}
+
 	req, err = http.NewRequest("POST", url, bytes.NewReader([]byte(promptData)))
 	if err != nil {
 		return

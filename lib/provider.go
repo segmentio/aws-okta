@@ -25,6 +25,7 @@ const (
 )
 
 type ProviderOptions struct {
+	MFADevice          string
 	SessionDuration    time.Duration
 	AssumeRoleDuration time.Duration
 	ExpiryWindow       time.Duration
@@ -158,6 +159,7 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	}
 
 	provider := OktaProvider{
+		MFADevice:       p.ProviderOptions.MFADevice,
 		Keyring:         p.keyring,
 		ProfileARN:      profileARN,
 		SessionDuration: p.SessionDuration,

@@ -33,6 +33,7 @@ type OktaClient struct {
 	Password        string
 	UserAuth        *OktaUserAuthn
 	DuoClient       *DuoClient
+	MFADevice       string
 	AccessKeyId     string
 	SecretAccessKey string
 	SessionToken    string
@@ -55,7 +56,7 @@ type OktaCreds struct {
 
 func (c *OktaCreds) Validate() error {
 	// OktaClient assumes we're doing some AWS SAML calls, but Validate doesn't
-	o, err := NewOktaClient(*c, "", "")
+	o, err := NewOktaClient(*c, "", "", "")
 	if err != nil {
 		return err
 	}
@@ -67,7 +68,7 @@ func (c *OktaCreds) Validate() error {
 	return nil
 }
 
-func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string) (*OktaClient, error) {
+func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string, mfaDevice string) (*OktaClient, error) {
 	base, err := url.Parse(fmt.Sprintf(
 		"https://%s.%s", creds.Organization, OktaServer,
 	))
@@ -96,6 +97,7 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string)
 		OktaAwsSAMLUrl: oktaAwsSAMLUrl,
 		CookieJar:      jar,
 		BaseURL:        base,
+		MFADevice:      mfaDevice,
 	}, nil
 }
 
@@ -217,7 +219,7 @@ func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, 
 	var mfaCode string
 	var err error
 	//Software and Hardware based OTP Tokens
-	if strings.Contains(oktaFactorType, "token") {
+	if strings.Contains(oktaFactorId, "token") {
 		log.Debug("Token MFA")
 		mfaCode, err = Prompt("Enter MFA Code", false)
 		if err != nil {
@@ -267,6 +269,7 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, ok
 					Host:       f.Embedded.Verification.Host,
 					Signature:  f.Embedded.Verification.Signature,
 					Callback:   f.Embedded.Verification.Links.Complete.Href,
+					Device:     o.MFADevice,
 					StateToken: o.UserAuth.StateToken,
 				}
 
@@ -289,15 +292,16 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, ok
 		for o.UserAuth.Status != "SUCCESS" {
 			select {
 			case duoErr := <-errChan:
+				log.Printf("Err: %s", duoErr)
 				if duoErr != nil {
-					return errors.New("Failed Duo challenge")
+					return fmt.Errorf("Failed Duo challenge. Err: %s", duoErr)
 				}
 			default:
 				err := o.Get("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify",
 					payload, &o.UserAuth, "json",
 				)
 				if err != nil {
-					return err
+					return fmt.Errorf("Failed authn verification for okta. Err: %s", err)
 				}
 			}
 			time.Sleep(2 * time.Second)
@@ -441,6 +445,7 @@ type OktaProvider struct {
 	ProfileARN      string
 	SessionDuration time.Duration
 	OktaAwsSAMLUrl  string
+	MFADevice       string
 }
 
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
@@ -463,7 +468,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 		sessionCookie = string(cookieItem.Data)
 	}
 
-	oktaClient, err := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie)
+	oktaClient, err := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie, p.MFADevice)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
