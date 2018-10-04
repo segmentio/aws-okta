@@ -269,6 +269,12 @@
 			"revisionTime": "2017-01-28T05:16:51Z"
 		},
 		{
+			"checksumSHA1": "YRLjKfRVsaCD7vydWyPOSHho3uc=",
+			"path": "github.com/marshallbrekka/go.hid",
+			"revision": "2c1c4616a9e71d08897a583653abca4b4ac55028",
+			"revisionTime": "2016-12-27T00:27:17Z"
+		},
+		{
 			"checksumSHA1": "V/quM7+em2ByJbWBLOsEwnY3j/Q=",
 			"path": "github.com/mitchellh/go-homedir",
 			"revision": "b8bc1bf767474819792c23f32d8286a45736f1c6",
