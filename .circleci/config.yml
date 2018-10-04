@@ -22,6 +22,11 @@ jobs:
           command: |
             sudo make -f Makefile.tools nfpm-debian rpmbuild-debian
       - run:
+          name: Install libusb
+          command: |
+            sudo apt update -q
+            sudo apt install -yq libusb-dev
+      - run:
           name: Make distributables
           command: |
             make -f Makefile.release dist-linux
@@ -39,11 +44,11 @@ jobs:
       - run:
           name: Install tools
           command: |
-            # this is required for the u2f to work linux & for package_cloud :/
-            sudo apt update -q
-            sudo apt install -yq ruby ruby-dev build-essential libusb-1.0.0-dev libusb-dev
-            # fixes https://askubuntu.com/questions/872399/error-failed-to-build-gem-native-extension-when-trying-to-download-rubocop
             make -f Makefile.tools github-release
+            # this is all for package_cloud :/
+            sudo apt update -q
+            sudo apt install -yq ruby ruby-dev build-essential
+            # fixes https://askubuntu.com/questions/872399/error-failed-to-build-gem-native-extension-when-trying-to-download-rubocop
             sudo gem install rake
             sudo make -f Makefile.tools package_cloud
       - run:
