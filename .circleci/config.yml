@@ -25,7 +25,7 @@ jobs:
           name: Install libusb
           command: |
             sudo apt update -q
-            sudo apt install -yq libusb-dev
+            sudo apt install -yq libusb-dev libusb-1.0.0-dev
       - run:
           name: Make distributables
           command: |
