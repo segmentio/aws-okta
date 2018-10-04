@@ -6,13 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
-	"net/http/httputil"
 	"os"
 	"strings"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 
 	"net/url"
 
@@ -67,6 +66,41 @@ func NewDuoClient(host, signature, callback string) *DuoClient {
 	}
 }
 
+type FacetResponse struct {
+	TrustedFacets []struct {
+		Ids     []string `json:"ids"`
+		Version struct {
+			Major int `json:"major"`
+			Minor int `json:"minor"`
+		} `json:"version"`
+	} `json:"trustedFacets"`
+}
+
+// U2F Signing Request returns some trusted urls that we need to lookup
+func (d *DuoClient) getTrustedFacet(appId string) (facetResponse *FacetResponse, err error) {
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", appId, nil)
+	if err != nil {
+		return
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+
+	facetResponse = &FacetResponse{}
+	err = json.NewDecoder(res.Body).Decode(facetResponse)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 // ChallengeU2F performs multiple call against an obscure Duo API.
 //
 // Normally you use an iframe to perform those calls but here the main idea is
@@ -100,12 +134,10 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 
 	if status.Response.StatusCode == "u2f_sent" {
 		var response *u2fhost.AuthenticateResponse
-		log.Printf("U2FResponse: %#v", status)
 		allDevices := u2fhost.Devices()
 		// Filter only the devices that can be opened.
 		openDevices := []u2fhost.Device{}
 		for i, device := range allDevices {
-			log.Printf("Device: %#v", device)
 			err := device.Open()
 			if err == nil {
 				openDevices = append(openDevices, allDevices[i])
@@ -118,19 +150,26 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 			return errors.New("no open u2f devices")
 		}
 
-		// Prompt the user to perform the registration request.
-		fmt.Println("\nTouch the U2F device you wish to register...")
+		// Prompt the user to perform the authentication request.
+		fmt.Println("\nTouch the button on the U2F device to authenticate...")
 		var (
 			err error
 		)
 		prompted := false
 		timeout := time.After(time.Second * 25)
 		interval := time.NewTicker(time.Millisecond * 250)
+		facet := ""
+		facetResponse, err := d.getTrustedFacet(status.Response.U2FSignRequest[0].AppID)
+		if err != nil {
+			return fmt.Errorf("failed to get trusted facets for u2f device. Err: %s", err)
+		}
+		// TODO: do more error checks
+		facet = facetResponse.TrustedFacets[0].Ids[0]
 		var req = &u2fhost.AuthenticateRequest{
 			Challenge: status.Response.U2FSignRequest[0].Challenge,
 			AppId:     status.Response.U2FSignRequest[0].AppID,
 			KeyHandle: status.Response.U2FSignRequest[0].KeyHandle,
-			//Facet:     status.Response.U2FSignRequest[0].Facet,
+			Facet:     facet,
 		}
 		defer interval.Stop()
 		for {
@@ -146,7 +185,7 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 					response, err = device.Authenticate(req)
 					if err == nil {
 						log.Printf("Got error from device, skipping: %s", err)
-					} else if _, ok := err.(u2fhost.TestOfUserPresenceRequiredError); ok && !prompted {
+					} else if _, ok := err.(*u2fhost.TestOfUserPresenceRequiredError); ok && !prompted {
 						fmt.Println("\nTouch the flashing U2F device to authenticate...\n")
 						prompted = true
 					} else {
@@ -156,7 +195,7 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 				}
 			}
 		}
-		log.Printf("response: %#v", response)
+		//log.Debugf("response: %#v", response)
 		//if response != nil {
 		txid, err = d.DoU2FPromptFinal(sid, status.Response.U2FSignRequest[0].SessionID, response)
 		if err != nil {
@@ -171,7 +210,6 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 	// but for Push you get empty value and have to
 	// wait on second response post-push
 	if auth == "" {
-		log.Println("here")
 		// This one should block untile 2fa completed
 		auth, _, err = d.DoStatus(txid, sid)
 		if err != nil {
@@ -306,32 +344,19 @@ func (d *DuoClient) DoU2FPromptFinal(sid string, sessionID string, resp *u2fhost
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("X-Requested-With", "XMLHttpRequest")
 
-	dump, _ := httputil.DumpRequest(req, true)
-
-	log.Printf("dump %v", string(dump))
-
 	res, err := client.Do(req)
 	if err != nil {
 		return
 	}
 	defer res.Body.Close()
 
-	out, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return
-	}
-	log.Printf("response: %s", out)
-
-	log.Printf("status Code: %d", res.StatusCode)
 	if res.StatusCode != http.StatusOK {
 		err = fmt.Errorf("Prompt request failed: %d", res.StatusCode)
 		return
 	}
-	log.Println("here")
 
 	var status PromptResp
-	//err = json.NewDecoder(res.Body).Decode(&status)
-	err = json.Unmarshal([]byte(out), &status)
+	err = json.NewDecoder(res.Body).Decode(&status)
 
 	txid = status.Response.Txid
 
@@ -433,14 +458,7 @@ func (d *DuoClient) DoStatus(txid, sid string) (auth string, status StatusResp, 
 		return
 	}
 
-	out, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return
-	}
-	log.Printf("response: %s", out)
-
-	//err = json.NewDecoder(res.Body).Decode(&status)
-	err = json.Unmarshal([]byte(out), &status)
+	err = json.NewDecoder(res.Body).Decode(&status)
 
 	if status.Response.Result == "SUCCESS" {
 		if status.Response.ResultURL != "" {
