@@ -7,6 +7,11 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install linux dependencies - libusb
+          command:
+            sudo apt update -q
+            sudo apt install -yq libusb-dev libusb-1.0.0-dev
+      - run:
           name: Test
           command: |
             make test
