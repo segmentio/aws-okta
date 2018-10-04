@@ -257,6 +257,18 @@
 			"revisionTime": "2017-01-28T05:16:51Z"
 		},
 		{
+			"checksumSHA1": "AlTh58nkLM7k2dzV0ZKGy0/N+wA=",
+			"path": "github.com/marshallbrekka/go-u2fhost/bytes",
+			"revision": "72b0e7a3f583583996b3b382d2dfaa81fdc4b82c",
+			"revisionTime": "2017-01-28T05:16:51Z"
+		},
+		{
+			"checksumSHA1": "gZLz/NbmeZfwd09MMZJxCC5p9nE=",
+			"path": "github.com/marshallbrekka/go-u2fhost/hid",
+			"revision": "72b0e7a3f583583996b3b382d2dfaa81fdc4b82c",
+			"revisionTime": "2017-01-28T05:16:51Z"
+		},
+		{
 			"checksumSHA1": "V/quM7+em2ByJbWBLOsEwnY3j/Q=",
 			"path": "github.com/mitchellh/go-homedir",
 			"revision": "b8bc1bf767474819792c23f32d8286a45736f1c6",
