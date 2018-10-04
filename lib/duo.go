@@ -185,7 +185,8 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 						log.Printf("Authentication succeeded, continuing")
 					} else if _, ok := err.(*u2fhost.TestOfUserPresenceRequiredError); ok {
 						if !prompted {
-							fmt.Println("\nTouch the flashing U2F device to authenticate...\n")
+							fmt.Println("Touch the flashing U2F device to authenticate...")
+							fmt.Println()
 						}
 						prompted = true
 					} else {
