@@ -150,8 +150,6 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 			return errors.New("no open u2f devices")
 		}
 
-		// Prompt the user to perform the authentication request.
-		fmt.Println("\nTouch the button on the U2F device to authenticate...")
 		var (
 			err error
 		)
@@ -184,9 +182,11 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 				for _, device := range openDevices {
 					response, err = device.Authenticate(req)
 					if err == nil {
-						log.Printf("Got error from device, skipping: %s", err)
-					} else if _, ok := err.(*u2fhost.TestOfUserPresenceRequiredError); ok && !prompted {
-						fmt.Println("\nTouch the flashing U2F device to authenticate...\n")
+						log.Printf("Authentication succeeded, continuing")
+					} else if _, ok := err.(*u2fhost.TestOfUserPresenceRequiredError); ok {
+						if !prompted {
+							fmt.Println("\nTouch the flashing U2F device to authenticate...\n")
+						}
 						prompted = true
 					} else {
 						fmt.Printf("Got status response %#v\n", err)
@@ -197,7 +197,7 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 		}
 		//log.Debugf("response: %#v", response)
 		//if response != nil {
-		txid, err = d.DoU2FPromptFinal(sid, status.Response.U2FSignRequest[0].SessionID, response)
+		txid, err = d.DoU2FPromptFinish(sid, status.Response.U2FSignRequest[0].SessionID, response)
 		if err != nil {
 			return fmt.Errorf("Failed on U2F_final. Err: %s", err)
 		}
@@ -302,7 +302,7 @@ func (d *DuoClient) DoAuth(tx string, inputSid string, inputCertsURL string) (si
 //
 // The functions returns the Duo transaction ID which is different from
 // the Okta transaction ID
-func (d *DuoClient) DoU2FPromptFinal(sid string, sessionID string, resp *u2fhost.AuthenticateResponse) (txid string, err error) {
+func (d *DuoClient) DoU2FPromptFinish(sid string, sessionID string, resp *u2fhost.AuthenticateResponse) (txid string, err error) {
 	var (
 		req        *http.Request
 		promptData string
