@@ -8,7 +8,7 @@ jobs:
       - checkout
       - run:
           name: Install linux dependencies - libusb
-          command:
+          command: |
             sudo apt update -q
             sudo apt install -yq libusb-dev libusb-1.0.0-dev
       - run:
