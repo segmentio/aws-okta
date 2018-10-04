@@ -251,6 +251,12 @@
 			"revisionTime": "2018-08-01T17:02:00Z"
 		},
 		{
+			"checksumSHA1": "5gr/jp09qcOuCFNuh5qwXkjB3lk=",
+			"path": "github.com/marshallbrekka/go-u2fhost",
+			"revision": "72b0e7a3f583583996b3b382d2dfaa81fdc4b82c",
+			"revisionTime": "2017-01-28T05:16:51Z"
+		},
+		{
 			"checksumSHA1": "V/quM7+em2ByJbWBLOsEwnY3j/Q=",
 			"path": "github.com/mitchellh/go-homedir",
 			"revision": "b8bc1bf767474819792c23f32d8286a45736f1c6",

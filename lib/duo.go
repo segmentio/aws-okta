@@ -4,10 +4,19 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"strings"
+	"time"
+
+	"net/url"
+
+	u2fhost "github.com/marshallbrekka/go-u2fhost"
 
 	uniformResourceLocator "net/url"
 
@@ -70,6 +79,7 @@ func NewDuoClient(host, signature, callback string) *DuoClient {
 // TODO: Use a Context to gracefully shutdown the thing and have a nice timeout
 func (d *DuoClient) ChallengeU2f() (err error) {
 	var sid, tx, txid, auth string
+	var status = StatusResp{}
 
 	tx = strings.Split(d.Signature, ":")[0]
 
@@ -83,9 +93,76 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 		return
 	}
 
-	auth, err = d.DoStatus(txid, sid)
+	auth, status, err = d.DoStatus(txid, sid)
 	if err != nil {
 		return
+	}
+
+	if status.Response.StatusCode == "u2f_sent" {
+		var response *u2fhost.AuthenticateResponse
+		log.Printf("U2FResponse: %#v", status)
+		allDevices := u2fhost.Devices()
+		// Filter only the devices that can be opened.
+		openDevices := []u2fhost.Device{}
+		for i, device := range allDevices {
+			log.Printf("Device: %#v", device)
+			err := device.Open()
+			if err == nil {
+				openDevices = append(openDevices, allDevices[i])
+				defer func(i int) {
+					allDevices[i].Close()
+				}(i)
+			}
+		}
+		if len(openDevices) == 0 {
+			return errors.New("no open u2f devices")
+		}
+
+		// Prompt the user to perform the registration request.
+		fmt.Println("\nTouch the U2F device you wish to register...")
+		var (
+			err error
+		)
+		prompted := false
+		timeout := time.After(time.Second * 25)
+		interval := time.NewTicker(time.Millisecond * 250)
+		var req = &u2fhost.AuthenticateRequest{
+			Challenge: status.Response.U2FSignRequest[0].Challenge,
+			AppId:     status.Response.U2FSignRequest[0].AppID,
+			KeyHandle: status.Response.U2FSignRequest[0].KeyHandle,
+			//Facet:     status.Response.U2FSignRequest[0].Facet,
+		}
+		defer interval.Stop()
+		for {
+			if response != nil {
+				break
+			}
+			select {
+			case <-timeout:
+				fmt.Println("Failed to get registration response after 25 seconds")
+				break
+			case <-interval.C:
+				for _, device := range openDevices {
+					response, err = device.Authenticate(req)
+					if err == nil {
+						log.Printf("Got error from device, skipping: %s", err)
+					} else if _, ok := err.(u2fhost.TestOfUserPresenceRequiredError); ok && !prompted {
+						fmt.Println("\nTouch the flashing U2F device to authenticate...\n")
+						prompted = true
+					} else {
+						fmt.Printf("Got status response %#v\n", err)
+						break
+					}
+				}
+			}
+		}
+		log.Printf("response: %#v", response)
+		//if response != nil {
+		txid, err = d.DoU2FPromptFinal(sid, status.Response.U2FSignRequest[0].SessionID, response)
+		if err != nil {
+			return fmt.Errorf("Failed on U2F_final. Err: %s", err)
+		}
+		//}
 	}
 
 	// So, turns out that if you call DoStatus in
@@ -94,8 +171,9 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 	// but for Push you get empty value and have to
 	// wait on second response post-push
 	if auth == "" {
+		log.Println("here")
 		// This one should block untile 2fa completed
-		auth, err = d.DoStatus(txid, sid)
+		auth, _, err = d.DoStatus(txid, sid)
 		if err != nil {
 			return
 		}
@@ -106,6 +184,14 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 		return
 	}
 	return
+}
+
+// It's same as u2fhost.AuthenticateResponse but needs SessionID for Duo/Okta
+type ResponseData struct {
+	ClientData    string `json:"clientData"`
+	KeyHandle     string `json:"keyHandle"`
+	SessionID     string `json:"sessionId"`
+	SignatureData string `json:"signatureData"`
 }
 
 // DoAuth sends a POST request to the Duo /frame/web/v1/auth endpoint.
@@ -178,6 +264,84 @@ func (d *DuoClient) DoAuth(tx string, inputSid string, inputCertsURL string) (si
 //
 // The functions returns the Duo transaction ID which is different from
 // the Okta transaction ID
+func (d *DuoClient) DoU2FPromptFinal(sid string, sessionID string, resp *u2fhost.AuthenticateResponse) (txid string, err error) {
+	var (
+		req        *http.Request
+		promptData string
+	)
+
+	promptUrl := "https://" + d.Host + "/frame/prompt"
+
+	client := &http.Client{}
+
+	var respData = ResponseData{
+		SessionID:     sessionID,
+		KeyHandle:     resp.KeyHandle,
+		ClientData:    resp.ClientData,
+		SignatureData: resp.SignatureData,
+	}
+
+	respJSON, err := json.Marshal(respData)
+	if err != nil {
+		return
+	}
+
+	// Pick between device you want to use -- the flow are bit different depending on
+	// whether you want to use a token or a phone of some sort
+	// it may make sense to make a selector in CLI similar to the Okta UI but
+	// I'm not certain that belongs here
+	if d.Device == "u2f" {
+		promptData = "sid=" + sid + "&device=u2f_token&factor=u2f_finish&out_of_date=False&days_out_of_date=0&response_data=" + url.QueryEscape(string(respJSON))
+	} else {
+		err = fmt.Errorf("U2F Prompt final only applies to u2f devices, not %s", d.Device)
+		return
+	}
+
+	req, err = http.NewRequest("POST", promptUrl, bytes.NewReader([]byte(promptData)))
+	if err != nil {
+		return
+	}
+
+	req.Header.Add("Origin", "https://"+d.Host)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("X-Requested-With", "XMLHttpRequest")
+
+	dump, _ := httputil.DumpRequest(req, true)
+
+	log.Printf("dump %v", string(dump))
+
+	res, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+
+	out, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+	log.Printf("response: %s", out)
+
+	log.Printf("status Code: %d", res.StatusCode)
+	if res.StatusCode != http.StatusOK {
+		err = fmt.Errorf("Prompt request failed: %d", res.StatusCode)
+		return
+	}
+	log.Println("here")
+
+	var status PromptResp
+	//err = json.NewDecoder(res.Body).Decode(&status)
+	err = json.Unmarshal([]byte(out), &status)
+
+	txid = status.Response.Txid
+
+	return
+}
+
+// DoPrompt sends a POST request to the Duo /frame/promt endpoint
+//
+// The functions returns the Duo transaction ID which is different from
+// the Okta transaction ID
 func (d *DuoClient) DoPrompt(sid string) (txid string, err error) {
 	var (
 		req        *http.Request
@@ -203,6 +367,8 @@ func (d *DuoClient) DoPrompt(sid string) (txid string, err error) {
 		//fmt.Println(text)
 
 		promptData = "sid=" + sid + "&device=token&factor=Passcode&passcode=" + text + "&out_of_date=False&days_out_of_date=0"
+	} else if d.Device == "u2f" {
+		promptData = "sid=" + sid + "&device=u2f_token&factor=U2F+Token&out_of_date=False&days_out_of_date=0"
 	} else {
 		promptData = "sid=" + sid + "&device=" + d.Device + "&factor=Duo+Push&out_of_date=False"
 	}
@@ -239,7 +405,7 @@ func (d *DuoClient) DoPrompt(sid string) (txid string, err error) {
 //
 // The function returns the auth string required for the Okta Callback if
 // the request succeeded.
-func (d *DuoClient) DoStatus(txid, sid string) (auth string, err error) {
+func (d *DuoClient) DoStatus(txid, sid string) (auth string, status StatusResp, err error) {
 	var req *http.Request
 
 	url := "https://" + d.Host + "/frame/status"
@@ -267,8 +433,14 @@ func (d *DuoClient) DoStatus(txid, sid string) (auth string, err error) {
 		return
 	}
 
-	var status StatusResp
-	err = json.NewDecoder(res.Body).Decode(&status)
+	out, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return
+	}
+	log.Printf("response: %s", out)
+
+	//err = json.NewDecoder(res.Body).Decode(&status)
+	err = json.Unmarshal([]byte(out), &status)
 
 	if status.Response.Result == "SUCCESS" {
 		if status.Response.ResultURL != "" {
