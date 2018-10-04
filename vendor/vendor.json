@@ -269,6 +269,12 @@
 			"revisionTime": "2017-01-28T05:16:51Z"
 		},
 		{
+			"checksumSHA1": "YRLjKfRVsaCD7vydWyPOSHho3uc=",
+			"path": "github.com/marshallbrekka/go.hid",
+			"revision": "2c1c4616a9e71d08897a583653abca4b4ac55028",
+			"revisionTime": "2016-12-27T00:27:17Z"
+		},
+		{
 			"checksumSHA1": "V/quM7+em2ByJbWBLOsEwnY3j/Q=",
 			"path": "github.com/mitchellh/go-homedir",
 			"revision": "b8bc1bf767474819792c23f32d8286a45736f1c6",
@@ -311,6 +317,12 @@
 			"path": "github.com/vaughan0/go-ini",
 			"revision": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1",
 			"revisionTime": "2013-09-23T14:52:12Z"
+		},
+		{
+			"checksumSHA1": "slWRUAScaoYv/QZC1GOI2oxNSPo=",
+			"path": "github.com/vitaminwater/cgo.wchar",
+			"revision": "5dd6f4be3f2a8c064325fe63439975cf37a8aa1d",
+			"revisionTime": "2016-03-20T12:33:32Z"
 		},
 		{
 			"checksumSHA1": "LAL/r7KfCdqp4M6MM13+7NWsUNc=",
