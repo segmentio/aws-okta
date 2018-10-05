@@ -280,7 +280,7 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, ok
 				go func() {
 					log.Debug("challenge u2f")
 					log.Info("Sending Push Notification...")
-					err := o.DuoClient.ChallengeU2f()
+					err := o.DuoClient.ChallengeU2f(f.Embedded.Verification.Host)
 					if err != nil {
 						errChan <- err
 					}

@@ -111,7 +111,7 @@ func (d *DuoClient) getTrustedFacet(appId string) (facetResponse *FacetResponse,
 // call the callback url.
 //
 // TODO: Use a Context to gracefully shutdown the thing and have a nice timeout
-func (d *DuoClient) ChallengeU2f() (err error) {
+func (d *DuoClient) ChallengeU2f(verificationHost string) (err error) {
 	var sid, tx, txid, auth string
 	var status = StatusResp{}
 
@@ -156,13 +156,8 @@ func (d *DuoClient) ChallengeU2f() (err error) {
 		prompted := false
 		timeout := time.After(time.Second * 25)
 		interval := time.NewTicker(time.Millisecond * 250)
-		facet := ""
-		facetResponse, err := d.getTrustedFacet(status.Response.U2FSignRequest[0].AppID)
-		if err != nil {
-			return fmt.Errorf("failed to get trusted facets for u2f device. Err: %s", err)
-		}
-		// TODO: do more error checks
-		facet = facetResponse.TrustedFacets[0].Ids[0]
+		facet := "https://" + verificationHost
+		log.Debugf("Facet: %s", facet)
 		var req = &u2fhost.AuthenticateRequest{
 			Challenge: status.Response.U2FSignRequest[0].Challenge,
 			AppId:     status.Response.U2FSignRequest[0].AppID,
