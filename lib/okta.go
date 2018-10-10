@@ -54,9 +54,9 @@ type OktaCreds struct {
 	Password     string
 }
 
-func (c *OktaCreds) Validate() error {
+func (c *OktaCreds) Validate(mfaDevice string) error {
 	// OktaClient assumes we're doing some AWS SAML calls, but Validate doesn't
-	o, err := NewOktaClient(*c, "", "", "")
+	o, err := NewOktaClient(*c, "", "", mfaDevice)
 	if err != nil {
 		return err
 	}

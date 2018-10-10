@@ -200,12 +200,14 @@ func (d *DuoClient) ChallengeU2f(verificationHost string) (err error) {
 		//}
 	}
 
+	log.Printf("Device: %s", d.Device)
+
 	// So, turns out that if you call DoStatus in
 	// Duo's token mode, it will return an auth token
 	// immediately if successful, because it's a single check
 	// but for Push you get empty value and have to
 	// wait on second response post-push
-	if auth == "" {
+	if d.Device != "u2f" && d.Device != "token" {
 		// This one should block untile 2fa completed
 		auth, _, err = d.DoStatus(txid, sid)
 		if err != nil {

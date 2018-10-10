@@ -20,6 +20,11 @@ var (
 	ErrFailedToValidateCredentials = errors.New("Failed to validate credentials")
 )
 
+const (
+	// keep expected behavior pre-u2f with duo push
+	DefaultMFADevice = "phone1"
+)
+
 // global flags
 var (
 	backend           string
@@ -71,6 +76,8 @@ func prerun(cmd *cobra.Command, args []string) {
 		mfaDeviceFromEnv, ok := os.LookupEnv("AWS_OKTA_MFA_DEVICE")
 		if ok {
 			mfaDevice = mfaDeviceFromEnv
+		} else {
+			mfaDevice = DefaultMFADevice
 		}
 	}
 
