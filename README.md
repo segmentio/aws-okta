@@ -49,7 +49,7 @@ Global Flags:
 
 ### Exec for EKS and Kubernetes
 
-`aws-okta` can also be used to authenticate `kubectl` to your AWS EKS cluster. Assuming you have [installed `kubectl`](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html), [setup your kubeconfig](https://docs.aws.amazon.com/eks/latest/userguide/create-kubeconfig.html) and [installed `aws-iam-authenticator`](https://docs.aws.amazon.com/eks/latest/userguide/configure-kubectl.html), you can now access your EKS cluster with `kubectl`. Note that on a new clusters, your Okta cli user needs to be using the same assumed role as the one who created the cluster. Otherwise, your cluster needs to have been configured to allow your assumed role.
+`aws-okta` can also be used to authenticate `kubectl` to your AWS EKS cluster. Assuming you have [installed `kubectl`](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html), [setup your kubeconfig](https://docs.aws.amazon.com/eks/latest/userguide/create-kubeconfig.html) and [installed `aws-iam-authenticator`](https://docs.aws.amazon.com/eks/latest/userguide/configure-kubectl.html), you can now access your EKS cluster with `kubectl`. Note that on a new cluster, your Okta cli user needs to be using the same assumed role as the one who created the cluster. Otherwise, your cluster needs to have been configured to allow your assumed role.
 
 ```bash
 $ aws-okta exec <profile> -- kubectl version --short
@@ -117,7 +117,7 @@ export AWS_OKTA_BACKEND=secret-service
 
 ## Releasing
 
-Pushing a new tag will cause Circle to automatically create and push a linux release.  After this is done, you shoule run (from a mac):
+Pushing a new tag will cause Circle to automatically create and push a linux release.  After this is done, you should run (from a mac):
 
 ```bash
 $ export CIRCLE_TAG=`git describe --tags`
