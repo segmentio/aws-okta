@@ -56,6 +56,16 @@ func add(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	customDomain, err := lib.Prompt("Okta custom domain", false)
+	if err != nil {
+		return err
+	}
+
+	oktaRegion, err := lib.Prompt("Okta region", false)
+	if err != nil {
+		return err
+	}
+
 	password, err := lib.Prompt("Okta password", true)
 	if err != nil {
 		return err
@@ -66,6 +76,8 @@ func add(cmd *cobra.Command, args []string) error {
 		Organization: organization,
 		Username:     username,
 		Password:     password,
+		CustomDomain: customDomain,
+		OktaRegion:   oktaRegion,
 	}
 
 	if err := creds.Validate(mfaDevice); err != nil {
