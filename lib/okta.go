@@ -389,31 +389,31 @@ func (o *OktaClient) challengeMFA() (err error) {
 	return
 }
 
-func GetOktaUrl(o *OktaClient) (url *url.URL, err error) {
+func GetOktaUrl(o *OktaClient) (baseurl *url.URL, err error) {
 	if o.CustomDomain != "" {
-		url, err := url.Parse(fmt.Sprintf(
+		baseurl, err := url.Parse(fmt.Sprintf(
 			"https://%s", o.CustomDomain,
 		))
 		if err != nil {
 			return nil, err
 		}
-		return url, err
+		return baseurl, err
 	} else if _, exists := OktaServer[o.OktaRegion]; exists && o.OktaRegion != "" {
-		url, err := url.Parse(fmt.Sprintf(
+		baseurl, err := url.Parse(fmt.Sprintf(
 			"http://%s.%s", o.Organization, OktaServer[o.OktaRegion],
 		))
 		if err != nil {
 			return nil, err
 		}
-		return url, err
+		return baseurl, err
 	} else {
-		url, err := url.Parse(fmt.Sprintf(
+		baseurl, err := url.Parse(fmt.Sprintf(
 			"https://%s.%s", o.Organization, OktaServer[OktaDefaultRegion],
 		))
 		if err != nil {
 			return nil, err
 		}
-		return url, err
+		return baseurl, err
 	}
 }
 
@@ -445,7 +445,10 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	var header http.Header
 	var client http.Client
 
- 	url, err := GetOktaUrl(o)
+ 	baseurl, err := GetOktaUrl(o)
+ 	url, err := url.Parse(fmt.Sprintf(
+ 		"%s/%s", baseurl, path,
+ 	))
 
 	if format == "json" {
 		header = http.Header{
@@ -460,6 +463,7 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	client = http.Client{
 		Jar: o.CookieJar,
 	}
+
 	req := &http.Request{
 		Method:        method,
 		URL:           url,
