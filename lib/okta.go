@@ -46,6 +46,7 @@ type OktaClient struct {
 	CookieJar       http.CookieJar
 	BaseURL         *url.URL
 	OktaRegion      string
+	CustomDomain 	string
 }
 
 type SAMLAssertion struct {
@@ -79,33 +80,33 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 
 	// If a custom domain was passed then attempt to use it for auth
 	if creds.CustomDomain != "" {
-		baseParsed, err := url.Parse(fmt.Sprintf(
+		url, err := url.Parse(fmt.Sprintf(
 			"https://%s", creds.CustomDomain,
 		))
 		if err != nil {
 			return nil, err
 		}
-		base = baseParsed
+		base = url
+
 	} else if _, exists := OktaServer[creds.OktaRegion]; exists && creds.OktaRegion != "" {
 		// else use okta managed service map with OktaRegion var
-		baseParsed, err := url.Parse(fmt.Sprintf(
+		url, err := url.Parse(fmt.Sprintf(
 			"https://%s.%s", creds.Organization, OktaServer[creds.OktaRegion],
 		))
 		if err != nil {
 			return nil, err
 		}
-		base = baseParsed
+		base = url
 	} else {
 		// finally fall back to the OktaDefaultRegion
-		baseParsed, err := url.Parse(fmt.Sprintf(
+		url, err := url.Parse(fmt.Sprintf(
 			"https://%s.%s", creds.Organization, OktaServer[OktaDefaultRegion],
 		))
 		if err != nil {
 			return nil, err
 		}
-		base = baseParsed
+		base = url
 	}
-	fmt.Println(base)
 
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
@@ -122,14 +123,15 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 	}
 
 	return &OktaClient{
-		Organization:   creds.Organization,
-		Username:       creds.Username,
-		Password:       creds.Password,
-		OktaAwsSAMLUrl: oktaAwsSAMLUrl,
-		CookieJar:      jar,
-		BaseURL:        base,
-		MFADevice:      mfaDevice,
-		OktaRegion: 	creds.OktaRegion,
+		Organization:   	creds.Organization,
+		Username:       	creds.Username,
+		Password:       	creds.Password,
+		OktaAwsSAMLUrl: 	oktaAwsSAMLUrl,
+		CookieJar:      	jar,
+		BaseURL:        	base,
+		MFADevice:          mfaDevice,
+		OktaRegion: 		creds.OktaRegion,
+		CustomDomain: 		creds.CustomDomain,
 	}, nil
 }
 
@@ -387,15 +389,32 @@ func (o *OktaClient) challengeMFA() (err error) {
 	return
 }
 
-func GetOktaUrl(o *OktaClient) (baseurl *url.URL, err error) {
-	baseurl, e := url.Parse(fmt.Sprintf(
-		"https://%s.%s", o.Organization, OktaServer[o.OktaRegion],
-	))
-	fmt.Println("Cor", baseurl)
-	if e != nil {
-		return
+func GetOktaUrl(o *OktaClient) (url *url.URL, err error) {
+	if o.CustomDomain != "" {
+		url, err := url.Parse(fmt.Sprintf(
+			"https://%s", o.CustomDomain,
+		))
+		if err != nil {
+			return nil, err
+		}
+		return url, err
+	} else if _, exists := OktaServer[o.OktaRegion]; exists && o.OktaRegion != "" {
+		url, err := url.Parse(fmt.Sprintf(
+			"http://%s.%s", o.Organization, OktaServer[o.OktaRegion],
+		))
+		if err != nil {
+			return nil, err
+		}
+		return url, err
+	} else {
+		url, err := url.Parse(fmt.Sprintf(
+			"https://%s.%s", o.Organization, OktaServer[OktaDefaultRegion],
+		))
+		if err != nil {
+			return nil, err
+		}
+		return url, err
 	}
-	return
 }
 
 func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
@@ -426,9 +445,7 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	var header http.Header
 	var client http.Client
 
-	var url *url.URL
-	baseurl, err := GetOktaUrl(o)
-	fmt.Println(baseurl)
+ 	url, err := GetOktaUrl(o)
 
 	if format == "json" {
 		header = http.Header{
