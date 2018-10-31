@@ -26,9 +26,9 @@ import (
 const OktaDefaultRegion = "us"
 
 var OktaServer = map[string]string{
-	"emea": 		"okta-emea.com",
-	"us": 			"okta.com",
-	"preview": 	"oktapreview.com",
+	"emea":			"okta-emea.com",
+	"us":				"okta.com",
+	"preview":	"oktapreview.com",
 }
 
 type OktaClient struct {
@@ -107,6 +107,7 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 		}
 		base = url
 	}
+	log.Debug(base)
 
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
@@ -449,6 +450,7 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
  	url, err := url.Parse(fmt.Sprintf(
  		"%s/%s", baseurl, path,
  	))
+ 	log.Debug(url)
 
 	if format == "json" {
 		header = http.Header{
