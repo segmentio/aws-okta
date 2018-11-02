@@ -1,4 +1,7 @@
-// +build darwin,!ios,!go1.10
+// +build darwin,!ios
+// +build !go1.10
+
+// TODO: Remove this file once we've completely migrated to go 1.10.x.
 
 package keychain
 
@@ -212,10 +215,7 @@ func UnlockAtPath(path string, password string) error {
 	}
 	passwordRef := C.CString(password)
 	defer C.free(unsafe.Pointer(passwordRef))
-	if err := checkError(C.SecKeychainUnlock(kref, C.UInt32(len(password)), unsafe.Pointer(passwordRef), C.Boolean(1))); err != nil {
-		return err
-	}
-	return nil
+	return checkError(C.SecKeychainUnlock(kref, C.UInt32(len(password)), unsafe.Pointer(passwordRef), C.Boolean(1)))
 }
 
 // LockAtPath locks keychain at path
