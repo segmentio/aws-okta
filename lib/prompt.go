@@ -11,7 +11,13 @@ import (
 )
 
 func Prompt(prompt string, sensitive bool) (string, error) {
-	fmt.Printf("%s: ", prompt)
+	return PromptWithOutput(prompt, sensitive, os.Stdout)
+}
+
+func PromptWithOutput(prompt string, sensitive bool, output *os.File) (string, error) {
+	fmt.Fprintf(output, "%s: ", prompt)
+	defer fmt.Fprintf(output, "\n")
+
 	if sensitive {
 		var input []byte
 		input, err := terminal.ReadPassword(int(syscall.Stdin))
