@@ -51,12 +51,12 @@ func add(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	customDomain, err := lib.Prompt("Okta custom domain", false)
+	oktaRegion, err := lib.Prompt("Okta region ([us], emea, preview)", false)
 	if err != nil {
 		return err
 	}
 
-	oktaRegion, err := lib.Prompt("Okta region", false)
+	oktaDomain, err := lib.Prompt("Okta domain ["+oktaRegion+".okta.com]", false)
 	if err != nil {
 		return err
 	}
