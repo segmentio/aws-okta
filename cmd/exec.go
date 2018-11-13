@@ -12,6 +12,7 @@ import (
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
+	"github.com/segmentio/aws-okta/lib/legacy"
 	"github.com/spf13/cobra"
 )
 
@@ -102,7 +103,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 		commandArgs = commandPart[1:]
 	}
 
-	config, err := lib.NewConfigFromEnv()
+	config, err := legacy.NewConfigFromEnv()
 	if err != nil {
 		return err
 	}
@@ -123,7 +124,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	opts := lib.ProviderOptions{
+	opts := legacy.ProviderOptions{
 		Profiles:           profiles,
 		SessionDuration:    sessionTTL,
 		AssumeRoleDuration: assumeRoleTTL,
@@ -151,7 +152,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	p, err := lib.NewProvider(kr, profile, opts)
+	p, err := legacy.NewProvider(kr, profile, opts)
 	if err != nil {
 		return err
 	}
