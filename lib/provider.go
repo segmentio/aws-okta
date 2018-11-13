@@ -8,27 +8,21 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/99designs/keyring"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 )
 
 const (
-	MaxSessionDuration    = time.Hour * 36
-	MinSessionDuration    = time.Minute * 15
-	MinAssumeRoleDuration = time.Minute * 15
-	MaxAssumeRoleDuration = time.Hour * 12
+	MaxSessionDuration = time.Hour * 36
+	MinSessionDuration = time.Minute * 15
 
-	DefaultSessionDuration    = time.Hour * 4
-	DefaultAssumeRoleDuration = time.Minute * 15
+	DefaultSessionDuration = time.Hour * 4
 )
 
 type ProviderOptions struct {
-	SessionDuration    time.Duration
-	AssumeRoleDuration time.Duration
-	ExpiryWindow       time.Duration
-	Profiles           profiles
+	SessionDuration time.Duration
+	ExpiryWindow    time.Duration
+	Profiles        profiles
 }
 
 func (o ProviderOptions) Validate() error {
@@ -37,20 +31,11 @@ func (o ProviderOptions) Validate() error {
 	} else if o.SessionDuration > MaxSessionDuration {
 		return errors.New("Maximum session duration is " + MaxSessionDuration.String())
 	}
-	if o.AssumeRoleDuration < MinAssumeRoleDuration {
-		return errors.New("Minimum duration for assumed roles is " + MinAssumeRoleDuration.String())
-	} else if o.AssumeRoleDuration > MaxAssumeRoleDuration {
-		log.Println(o.AssumeRoleDuration)
-		return errors.New("Maximum duration for assumed roles is " + MaxAssumeRoleDuration.String())
-	}
 
 	return nil
 }
 
 func (o ProviderOptions) ApplyDefaults() ProviderOptions {
-	if o.AssumeRoleDuration == 0 {
-		o.AssumeRoleDuration = DefaultAssumeRoleDuration
-	}
 	if o.SessionDuration == 0 {
 		o.SessionDuration = DefaultSessionDuration
 	}
@@ -104,22 +89,6 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 		(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
 		session.Expiration.Sub(time.Now()).String())
 
-	// If sourceProfile returns the same source then we do not need to assume a
-	// second role. Not assuming a second role allows us to assume IDP enabled
-	// roles directly.
-	if p.profile != source {
-		if role, ok := p.profiles[p.profile]["role_arn"]; ok {
-			session, err = p.assumeRoleFromSession(session, role)
-			if err != nil {
-				return credentials.Value{}, err
-			}
-
-			log.Debugf("using role %s expires in %s",
-				(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
-				session.Expiration.Sub(time.Now()).String())
-		}
-	}
-
 	p.SetExpiration(*session.Expiration, window)
 	p.expires = *session.Expiration
 
@@ -171,29 +140,6 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	p.defaultRoleSessionName = oktaUsername
 
 	return creds, nil
-}
-
-// assumeRoleFromSession takes a session created with an okta SAML login and uses that to assume a role
-func (p *Provider) assumeRoleFromSession(creds sts.Credentials, roleArn string) (sts.Credentials, error) {
-	client := sts.New(session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
-		*creds.AccessKeyId,
-		*creds.SecretAccessKey,
-		*creds.SessionToken,
-	)}))
-
-	input := &sts.AssumeRoleInput{
-		RoleArn:         aws.String(roleArn),
-		RoleSessionName: aws.String(p.roleSessionName()),
-		DurationSeconds: aws.Int64(int64(p.AssumeRoleDuration.Seconds())),
-	}
-
-	log.Debugf("Assuming role %s from session token", roleArn)
-	resp, err := client.AssumeRole(input)
-	if err != nil {
-		return sts.Credentials{}, err
-	}
-
-	return *resp.Credentials, nil
 }
 
 func (p *Provider) roleSessionName() string {
