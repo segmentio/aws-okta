@@ -124,6 +124,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := lib.ProviderOptions{
+		MFADevice:          mfaDevice,
 		Profiles:           profiles,
 		SessionDuration:    sessionTTL,
 		AssumeRoleDuration: assumeRoleTTL,

@@ -68,7 +68,7 @@ func add(cmd *cobra.Command, args []string) error {
 		Password:     password,
 	}
 
-	if err := creds.Validate(); err != nil {
+	if err := creds.Validate(mfaDevice); err != nil {
 		log.Debugf("Failed to validate credentials: %s", err)
 		return ErrFailedToValidateCredentials
 	}
