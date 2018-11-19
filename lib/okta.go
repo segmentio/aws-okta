@@ -56,7 +56,7 @@ type OktaCreds struct {
 
 func (c *OktaCreds) Validate() error {
 	// OktaClient assumes we're doing some AWS SAML calls, but Validate doesn't
-	o, err := NewOktaClient(*c, "", "", MFAConfig{})
+	o, err := NewOktaClient(*c, "", "")
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (c *OktaCreds) Validate() error {
 	return nil
 }
 
-func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string, mfaConfig MFAConfig) (*OktaClient, error) {
+func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string) (*OktaClient, error) {
 	base, err := url.Parse(fmt.Sprintf(
 		"https://%s.%s", creds.Organization, OktaServer,
 	))
@@ -97,8 +97,12 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 		OktaAwsSAMLUrl: oktaAwsSAMLUrl,
 		CookieJar:      jar,
 		BaseURL:        base,
-		MFAConfig:      mfaConfig,
 	}, nil
+}
+
+func (o *OktaClient) SetMFAConfig(mfaConfig MFAConfig) error {
+	o.MFAConfig = mfaConfig
+	return nil
 }
 
 func (o *OktaClient) AuthenticateUser() error {
@@ -480,7 +484,12 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 		sessionCookie = string(cookieItem.Data)
 	}
 
-	oktaClient, err := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie, p.MFAConfig)
+	oktaClient, err := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie)
+	if err != nil {
+		return sts.Credentials{}, "", err
+	}
+
+	err = oktaClient.SetMFAConfig(p.MFAConfig)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
