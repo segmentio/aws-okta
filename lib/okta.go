@@ -198,17 +198,37 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 	return *samlResp.Credentials, sessionCookie, nil
 }
 
+func selectMFADeviceFromConfig(o *OktaClient) (*OktaUserAuthnFactor, error) {
+	log.Debugf("MFAConfig: %v\n", o.MFAConfig)
+	if o.MFAConfig.MFAFactor == "" || o.MFAConfig.MFAType == "" {
+		return nil, nil
+	}
+
+	for _, f := range o.UserAuth.Embedded.Factors {
+		log.Debugf("%v\n", f)
+		if f.Provider == o.MFAConfig.MFAFactor && f.FactorType == o.MFAConfig.MFAType {
+			log.Debugf("Using matching factor \"%v %v\" from aws config\n", f.Provider, f.FactorType)
+			return &f, nil
+		}
+	}
+
+	return nil, fmt.Errorf("Failed to select MFA device with Factor = \"%s\", Type = \"%s\"", o.MFAConfig.MFAFactor, o.MFAConfig.MFAType)
+}
+
 func selectMFADevice(o *OktaClient) (*OktaUserAuthnFactor, error) {
 	var factors = o.UserAuth.Embedded.Factors
 	log.Debugf("MFAConfig: %v\n", o.MFAConfig)
 
 	if len(factors) > 1 {
-		for i, f := range factors {
-			if f.Provider == o.MFAConfig.MFAFactor && f.FactorType == o.MFAConfig.MFAType {
-				log.Debugf("Using matching factor \"%v %v\" from aws config\n", f.Provider, f.FactorType)
-				return &factors[i], nil
-			}
+		factor, err := selectMFADeviceFromConfig(o)
+		if err != nil {
+			return nil, err
 		}
+
+		if factor != nil {
+			return factor, nil
+		}
+
 		log.Info("Select a MFA from the following list")
 		for i, f := range factors {
 			log.Infof("%d: %s (%s)", i, f.Provider, f.FactorType)
@@ -217,11 +237,11 @@ func selectMFADevice(o *OktaClient) (*OktaUserAuthnFactor, error) {
 		if err != nil {
 			return nil, err
 		}
-		factor, err := strconv.Atoi(i)
+		factorIdx, err := strconv.Atoi(i)
 		if err != nil {
 			return nil, err
 		}
-		return &factors[factor], nil
+		return &factors[factorIdx], nil
 	} else if len(factors) == 1 {
 		return &factors[0], nil
 	}
