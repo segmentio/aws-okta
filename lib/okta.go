@@ -200,19 +200,19 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 
 func selectMFADeviceFromConfig(o *OktaClient) (*OktaUserAuthnFactor, error) {
 	log.Debugf("MFAConfig: %v\n", o.MFAConfig)
-	if o.MFAConfig.MFAFactor == "" || o.MFAConfig.MFAType == "" {
+	if o.MFAConfig.Provider == "" || o.MFAConfig.FactorType == "" {
 		return nil, nil
 	}
 
 	for _, f := range o.UserAuth.Embedded.Factors {
 		log.Debugf("%v\n", f)
-		if f.Provider == o.MFAConfig.MFAFactor && f.FactorType == o.MFAConfig.MFAType {
+		if f.Provider == o.MFAConfig.Provider && f.FactorType == o.MFAConfig.FactorType {
 			log.Debugf("Using matching factor \"%v %v\" from aws config\n", f.Provider, f.FactorType)
 			return &f, nil
 		}
 	}
 
-	return nil, fmt.Errorf("Failed to select MFA device with Factor = \"%s\", Type = \"%s\"", o.MFAConfig.MFAFactor, o.MFAConfig.MFAType)
+	return nil, fmt.Errorf("Failed to select MFA device with Provider = \"%s\", FactorType = \"%s\"", o.MFAConfig.Provider, o.MFAConfig.FactorType)
 }
 
 func selectMFADevice(o *OktaClient) (*OktaUserAuthnFactor, error) {
@@ -480,8 +480,8 @@ type OktaProvider struct {
 }
 
 type MFAConfig struct {
-	MFAFactor string
-	MFAType   string
+	Provider   string // Which MFA provider to use when presented with an MFA challenge
+	FactorType string // Which of the factor types of the MFA provider to use
 }
 
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {

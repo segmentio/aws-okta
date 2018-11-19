@@ -163,8 +163,8 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 		SessionDuration: p.SessionDuration,
 		OktaAwsSAMLUrl:  oktaAwsSAMLUrl,
 		MFAConfig: MFAConfig{
-			MFAFactor: p.profiles["okta"]["mfa_factor"],
-			MFAType:   p.profiles["okta"]["mfa_type"],
+			Provider:   p.profiles["okta"]["mfa_provider"],
+			FactorType: p.profiles["okta"]["mfa_type"],
 		},
 	}
 
