@@ -61,10 +61,12 @@ You can optionally specify which MFA type to use, which is useful when multiple 
 ```ini
 [okta]
 aws_saml_url = home/amazon_aws/0ac4qfegf372HSvKF6a3/965
-mfa_factor = OKTA
+mfa_provider = OKTA
 mfa_type = push
 
 ```
+Available factors and types are dependent on the types configured by your Okta administrator and your list of enrolled factors.  If you have multiple factors, running `aws-okta` without `mfa_provider` and `mfa_type` set will display the list of available factors and types.
+
 
 Next, you need to set up your base Okta role.  This will be one your admin created while setting up the integration.  It should be specified like any other aws profile:
 
