@@ -219,7 +219,7 @@ func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, 
 	var mfaCode string
 	var err error
 	//Software and Hardware based OTP Tokens
-	if strings.Contains(oktaFactorId, "token") {
+	if strings.Contains(oktaFactorType, "token") {
 		log.Debug("Token MFA")
 		mfaCode, err = Prompt("Enter MFA Code", false)
 		if err != nil {
