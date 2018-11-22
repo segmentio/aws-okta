@@ -76,7 +76,7 @@ func add(cmd *cobra.Command, args []string) error {
 		Organization: organization,
 		Username:     username,
 		Password:     password,
-		CustomDomain: customDomain,
+		Domain:       oktaDomain,
 		OktaRegion:   oktaRegion,
 	}
 
