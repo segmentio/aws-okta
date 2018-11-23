@@ -55,6 +55,9 @@ func add(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	if oktaRegion == "" {
+		oktaRegion = "us"
+	}
 
 	oktaDomain, err := lib.Prompt("Okta domain ["+oktaRegion+".okta.com]", false)
 	if err != nil {
