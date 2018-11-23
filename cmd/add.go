@@ -80,7 +80,6 @@ func add(cmd *cobra.Command, args []string) error {
 		Username:     username,
 		Password:     password,
 		Domain:       oktaDomain,
-		OktaRegion:   oktaRegion,
 	}
 
 	if err := creds.Validate(mfaDevice); err != nil {

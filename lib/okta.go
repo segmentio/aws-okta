@@ -47,7 +47,6 @@ type OktaClient struct {
 	OktaAwsSAMLUrl  string
 	CookieJar       http.CookieJar
 	BaseURL         *url.URL
-	OktaRegion      string
 	Domain          string
 }
 
@@ -57,11 +56,11 @@ type SAMLAssertion struct {
 }
 
 type OktaCreds struct {
-	Organization string // will be deprecated in the future
+	// will be deprecated in the future
+	Organization string
 	Username     string
 	Password     string
 	Domain 		 string
-	OktaRegion   string
 }
 
 func (c *OktaCreds) Validate(mfaDevice string) error {
@@ -78,31 +77,28 @@ func (c *OktaCreds) Validate(mfaDevice string) error {
 	return nil
 }
 
-func getOktaDomain(region string) (domain string) {
-	var domainbase string;
+func getOktaDomain(region string) (string, error) {
 	switch region {
 		case "us":
-			domainbase = OktaServerUs
-			break;
+			return OktaServerUs, nil
 		case "emea":
-			domainbase = OktaServerEmea
-			break;
+			return OktaServerEmea, nil
 		case "preview":
-			domainbase = OktaServerPreview
+			return OktaServerPreview, nil
 	}
-	return domainbase
+	return "", fmt.Errorf("invalid region %s", region)
 }
 
 func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string, mfaDevice string) (*OktaClient, error) {
 	var domain string
-	var base *url.URL
 
-	if creds.Domain != "" {
+	// maintain compatibility for deprecated creds.Organization
+	if creds.Domain == "" && creds.Organization != "" {
+		domain = fmt.Sprintf("%s.%s", creds.Organization, OktaServerDefault)
+	} else if creds.Domain != "" {
 		domain = creds.Domain
-	} else if creds.Domain == "" && creds.OktaRegion != "" {
-		domain = getOktaDomain(creds.OktaRegion)
 	} else {
-		domain = OktaServerDefault
+		return &OktaClient{}, errors.New("either creds.Organization (deprecated) or creds.Domain must be set, and not both")
 	}
 
 	// url parse & set base
@@ -132,7 +128,6 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 		CookieJar:      	jar,
 		BaseURL:        	base,
 		MFADevice:          mfaDevice,
-		OktaRegion: 		creds.OktaRegion,
 		Domain: 			domain,
 	}, nil
 }
@@ -422,6 +417,9 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
  	url, err := url.Parse(fmt.Sprintf(
  		"%s/%s", o.BaseURL, path,
  	))
+ 	if err != nil {
+ 		return err
+ 	}
 
 	if format == "json" {
 		header = http.Header{
