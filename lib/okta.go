@@ -34,6 +34,7 @@ const (
 )
 
 type OktaClient struct {
+	// Organization will be deprecated in the future
 	Organization    string
 	Username        string
 	Password        string
@@ -56,7 +57,7 @@ type SAMLAssertion struct {
 }
 
 type OktaCreds struct {
-	// will be deprecated in the future
+	// Organization will be deprecated in the future
 	Organization string
 	Username     string
 	Password     string
@@ -121,6 +122,7 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 	}
 
 	return &OktaClient{
+		// Setting Organization for backwards compatibility
 		Organization:   	creds.Organization,
 		Username:       	creds.Username,
 		Password:       	creds.Password,
