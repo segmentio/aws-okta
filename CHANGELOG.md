@@ -1,3 +1,6 @@
+### 1.3.5
+* Add `--filter|-f` param to `list` subcommand to filter roles by regex (eg. '-f admin' will show only admin roles)
+
 ### 1.3.4
 * Subcommand `env` only display AWS environment vars
 * Running without any keycloak-config will automatically download one
