@@ -1,7 +1,9 @@
+### 1.3.6
+* Make deps more stable
+
 ### 1.3.5
 * Add `--filter|-f` param to `list` subcommand to filter roles by regex (eg. '-f admin' will show only admin roles)
 * Bump `keyring` version (for linux folks)
-* Make deps more stable
 
 ### 1.3.4
 * Subcommand `env` only display AWS environment vars
