@@ -28,9 +28,7 @@ $ brew install aws-okta
 $ aws-okta add
 ```
 
-This will prompt you for your Okta organization, username, and password.  These credentials will then be stored in your keyring for future use.   
-Note: Don't append ".okta.com" to your organization name, it is automatically added by `aws-okta`.
-
+This will prompt you for your Okta organization, custom domain, region, username, and password. These credentials will then be stored in your keyring for future use.
 
 ### Exec
 

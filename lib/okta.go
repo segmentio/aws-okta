@@ -24,10 +24,17 @@ import (
 )
 
 const (
-	OktaServer = "okta.com"
+	OktaServerUs = "okta.com"
+	OktaServerEmea = "okta-emea.com"
+	OktaServerPreview = "oktapreview.com"
+	OktaServerDefault = OktaServerUs
+
+	// deprecated; use OktaServerUs
+	OktaServer = OktaServerUs
 )
 
 type OktaClient struct {
+	// Organization will be deprecated in the future
 	Organization    string
 	Username        string
 	Password        string
@@ -41,6 +48,7 @@ type OktaClient struct {
 	OktaAwsSAMLUrl  string
 	CookieJar       http.CookieJar
 	BaseURL         *url.URL
+	Domain          string
 }
 
 type SAMLAssertion struct {
@@ -49,9 +57,11 @@ type SAMLAssertion struct {
 }
 
 type OktaCreds struct {
+	// Organization will be deprecated in the future
 	Organization string
 	Username     string
 	Password     string
+	Domain 		 string
 }
 
 func (c *OktaCreds) Validate(mfaDevice string) error {
@@ -68,9 +78,33 @@ func (c *OktaCreds) Validate(mfaDevice string) error {
 	return nil
 }
 
+func getOktaDomain(region string) (string, error) {
+	switch region {
+		case "us":
+			return OktaServerUs, nil
+		case "emea":
+			return OktaServerEmea, nil
+		case "preview":
+			return OktaServerPreview, nil
+	}
+	return "", fmt.Errorf("invalid region %s", region)
+}
+
 func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string, mfaDevice string) (*OktaClient, error) {
+	var domain string
+
+	// maintain compatibility for deprecated creds.Organization
+	if creds.Domain == "" && creds.Organization != "" {
+		domain = fmt.Sprintf("%s.%s", creds.Organization, OktaServerDefault)
+	} else if creds.Domain != "" {
+		domain = creds.Domain
+	} else {
+		return &OktaClient{}, errors.New("either creds.Organization (deprecated) or creds.Domain must be set, and not both")
+	}
+
+	// url parse & set base
 	base, err := url.Parse(fmt.Sprintf(
-		"https://%s.%s", creds.Organization, OktaServer,
+		"https://%s", domain,
 	))
 	if err != nil {
 		return nil, err
@@ -91,13 +125,15 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 	}
 
 	return &OktaClient{
-		Organization:   creds.Organization,
-		Username:       creds.Username,
-		Password:       creds.Password,
-		OktaAwsSAMLUrl: oktaAwsSAMLUrl,
-		CookieJar:      jar,
-		BaseURL:        base,
-		MFADevice:      mfaDevice,
+		// Setting Organization for backwards compatibility
+		Organization:   	creds.Organization,
+		Username:       	creds.Username,
+		Password:       	creds.Password,
+		OktaAwsSAMLUrl: 	oktaAwsSAMLUrl,
+		CookieJar:      	jar,
+		BaseURL:        	base,
+		MFADevice:          mfaDevice,
+		Domain: 			domain,
 	}, nil
 }
 
@@ -383,12 +419,12 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	var header http.Header
 	var client http.Client
 
-	url, err := url.Parse(fmt.Sprintf(
-		"https://%s.%s/%s", o.Organization, OktaServer, path,
-	))
-	if err != nil {
-		return err
-	}
+ 	url, err := url.Parse(fmt.Sprintf(
+ 		"%s/%s", o.BaseURL, path,
+ 	))
+ 	if err != nil {
+ 		return err
+ 	}
 
 	if format == "json" {
 		header = http.Header{
@@ -403,6 +439,7 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	client = http.Client{
 		Jar: o.CookieJar,
 	}
+
 	req := &http.Request{
 		Method:        method,
 		URL:           url,
