@@ -106,6 +106,9 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 	base, err := url.Parse(fmt.Sprintf(
 		"https://%s", domain,
 	))
+	if err != nil {
+		return nil, err
+	}
 
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
