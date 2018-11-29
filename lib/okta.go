@@ -503,7 +503,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 
 	// Check for stored session cookie
 	var sessionCookie string
-	cookieItem, err := p.Keyring.Get(p.OktaSessionKey)
+	cookieItem, err := p.Keyring.Get(p.OktaSessionCookieKey)
 	if err == nil {
 		sessionCookie = string(cookieItem.Data)
 	}
@@ -519,7 +519,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	}
 
 	newCookieItem := keyring.Item{
-		Key:                         p.OktaSessionKey,
+		Key:                         p.OktaSessionCookieKey,
 		Data:                        []byte(newSessionCookie),
 		Label:                       "okta session cookie",
 		KeychainNotTrustApplication: false,
