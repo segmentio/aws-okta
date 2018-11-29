@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	OktaServerUs = "okta.com"
-	OktaServerEmea = "okta-emea.com"
+	OktaServerUs      = "okta.com"
+	OktaServerEmea    = "okta-emea.com"
 	OktaServerPreview = "oktapreview.com"
 	OktaServerDefault = OktaServerUs
 
@@ -61,7 +61,7 @@ type OktaCreds struct {
 	Organization string
 	Username     string
 	Password     string
-	Domain 		 string
+	Domain       string
 }
 
 func (c *OktaCreds) Validate(mfaDevice string) error {
@@ -80,12 +80,12 @@ func (c *OktaCreds) Validate(mfaDevice string) error {
 
 func getOktaDomain(region string) (string, error) {
 	switch region {
-		case "us":
-			return OktaServerUs, nil
-		case "emea":
-			return OktaServerEmea, nil
-		case "preview":
-			return OktaServerPreview, nil
+	case "us":
+		return OktaServerUs, nil
+	case "emea":
+		return OktaServerEmea, nil
+	case "preview":
+		return OktaServerPreview, nil
 	}
 	return "", fmt.Errorf("invalid region %s", region)
 }
@@ -126,14 +126,14 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 
 	return &OktaClient{
 		// Setting Organization for backwards compatibility
-		Organization:   	creds.Organization,
-		Username:       	creds.Username,
-		Password:       	creds.Password,
-		OktaAwsSAMLUrl: 	oktaAwsSAMLUrl,
-		CookieJar:      	jar,
-		BaseURL:        	base,
-		MFADevice:          mfaDevice,
-		Domain: 			domain,
+		Organization:   creds.Organization,
+		Username:       creds.Username,
+		Password:       creds.Password,
+		OktaAwsSAMLUrl: oktaAwsSAMLUrl,
+		CookieJar:      jar,
+		BaseURL:        base,
+		MFADevice:      mfaDevice,
+		Domain:         domain,
 	}, nil
 }
 
@@ -419,12 +419,12 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	var header http.Header
 	var client http.Client
 
- 	url, err := url.Parse(fmt.Sprintf(
- 		"%s/%s", o.BaseURL, path,
- 	))
- 	if err != nil {
- 		return err
- 	}
+	url, err := url.Parse(fmt.Sprintf(
+		"%s/%s", o.BaseURL, path,
+	))
+	if err != nil {
+		return err
+	}
 
 	if format == "json" {
 		header = http.Header{
@@ -483,6 +483,7 @@ type OktaProvider struct {
 	SessionDuration time.Duration
 	OktaAwsSAMLUrl  string
 	MFADevice       string
+	OktaSessionKey  string
 }
 
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
@@ -500,7 +501,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 
 	// Check for stored session cookie
 	var sessionCookie string
-	cookieItem, err := p.Keyring.Get("okta-session-cookie")
+	cookieItem, err := p.Keyring.Get(p.OktaSessionKey)
 	if err == nil {
 		sessionCookie = string(cookieItem.Data)
 	}
@@ -516,7 +517,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	}
 
 	newCookieItem := keyring.Item{
-		Key:   "okta-session-cookie",
+		Key:   p.OktaSessionKey,
 		Data:  []byte(newSessionCookie),
 		Label: "okta session cookie",
 		KeychainNotTrustApplication: false,
