@@ -16,11 +16,11 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/99designs/keyring"
-	log "github.com/sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/segmentio/aws-okta/lib/saml"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
