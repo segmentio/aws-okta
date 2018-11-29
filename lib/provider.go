@@ -146,12 +146,25 @@ func (p *Provider) getSamlURL(source string) (string, error) {
 	return "", errors.New("aws_saml_url missing from ~/.aws/config")
 }
 
+func (p *Provider) getOktaSessionCookieKey(source string) string {
+	haystack := []string{p.profile, source, "okta"}
+	for _, profile := range haystack {
+		oktaSessionCookieKey, ok := p.profiles[profile]["okta_session_cookie_key"]
+		if ok {
+			log.Debugf("Using okta_session_cookie_key from profile: %s", profile)
+			return oktaSessionCookieKey
+		}
+	}
+	return "okta-session-cookie"
+}
+
 func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	source := sourceProfile(p.profile, p.profiles)
 	oktaAwsSAMLUrl, err := p.getSamlURL(source)
 	if err != nil {
 		return sts.Credentials{}, err
 	}
+	oktaSessionCookieKey := p.getOktaSessionCookieKey(source)
 
 	profileARN, ok := p.profiles[source]["role_arn"]
 	if !ok {
@@ -159,11 +172,12 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	}
 
 	provider := OktaProvider{
-		MFADevice:       p.ProviderOptions.MFADevice,
-		Keyring:         p.keyring,
-		ProfileARN:      profileARN,
-		SessionDuration: p.SessionDuration,
-		OktaAwsSAMLUrl:  oktaAwsSAMLUrl,
+		MFADevice:            p.ProviderOptions.MFADevice,
+		Keyring:              p.keyring,
+		ProfileARN:           profileARN,
+		SessionDuration:      p.SessionDuration,
+		OktaAwsSAMLUrl:       oktaAwsSAMLUrl,
+		OktaSessionCookieKey: oktaSessionCookieKey,
 	}
 
 	creds, oktaUsername, err := provider.Retrieve()

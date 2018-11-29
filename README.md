@@ -110,6 +110,14 @@ role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
 # This profile uses the "integrations-auth" Okta app combined with secondary role assumption
 source_profile = integrations-auth
 role_arn = arn:aws:iam::<account-id>:role/<secondary-role-name>
+
+[profile testaccount]
+# This stores the Okta session in a separate item in the Keyring.
+# This is useful if the Okta session is used or modified by other applications
+# and needs to be isolated from other sessions. It is also useful for
+# development versions or multiple versions of aws-okta running.
+okta_session_cookie_key = okta-session-cookie-test
+role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
 ```
 
 The configuration above means that you can use multiple Okta Apps at the same time and switch between them easily.
