@@ -483,7 +483,9 @@ type OktaProvider struct {
 	SessionDuration time.Duration
 	OktaAwsSAMLUrl  string
 	MFADevice       string
-	OktaSessionKey  string
+	// OktaSessionCookieKey represents the name of the session cookie
+	// to be stored in the keyring.
+	OktaSessionCookieKey string
 }
 
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
@@ -517,9 +519,9 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	}
 
 	newCookieItem := keyring.Item{
-		Key:   p.OktaSessionKey,
-		Data:  []byte(newSessionCookie),
-		Label: "okta session cookie",
+		Key:                         p.OktaSessionKey,
+		Data:                        []byte(newSessionCookie),
+		Label:                       "okta session cookie",
 		KeychainNotTrustApplication: false,
 	}
 
