@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/99designs/keyring"
 	"github.com/aws/aws-sdk-go/service/sts"

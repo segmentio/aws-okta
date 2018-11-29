@@ -2,7 +2,6 @@ module github.com/segmentio/aws-okta
 
 require (
 	github.com/99designs/keyring v0.0.0-20181012025958-ff690aee77e9
-	github.com/Sirupsen/logrus v0.0.0-20170515105910-5e5dc898656f
 	github.com/aulanov/go.dbus v0.0.0-20150729231527-25c3068a42a0
 	github.com/aws/aws-sdk-go v0.0.0-20170323003848-3bc643c63c6f
 	github.com/danieljoos/wincred v1.0.1
@@ -17,6 +16,7 @@ require (
 	github.com/mitchellh/go-homedir v0.0.0-20161203194507-b8bc1bf76747
 	github.com/segmentio/analytics-go v0.0.0-20180319165424-4f08212e9b32
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c
+	github.com/sirupsen/logrus v0.0.0-20170515105910-5e5dc898656f
 	github.com/skratchdot/open-golang v0.0.0-20160302144031-75fb7ed4208c
 	github.com/spf13/cobra v0.0.0-20170621173259-31694f19adee
 	github.com/spf13/pflag v1.0.0
