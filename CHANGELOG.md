@@ -1,3 +1,6 @@
+### 1.4.0
+* Add `each` subcommand to run something across many envs
+
 ### 1.3.6
 * Make deps more stable
 

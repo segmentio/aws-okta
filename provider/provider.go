@@ -45,7 +45,7 @@ func (p *Provider) List() (roles []string, err error) {
 }
 
 func (p *Provider) Retrieve(awsrole string) (sts.Credentials, string, error) {
-	log.Debug("Step 0: Checking existing AWS session")
+	log.Debugf("Step 0: Checking existing AWS session for %s", awsrole)
 	creds, err := p.A.CheckAlreadyAuthd(awsrole)
 	if err == nil {
 		log.Debugf("AWS session already valid for %s", awsrole)
