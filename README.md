@@ -12,6 +12,14 @@ $ go get github.com/segmentio/aws-okta
 
 [See the wiki for more installation options like Linux packages and precompiled binaries.](https://github.com/segmentio/aws-okta/wiki/Installation)
 
+### MacOS
+
+You can install with `brew`:
+
+```bash
+$ brew install aws-okta
+```
+
 ## Usage
 
 ### Adding Okta credentials
@@ -20,7 +28,7 @@ $ go get github.com/segmentio/aws-okta
 $ aws-okta add
 ```
 
-This will prompt you for your Okta organization, username, and password.  These credentials will then be stored in your keyring for future use.
+This will prompt you for your Okta organization, custom domain, region, username, and password. These credentials will then be stored in your keyring for future use.
 
 ### Exec
 
@@ -47,6 +55,19 @@ Global Flags:
   -d, --debug            Enable debug logging
 ```
 
+### Exec for EKS and Kubernetes
+
+`aws-okta` can also be used to authenticate `kubectl` to your AWS EKS cluster. Assuming you have [installed `kubectl`](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html), [setup your kubeconfig](https://docs.aws.amazon.com/eks/latest/userguide/create-kubeconfig.html) and [installed `aws-iam-authenticator`](https://docs.aws.amazon.com/eks/latest/userguide/configure-kubectl.html), you can now access your EKS cluster with `kubectl`. Note that on a new cluster, your Okta CLI user needs to be using the same assumed role as the one who created the cluster. Otherwise, your cluster needs to have been configured to allow your assumed role.
+
+```bash
+$ aws-okta exec <profile> -- kubectl version --short
+```
+
+Likewise, most Kubernetes projects should work, like Helm and Ark.
+
+```bash
+$ aws-okta exec <profile> -- helm version --short
+```
 
 ### Configuring your aws config
 
@@ -100,9 +121,36 @@ role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
 # This profile uses the "integrations-auth" Okta app combined with secondary role assumption
 source_profile = integrations-auth
 role_arn = arn:aws:iam::<account-id>:role/<secondary-role-name>
+
+[profile testaccount]
+# This stores the Okta session in a separate item in the Keyring.
+# This is useful if the Okta session is used or modified by other applications
+# and needs to be isolated from other sessions. It is also useful for
+# development versions or multiple versions of aws-okta running.
+okta_session_cookie_key = okta-session-cookie-test
+role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
 ```
 
 The configuration above means that you can use multiple Okta Apps at the same time and switch between them easily.
+
+#### Configuring Okta session and AWS assume role TTLs
+
+The default TTLs for both Okta sessions and AWS assumed roles is 1 hour.  This means that aws-okta will re-authenticate to Okta and AWS credentials will expire every hour.  In addition to specifying the Okta session and AWS assume role TTLs with the command-line flags, they can be set using the `AWS_SESSION_TTL` and `AWS_ASSUME_ROLE_TTL` environment variables respectively.
+
+```bash
+export AWS_SESSION_TTL=1h
+export AWS_ASSUME_ROLE_TTL=1h
+```
+
+The AWS assume role TTL can also be set per-profile in the aws config:
+
+```ini
+# example with a role that's configured with a max session duration of 12 hours
+[profile ttldemo]
+aws_saml_url = home/amazon_aws/cuZGoka9dAIFcyG0UllG/214
+role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
+assume_role_ttl = 12h
+```
 
 ## Backends
 
@@ -115,7 +163,7 @@ export AWS_OKTA_BACKEND=secret-service
 
 ## Releasing
 
-Pushing a new tag will cause Circle to automatically create and push a linux release.  After this is done, you shoule run (from a mac):
+Pushing a new tag will cause Circle to automatically create and push a linux release.  After this is done, you should run (from a mac):
 
 ```bash
 $ export CIRCLE_TAG=`git describe --tags`

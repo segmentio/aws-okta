@@ -16,23 +16,31 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/99designs/keyring"
-	log "github.com/Sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/segmentio/aws-okta/lib/saml"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
-	OktaServer = "okta.com"
+	OktaServerUs      = "okta.com"
+	OktaServerEmea    = "okta-emea.com"
+	OktaServerPreview = "oktapreview.com"
+	OktaServerDefault = OktaServerUs
+
+	// deprecated; use OktaServerUs
+	OktaServer = OktaServerUs
 )
 
 type OktaClient struct {
+	// Organization will be deprecated in the future
 	Organization    string
 	Username        string
 	Password        string
 	UserAuth        *OktaUserAuthn
 	DuoClient       *DuoClient
+	MFADevice       string
 	AccessKeyId     string
 	SecretAccessKey string
 	SessionToken    string
@@ -41,6 +49,7 @@ type OktaClient struct {
 	CookieJar       http.CookieJar
 	BaseURL         *url.URL
 	MFAConfig       MFAConfig
+	Domain          string
 }
 
 type SAMLAssertion struct {
@@ -49,14 +58,16 @@ type SAMLAssertion struct {
 }
 
 type OktaCreds struct {
+	// Organization will be deprecated in the future
 	Organization string
 	Username     string
 	Password     string
+	Domain       string
 }
 
-func (c *OktaCreds) Validate() error {
+func (c *OktaCreds) Validate(mfaDevice string) error {
 	// OktaClient assumes we're doing some AWS SAML calls, but Validate doesn't
-	o, err := NewOktaClient(*c, "", "")
+	o, err := NewOktaClient(*c, "", "", mfaDevice)
 	if err != nil {
 		return err
 	}
@@ -68,9 +79,33 @@ func (c *OktaCreds) Validate() error {
 	return nil
 }
 
-func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string) (*OktaClient, error) {
+func getOktaDomain(region string) (string, error) {
+	switch region {
+	case "us":
+		return OktaServerUs, nil
+	case "emea":
+		return OktaServerEmea, nil
+	case "preview":
+		return OktaServerPreview, nil
+	}
+	return "", fmt.Errorf("invalid region %s", region)
+}
+
+func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string, mfaDevice string) (*OktaClient, error) {
+	var domain string
+
+	// maintain compatibility for deprecated creds.Organization
+	if creds.Domain == "" && creds.Organization != "" {
+		domain = fmt.Sprintf("%s.%s", creds.Organization, OktaServerDefault)
+	} else if creds.Domain != "" {
+		domain = creds.Domain
+	} else {
+		return &OktaClient{}, errors.New("either creds.Organization (deprecated) or creds.Domain must be set, and not both")
+	}
+
+	// url parse & set base
 	base, err := url.Parse(fmt.Sprintf(
-		"https://%s.%s", creds.Organization, OktaServer,
+		"https://%s", domain,
 	))
 	if err != nil {
 		return nil, err
@@ -91,12 +126,15 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string)
 	}
 
 	return &OktaClient{
+		// Setting Organization for backwards compatibility
 		Organization:   creds.Organization,
 		Username:       creds.Username,
 		Password:       creds.Password,
 		OktaAwsSAMLUrl: oktaAwsSAMLUrl,
 		CookieJar:      jar,
 		BaseURL:        base,
+		MFADevice:      mfaDevice,
+		Domain:         domain,
 	}, nil
 }
 
@@ -302,6 +340,7 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, ok
 					Host:       f.Embedded.Verification.Host,
 					Signature:  f.Embedded.Verification.Signature,
 					Callback:   f.Embedded.Verification.Links.Complete.Href,
+					Device:     o.MFADevice,
 					StateToken: o.UserAuth.StateToken,
 				}
 
@@ -312,7 +351,7 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, ok
 				go func() {
 					log.Debug("challenge u2f")
 					log.Info("Sending Push Notification...")
-					err := o.DuoClient.ChallengeU2f()
+					err := o.DuoClient.ChallengeU2f(f.Embedded.Verification.Host)
 					if err != nil {
 						errChan <- err
 					}
@@ -324,15 +363,16 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, ok
 		for o.UserAuth.Status != "SUCCESS" {
 			select {
 			case duoErr := <-errChan:
+				log.Printf("Err: %s", duoErr)
 				if duoErr != nil {
-					return errors.New("Failed Duo challenge")
+					return fmt.Errorf("Failed Duo challenge. Err: %s", duoErr)
 				}
 			default:
 				err := o.Get("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify",
 					payload, &o.UserAuth, "json",
 				)
 				if err != nil {
-					return err
+					return fmt.Errorf("Failed authn verification for okta. Err: %s", err)
 				}
 			}
 			time.Sleep(2 * time.Second)
@@ -415,7 +455,7 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	var client http.Client
 
 	url, err := url.Parse(fmt.Sprintf(
-		"https://%s.%s/%s", o.Organization, OktaServer, path,
+		"%s/%s", o.BaseURL, path,
 	))
 	if err != nil {
 		return err
@@ -434,6 +474,7 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	client = http.Client{
 		Jar: o.CookieJar,
 	}
+
 	req := &http.Request{
 		Method:        method,
 		URL:           url,
@@ -477,6 +518,10 @@ type OktaProvider struct {
 	SessionDuration time.Duration
 	OktaAwsSAMLUrl  string
 	MFAConfig       MFAConfig
+  MFADevice       string
+	// OktaSessionCookieKey represents the name of the session cookie
+	// to be stored in the keyring.
+	OktaSessionCookieKey string
 }
 
 type MFAConfig struct {
@@ -488,7 +533,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	log.Debug("using okta provider")
 	item, err := p.Keyring.Get("okta-creds")
 	if err != nil {
-		log.Debug("couldnt get okta creds from keyring: %s", err)
+		log.Debugf("couldnt get okta creds from keyring: %s", err)
 		return sts.Credentials{}, "", err
 	}
 
@@ -499,12 +544,12 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 
 	// Check for stored session cookie
 	var sessionCookie string
-	cookieItem, err := p.Keyring.Get("okta-session-cookie")
+	cookieItem, err := p.Keyring.Get(p.OktaSessionCookieKey)
 	if err == nil {
 		sessionCookie = string(cookieItem.Data)
 	}
 
-	oktaClient, err := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie)
+	oktaClient, err := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie, p.MFADevice)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
@@ -520,9 +565,9 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	}
 
 	newCookieItem := keyring.Item{
-		Key:   "okta-session-cookie",
-		Data:  []byte(newSessionCookie),
-		Label: "okta session cookie",
+		Key:                         p.OktaSessionCookieKey,
+		Data:                        []byte(newSessionCookie),
+		Label:                       "okta session cookie",
 		KeychainNotTrustApplication: false,
 	}
 

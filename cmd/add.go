@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
@@ -51,6 +51,19 @@ func add(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	oktaRegion, err := lib.Prompt("Okta region ([us], emea, preview)", false)
+	if err != nil {
+		return err
+	}
+	if oktaRegion == "" {
+		oktaRegion = "us"
+	}
+
+	oktaDomain, err := lib.Prompt("Okta domain ["+oktaRegion+".okta.com]", false)
+	if err != nil {
+		return err
+	}
+
 	username, err := lib.Prompt("Okta username", false)
 	if err != nil {
 		return err
@@ -66,9 +79,10 @@ func add(cmd *cobra.Command, args []string) error {
 		Organization: organization,
 		Username:     username,
 		Password:     password,
+		Domain:       oktaDomain,
 	}
 
-	if err := creds.Validate(); err != nil {
+	if err := creds.Validate(mfaDevice); err != nil {
 		log.Debugf("Failed to validate credentials: %s", err)
 		return ErrFailedToValidateCredentials
 	}
