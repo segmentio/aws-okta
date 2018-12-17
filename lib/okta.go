@@ -31,6 +31,8 @@ const (
 
 	// deprecated; use OktaServerUs
 	OktaServer = OktaServerUs
+
+	Timeout = time.Duration(60 * time.Second)
 )
 
 type OktaClient struct {
@@ -436,8 +438,13 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 		header = http.Header{}
 	}
 
+	transCfg := &http.Transport{
+		TLSHandshakeTimeout: Timeout,
+	}
 	client = http.Client{
-		Jar: o.CookieJar,
+		Transport: transCfg,
+		Timeout:   Timeout,
+		Jar:       o.CookieJar,
 	}
 
 	req := &http.Request{
