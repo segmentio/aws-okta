@@ -26,11 +26,11 @@ const (
 )
 
 type ProviderOptions struct {
-	MFADevice          string
 	SessionDuration    time.Duration
 	AssumeRoleDuration time.Duration
 	ExpiryWindow       time.Duration
 	Profiles           Profiles
+	MFAConfig          MFAConfig
 }
 
 func (o ProviderOptions) Validate() error {
@@ -167,7 +167,7 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	}
 
 	provider := OktaProvider{
-		MFADevice:            p.ProviderOptions.MFADevice,
+		MFAConfig:            p.ProviderOptions.MFAConfig,
 		Keyring:              p.keyring,
 		ProfileARN:           profileARN,
 		SessionDuration:      p.SessionDuration,

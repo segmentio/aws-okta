@@ -82,7 +82,7 @@ func add(cmd *cobra.Command, args []string) error {
 		Domain:       oktaDomain,
 	}
 
-	if err := creds.Validate(mfaDevice); err != nil {
+	if err := creds.Validate(mfaConfig); err != nil {
 		log.Debugf("Failed to validate credentials: %s", err)
 		return ErrFailedToValidateCredentials
 	}

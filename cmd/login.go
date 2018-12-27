@@ -77,7 +77,7 @@ func loginRun(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := lib.ProviderOptions{
-		MFADevice:          mfaDevice,
+		MFAConfig:          mfaConfig,
 		Profiles:           profiles,
 		SessionDuration:    sessionTTL,
 		AssumeRoleDuration: assumeRoleTTL,

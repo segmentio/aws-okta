@@ -7,6 +7,7 @@ import (
 
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
+	"github.com/segmentio/aws-okta/lib"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -22,13 +23,13 @@ var (
 
 const (
 	// keep expected behavior pre-u2f with duo push
-	DefaultMFADevice = "phone1"
+	DefaultMFADuoDevice = "phone1"
 )
 
 // global flags
 var (
 	backend           string
-	mfaDevice         string
+	mfaConfig         lib.MFAConfig
 	debug             bool
 	version           string
 	analyticsWriteKey string
@@ -72,12 +73,12 @@ func prerun(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if !cmd.Flags().Lookup("mfa-device").Changed {
-		mfaDeviceFromEnv, ok := os.LookupEnv("AWS_OKTA_MFA_DEVICE")
+	if !cmd.Flags().Lookup("mfa-duo-device").Changed {
+		mfaDeviceFromEnv, ok := os.LookupEnv("AWS_OKTA_MFA_DUO_DEVICE")
 		if ok {
-			mfaDevice = mfaDeviceFromEnv
+			mfaConfig.DuoDevice = mfaDeviceFromEnv
 		} else {
-			mfaDevice = DefaultMFADevice
+			mfaConfig.DuoDevice = DefaultMFADuoDevice
 		}
 	}
 
@@ -111,7 +112,7 @@ func init() {
 	for _, backendType := range keyring.AvailableBackends() {
 		backendsAvailable = append(backendsAvailable, string(backendType))
 	}
-	RootCmd.PersistentFlags().StringVarP(&mfaDevice, "mfa-device", "m", "phone1", "Device to use phone1, phone2, u2f or token")
+	RootCmd.PersistentFlags().StringVarP(&mfaConfig.DuoDevice, "mfa-duo-device", "m", "phone1", "Device to use phone1, phone2, u2f or token")
 	RootCmd.PersistentFlags().StringVarP(&backend, "backend", "b", "", fmt.Sprintf("Secret backend to use %s", backendsAvailable))
 	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
 }
