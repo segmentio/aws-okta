@@ -198,7 +198,7 @@ func (p *Provider) GetSAMLLoginURL() (*url.URL, error) {
 	}
 
 	provider := OktaProvider{
-		MFADevice:            p.ProviderOptions.MFADevice,
+		MFAConfig:            p.ProviderOptions.MFAConfig,
 		Keyring:              p.keyring,
 		ProfileARN:           profileARN,
 		SessionDuration:      p.SessionDuration,

@@ -116,6 +116,8 @@ func execRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Profile '%s' not found in your aws config. Use list command to see configured profiles.", profile)
 	}
 
+	updateMfaConfig(cmd, profiles, profile, &mfaConfig)
+
 	// check for an assume_role_ttl in the profile if we don't have a more explicit one
 	if !cmd.Flags().Lookup("assume-role-ttl").Changed {
 		if err := updateDurationFromConfigProfile(profiles, profile, &assumeRoleTTL); err != nil {

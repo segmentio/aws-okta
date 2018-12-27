@@ -238,25 +238,53 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 	return *samlResp.Credentials, sessionCookie, nil
 }
 
-func selectMFADevice(factors []OktaUserAuthnFactor) (*OktaUserAuthnFactor, error) {
-	if len(factors) > 1 {
-		log.Info("Select a MFA from the following list")
-		for i, f := range factors {
-			log.Infof("%d: %s (%s)", i, f.Provider, f.FactorType)
+func selectMFADeviceFromConfig(o *OktaClient) (*OktaUserAuthnFactor, error) {
+	log.Debugf("MFAConfig: %v\n", o.MFAConfig)
+	if o.MFAConfig.Provider == "" || o.MFAConfig.FactorType == "" {
+		return nil, nil
+	}
+
+	for _, f := range o.UserAuth.Embedded.Factors {
+		log.Debugf("%v\n", f)
+		if strings.EqualFold(f.Provider, o.MFAConfig.Provider) && strings.EqualFold(f.FactorType, o.MFAConfig.FactorType) {
+			log.Debugf("Using matching factor \"%v %v\" from config\n", f.Provider, f.FactorType)
+			return &f, nil
 		}
-		i, err := Prompt("Select MFA method", false)
-		if err != nil {
-			return nil, err
-		}
-		factor, err := strconv.Atoi(i)
-		if err != nil {
-			return nil, err
-		}
-		return &factors[factor], nil
+	}
+
+	return nil, fmt.Errorf("Failed to select MFA device with Provider = \"%s\", FactorType = \"%s\"", o.MFAConfig.Provider, o.MFAConfig.FactorType)
+}
+
+func (o *OktaClient) selectMFADevice() (*OktaUserAuthnFactor, error) {
+	factors := o.UserAuth.Embedded.Factors
+	if len(factors) == 0 {
+		return nil, errors.New("No available MFA Factors")
 	} else if len(factors) == 1 {
 		return &factors[0], nil
 	}
-	return nil, errors.New("Failed to select MFA device")
+
+	factor, err := selectMFADeviceFromConfig(o)
+	if err != nil {
+		return nil, err
+	}
+
+	if factor != nil {
+		return factor, nil
+	}
+
+	log.Info("Select a MFA from the following list")
+	for i, f := range factors {
+		log.Infof("%d: %s (%s)", i, f.Provider, f.FactorType)
+	}
+	i, err := Prompt("Select MFA method", false)
+	if err != nil {
+		return nil, err
+	}
+	factorIdx, err := strconv.Atoi(i)
+	if err != nil {
+		return nil, err
+	}
+	return &factors[factorIdx], nil
 }
 
 func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, error) {
@@ -361,7 +389,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 	var oktaFactorType string
 
 	log.Debugf("%s", o.UserAuth.StateToken)
-	factor, err := selectMFADevice(o.UserAuth.Embedded.Factors)
+	factor, err := o.selectMFADevice()
 	if err != nil {
 		log.Debug("Failed to select MFA device")
 		return

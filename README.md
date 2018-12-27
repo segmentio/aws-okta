@@ -141,6 +141,14 @@ role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
 assume_role_ttl = 12h
 ```
 
+#### Multi-factor Authentication (MFA) configuration
+
+If you have a single MFA factor configured, that factor will be automatically selected.  By default, if you have multiple available MFA factors, then you will be prompted to select which one to use.  However, if you have multiple factors and want to specify which factor to use, you can do one of the following:
+
+* Specify on the command line with `--mfa-provider` and `--mfa-factor-type`
+* Specify with environment variables `AWS_OKTA_MFA_PROVIDER` and `AWS_OKTA_MFA_FACTOR_TYPE`
+* Specify in your aws config with `mfa_provider` and `mfa_factor_type`
+
 ## Backends
 
 We use 99design's keyring package that they use in `aws-vault`.  Because of this, you can choose between different pluggable secret storage backends just like in `aws-vault`.  You can either set your backend from the command line as a flag, or set the `AWS_OKTA_BACKEND` environment variable.

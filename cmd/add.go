@@ -82,6 +82,11 @@ func add(cmd *cobra.Command, args []string) error {
 		Domain:       oktaDomain,
 	}
 
+	// Profiles aren't parsed during `add`, but still want
+	// to centralize the MFA config logic
+	var dummyProfiles lib.Profiles
+	updateMfaConfig(cmd, dummyProfiles, "", &mfaConfig)
+
 	if err := creds.Validate(mfaConfig); err != nil {
 		log.Debugf("Failed to validate credentials: %s", err)
 		return ErrFailedToValidateCredentials
