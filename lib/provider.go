@@ -29,7 +29,7 @@ type ProviderOptions struct {
 	SessionDuration    time.Duration
 	AssumeRoleDuration time.Duration
 	ExpiryWindow       time.Duration
-	Profiles           profiles
+	Profiles           Profiles
 }
 
 func (o ProviderOptions) Validate() error {
@@ -65,7 +65,7 @@ type Provider struct {
 	expires                time.Time
 	keyring                keyring.Keyring
 	sessions               *KeyringSessions
-	profiles               profiles
+	profiles               Profiles
 	defaultRoleSessionName string
 }
 
@@ -134,37 +134,31 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	return value, nil
 }
 
-func (p *Provider) getSamlURL(source string) (string, error) {
-	haystack := []string{p.profile, source, "okta"}
-	for _, profile := range haystack {
-		oktaAwsSAMLUrl, ok := p.profiles[profile]["aws_saml_url"]
-		if ok {
-			log.Debugf("Using aws_saml_url from profile: %s", profile)
-			return oktaAwsSAMLUrl, nil
-		}
+func (p *Provider) getSamlURL() (string, error) {
+	oktaAwsSAMLUrl, profile, err := p.profiles.GetValue(p.profile, "aws_saml_url")
+	if err != nil {
+		log.Debugf("Using aws_saml_url from profile: %s", profile)
+		return oktaAwsSAMLUrl, nil
 	}
 	return "", errors.New("aws_saml_url missing from ~/.aws/config")
 }
 
-func (p *Provider) getOktaSessionCookieKey(source string) string {
-	haystack := []string{p.profile, source, "okta"}
-	for _, profile := range haystack {
-		oktaSessionCookieKey, ok := p.profiles[profile]["okta_session_cookie_key"]
-		if ok {
-			log.Debugf("Using okta_session_cookie_key from profile: %s", profile)
-			return oktaSessionCookieKey
-		}
+func (p *Provider) getOktaSessionCookieKey() string {
+	oktaSessionCookieKey, profile, err := p.profiles.GetValue(p.profile, "okta_session_cookie_key")
+	if err != nil {
+		log.Debugf("Using okta_session_cookie_key from profile: %s", profile)
+		return oktaSessionCookieKey
 	}
 	return "okta-session-cookie"
 }
 
 func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	source := sourceProfile(p.profile, p.profiles)
-	oktaAwsSAMLUrl, err := p.getSamlURL(source)
+	oktaAwsSAMLUrl, err := p.getSamlURL()
 	if err != nil {
 		return sts.Credentials{}, err
 	}
-	oktaSessionCookieKey := p.getOktaSessionCookieKey(source)
+	oktaSessionCookieKey := p.getOktaSessionCookieKey()
 
 	profileARN, ok := p.profiles[source]["role_arn"]
 	if !ok {

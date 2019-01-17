@@ -54,9 +54,9 @@ func loadDurationFlagFromEnv(cmd *cobra.Command, flagName string, envVar string,
 	return nil
 }
 
-func updateDurationFromConfigProfile(profiles map[string]map[string]string, profile string, durationName string, val *time.Duration) error {
-	fromProfile, ok := profiles[profile]["assume_role_ttl"]
-	if !ok {
+func updateDurationFromConfigProfile(profiles lib.Profiles, profile string, val *time.Duration) error {
+	fromProfile, _, err := profiles.GetValue(profile, "assume_role_ttl")
+	if err != nil {
 		return nil
 	}
 
@@ -118,7 +118,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 
 	// check for an assume_role_ttl in the profile if we don't have a more explicit one
 	if !cmd.Flags().Lookup("assume-role-ttl").Changed {
-		if err := updateDurationFromConfigProfile(profiles, profile, "assume_role_ttl", &assumeRoleTTL); err != nil {
+		if err := updateDurationFromConfigProfile(profiles, profile, &assumeRoleTTL); err != nil {
 			fmt.Fprintln(os.Stderr, "warning: could not parse duration from profile config")
 		}
 	}

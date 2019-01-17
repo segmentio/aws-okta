@@ -22,10 +22,10 @@ type awsSession struct {
 
 type KeyringSessions struct {
 	Keyring  keyring.Keyring
-	Profiles profiles
+	Profiles Profiles
 }
 
-func NewKeyringSessions(k keyring.Keyring, p profiles) (*KeyringSessions, error) {
+func NewKeyringSessions(k keyring.Keyring, p Profiles) (*KeyringSessions, error) {
 	return &KeyringSessions{
 		Keyring:  k,
 		Profiles: p,
