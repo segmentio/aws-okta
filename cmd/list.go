@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"sort"
 	"text/tabwriter"
 
 	analytics "github.com/segmentio/analytics-go"
@@ -32,11 +33,20 @@ func listRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Let's sort this list of profiles so we can have some more deterministic output:
+	var profileNames []string
+
+	for profile := range profiles {
+		profileNames = append(profileNames, profile)
+	}
+
+	sort.Strings(profileNames)
+
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 8, 2, '\t', 0)
-	fmt.Fprintln(w, "profile\tarn\tsource_role\t")
-	fmt.Fprintln(w, "---\t---\t---\t")
-	for profile, v := range profiles {
+	fmt.Fprintln(w, "PROFILE\tARN\tSOURCE_ROLE\t")
+	for _, profile := range profileNames {
+		v := profiles[profile]
 		if role, exist := v["role_arn"]; exist {
 			fmt.Fprintf(w, "%s\t%s\t%s\n", profile, role, v["source_profile"])
 		}
