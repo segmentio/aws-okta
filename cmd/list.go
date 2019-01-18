@@ -38,10 +38,7 @@ func listRun(cmd *cobra.Command, args []string) error {
 	fmt.Fprintln(w, "---\t---\t---\t")
 	for profile, v := range profiles {
 		if role, exist := v["role_arn"]; exist {
-			if src, exist := v["source_profile"]; exist {
-				s := fmt.Sprintf("%s\t%s\t%s\t", profile, role, src)
-				fmt.Fprintln(w, s)
-			}
+			fmt.Fprintf(w, "%s\t%s\t%s\n", profile, role, v["source_profile"])
 		}
 	}
 	w.Flush()
