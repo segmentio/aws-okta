@@ -101,7 +101,7 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 	} else if creds.Domain != "" {
 		domain = creds.Domain
 	} else {
-		return &OktaClient{}, errors.New("either creds.Organization (deprecated) or creds.Domain must be set, and not both")
+		return &OktaClient{}, errors.New("either creds.Organization (deprecated) or creds.Domain must be set, but not both. To remedy this, re-add your credentials with `aws-okta add`")
 	}
 
 	// url parse & set base
@@ -526,9 +526,9 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	}
 
 	newCookieItem := keyring.Item{
-		Key:   p.OktaSessionCookieKey,
-		Data:  []byte(newSessionCookie),
-		Label: "okta session cookie",
+		Key:                         p.OktaSessionCookieKey,
+		Data:                        []byte(newSessionCookie),
+		Label:                       "okta session cookie",
 		KeychainNotTrustApplication: false,
 	}
 
