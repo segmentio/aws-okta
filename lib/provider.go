@@ -137,19 +137,19 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 func (p *Provider) getSamlURL() (string, error) {
 	oktaAwsSAMLUrl, profile, err := p.profiles.GetValue(p.profile, "aws_saml_url")
 	if err != nil {
-		log.Debugf("Using aws_saml_url from profile: %s", profile)
-		return oktaAwsSAMLUrl, nil
+		return "", errors.New("aws_saml_url missing from ~/.aws/config")
 	}
-	return "", errors.New("aws_saml_url missing from ~/.aws/config")
+	log.Debugf("Using aws_saml_url from profile: %s", profile)
+	return oktaAwsSAMLUrl, nil
 }
 
 func (p *Provider) getOktaSessionCookieKey() string {
 	oktaSessionCookieKey, profile, err := p.profiles.GetValue(p.profile, "okta_session_cookie_key")
 	if err != nil {
-		log.Debugf("Using okta_session_cookie_key from profile: %s", profile)
-		return oktaSessionCookieKey
+		return "okta-session-cookie"
 	}
-	return "okta-session-cookie"
+	log.Debugf("Using okta_session_cookie_key from profile: %s", profile)
+	return oktaSessionCookieKey
 }
 
 func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
