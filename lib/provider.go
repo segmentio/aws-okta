@@ -3,6 +3,7 @@ package lib
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -181,6 +182,35 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	p.defaultRoleSessionName = oktaUsername
 
 	return creds, nil
+}
+
+func (p *Provider) GetSamlLoginURL() (*url.URL, error) {
+	source := sourceProfile(p.profile, p.profiles)
+	oktaAwsSAMLUrl, err := p.getSamlURL()
+	if err != nil {
+		return &url.URL{}, err
+	}
+	oktaSessionCookieKey := p.getOktaSessionCookieKey()
+
+	profileARN, ok := p.profiles[source]["role_arn"]
+	if !ok {
+		return &url.URL{}, errors.New("Source profile must provide `role_arn`")
+	}
+
+	provider := OktaProvider{
+		MFADevice:            p.ProviderOptions.MFADevice,
+		Keyring:              p.keyring,
+		ProfileARN:           profileARN,
+		SessionDuration:      p.SessionDuration,
+		OktaAwsSAMLUrl:       oktaAwsSAMLUrl,
+		OktaSessionCookieKey: oktaSessionCookieKey,
+	}
+
+	loginURL, err := provider.GetSamlLoginURL()
+	if err != nil {
+		return &url.URL{}, err
+	}
+	return loginURL, nil
 }
 
 // assumeRoleFromSession takes a session created with an okta SAML login and uses that to assume a role
