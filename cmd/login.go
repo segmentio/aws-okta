@@ -119,7 +119,7 @@ func loginRun(cmd *cobra.Command, args []string) error {
 }
 
 func oktaLogin(p *lib.Provider) error {
-	loginURL, err := p.GetSamlLoginURL()
+	loginURL, err := p.GetSAMLLoginURL()
 	if err != nil {
 		return err
 	}

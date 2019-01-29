@@ -537,7 +537,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	return creds, oktaCreds.Username, err
 }
 
-func (p *OktaProvider) GetSamlLoginURL() (*url.URL, error) {
+func (p *OktaProvider) GetSAMLLoginURL() (*url.URL, error) {
 	item, err := p.Keyring.Get("okta-creds")
 	if err != nil {
 		log.Debugf("couldnt get okta creds from keyring: %s", err)

@@ -184,7 +184,7 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	return creds, nil
 }
 
-func (p *Provider) GetSamlLoginURL() (*url.URL, error) {
+func (p *Provider) GetSAMLLoginURL() (*url.URL, error) {
 	source := sourceProfile(p.profile, p.profiles)
 	oktaAwsSAMLUrl, err := p.getSamlURL()
 	if err != nil {
@@ -206,7 +206,7 @@ func (p *Provider) GetSamlLoginURL() (*url.URL, error) {
 		OktaSessionCookieKey: oktaSessionCookieKey,
 	}
 
-	loginURL, err := provider.GetSamlLoginURL()
+	loginURL, err := provider.GetSAMLLoginURL()
 	if err != nil {
 		return &url.URL{}, err
 	}
