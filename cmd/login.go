@@ -64,7 +64,8 @@ func loginRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if _, ok := profiles[profile]; !ok {
+	prof, ok := profiles[profile]
+	if !ok {
 		return fmt.Errorf("Profile '%s' not found in your aws config", profile)
 	}
 
@@ -108,6 +109,31 @@ func loginRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if _, ok := prof["aws_saml_url"]; ok {
+		oktaLogin(p)
+	} else {
+		federatedLogin(p, profile, profiles)
+	}
+
+	return nil
+}
+
+func oktaLogin(p *lib.Provider) error {
+	loginURL, err := p.GetSAMLLoginURL()
+	if err != nil {
+		return err
+	}
+
+	if Stdout {
+		fmt.Println(loginURL.String())
+	} else if err := open.Run(loginURL.String()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func federatedLogin(p *lib.Provider, profile string, profiles lib.Profiles) error {
 	creds, err := p.Retrieve()
 	if err != nil {
 		return err

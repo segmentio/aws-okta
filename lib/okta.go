@@ -536,3 +536,39 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 
 	return creds, oktaCreds.Username, err
 }
+
+func (p *OktaProvider) GetSAMLLoginURL() (*url.URL, error) {
+	item, err := p.Keyring.Get("okta-creds")
+	if err != nil {
+		log.Debugf("couldnt get okta creds from keyring: %s", err)
+		return &url.URL{}, err
+	}
+
+	var oktaCreds OktaCreds
+	if err = json.Unmarshal(item.Data, &oktaCreds); err != nil {
+		return &url.URL{}, errors.New("Failed to get okta credentials from your keyring.  Please make sure you have added okta credentials with `aws-okta add`")
+	}
+
+	var samlURL string
+
+	// maintain compatibility for deprecated creds.Organization
+	if oktaCreds.Domain == "" && oktaCreds.Organization != "" {
+		samlURL = fmt.Sprintf("%s.%s", oktaCreds.Organization, OktaServerDefault)
+	} else if oktaCreds.Domain != "" {
+		samlURL = oktaCreds.Domain
+	} else {
+		return &url.URL{}, errors.New("either oktaCreds.Organization (deprecated) or oktaCreds.Domain must be set, but not both. To remedy this, re-add your credentials with `aws-okta add`")
+	}
+
+	fullSamlURL, err := url.Parse(fmt.Sprintf(
+		"https://%s/%s",
+		samlURL,
+		p.OktaAwsSAMLUrl,
+	))
+
+	if err != nil {
+		return &url.URL{}, err
+	}
+
+	return fullSamlURL, nil
+}
