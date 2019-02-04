@@ -22,17 +22,21 @@ func init() {
 	RootCmd.AddCommand(listCmd)
 }
 
-func listRun(cmd *cobra.Command, args []string) error {
+func listProfiles() (lib.Profiles, error) {
 	config, err := lib.NewConfigFromEnv()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	profiles, err := config.Parse()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	return profiles, nil
+}
+
+func listProfileNames(profiles lib.Profiles) []string {
 	// Let's sort this list of profiles so we can have some more deterministic output:
 	var profileNames []string
 
@@ -41,6 +45,17 @@ func listRun(cmd *cobra.Command, args []string) error {
 	}
 
 	sort.Strings(profileNames)
+
+	return profileNames
+}
+
+func listRun(cmd *cobra.Command, args []string) error {
+	profiles, err := listProfiles()
+	if err != nil {
+		return err
+	}
+
+	profileNames := listProfileNames(profiles)
 
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 8, 2, '\t', 0)

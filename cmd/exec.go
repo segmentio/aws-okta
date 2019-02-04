@@ -20,12 +20,15 @@ var (
 	assumeRoleTTL time.Duration
 )
 
+var profiles, _ = listProfiles()
+
 // execCmd represents the exec command
 var execCmd = &cobra.Command{
-	Use:    "exec <profile> -- <command>",
-	Short:  "exec will run the command specified with aws credentials set in the environment",
-	RunE:   execRun,
-	PreRun: execPre,
+	Use:       "exec <profile> -- <command>",
+	Short:     "exec will run the command specified with aws credentials set in the environment",
+	RunE:      execRun,
+	PreRun:    execPre,
+	ValidArgs: listProfileNames(profiles),
 }
 
 func init() {
