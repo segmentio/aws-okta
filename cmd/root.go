@@ -7,6 +7,7 @@ import (
 
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
+	"github.com/segmentio/aws-okta/lib"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -22,13 +23,13 @@ var (
 
 const (
 	// keep expected behavior pre-u2f with duo push
-	DefaultMFADevice = "phone1"
+	DefaultMFADuoDevice = "phone1"
 )
 
 // global flags
 var (
 	backend           string
-	mfaDevice         string
+	mfaConfig         lib.MFAConfig
 	debug             bool
 	version           string
 	analyticsWriteKey string
@@ -72,15 +73,6 @@ func prerun(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if !cmd.Flags().Lookup("mfa-device").Changed {
-		mfaDeviceFromEnv, ok := os.LookupEnv("AWS_OKTA_MFA_DEVICE")
-		if ok {
-			mfaDevice = mfaDeviceFromEnv
-		} else {
-			mfaDevice = DefaultMFADevice
-		}
-	}
-
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	}
@@ -111,7 +103,44 @@ func init() {
 	for _, backendType := range keyring.AvailableBackends() {
 		backendsAvailable = append(backendsAvailable, string(backendType))
 	}
-	RootCmd.PersistentFlags().StringVarP(&mfaDevice, "mfa-device", "m", "phone1", "Device to use phone1, phone2, u2f or token")
+	RootCmd.PersistentFlags().StringVarP(&mfaConfig.Provider, "mfa-provider", "", "", "MFA Provider to use (eg DUO, OKTA, GOOGLE)")
+	RootCmd.PersistentFlags().StringVarP(&mfaConfig.FactorType, "mfa-factor-type", "", "", "MFA Factor Type to use (eg push, token:software:totp)")
+	RootCmd.PersistentFlags().StringVarP(&mfaConfig.DuoDevice, "mfa-duo-device", "", "phone1", "Device to use phone1, phone2, u2f or token")
 	RootCmd.PersistentFlags().StringVarP(&backend, "backend", "b", "", fmt.Sprintf("Secret backend to use %s", backendsAvailable))
 	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
+}
+
+func updateMfaConfig(cmd *cobra.Command, profiles lib.Profiles, profile string, config *lib.MFAConfig) {
+	if !cmd.Flags().Lookup("mfa-duo-device").Changed {
+		mfaDeviceFromEnv, ok := os.LookupEnv("AWS_OKTA_MFA_DUO_DEVICE")
+		if ok {
+			config.DuoDevice = mfaDeviceFromEnv
+		} else {
+			config.DuoDevice = DefaultMFADuoDevice
+		}
+	}
+
+	if !cmd.Flags().Lookup("mfa-provider").Changed {
+		mfaProvider, ok := os.LookupEnv("AWS_OKTA_MFA_PROVIDER")
+		if ok {
+			config.Provider = mfaProvider
+		} else {
+			mfaProvider, _, err := profiles.GetValue(profile, "mfa_provider")
+			if err == nil {
+				config.Provider = mfaProvider
+			}
+		}
+	}
+
+	if !cmd.Flags().Lookup("mfa-factor-type").Changed {
+		mfaFactorType, ok := os.LookupEnv("AWS_OKTA_MFA_FACTOR_TYPE")
+		if ok {
+			config.FactorType = mfaFactorType
+		} else {
+			mfaFactorType, _, err := profiles.GetValue(profile, "mfa_factor_type")
+			if err == nil {
+				config.FactorType = mfaFactorType
+			}
+		}
+	}
 }
