@@ -61,7 +61,7 @@ completion, e.g. on macOS:
 
 var zshAutocompleteCmd = &cobra.Command{
 	Use:   "zsh",
-	Short: "List users",
+	Short: "Output shell completion code for zsh",
 	Long: `
 Output shell completion code for zsh.
 This command prints shell code which must be evaluated to provide interactive
