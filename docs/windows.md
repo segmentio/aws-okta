@@ -2,11 +2,11 @@
 
 Documentation for getting `aws-okta` working with Windows.
 
-Environments where aws-okta works under Windows basically fall into 2 categories: "normal" Windows and Windows Subsystem for Linux.  Note that your home directory in WSL and your home directory in "normal" Windows are not the same!  Changes you make in WSL will not be reflected outside of WSL and vice versa.
+Environments where aws-okta works under Windows basically fall into 2 categories: Native Windows and Windows Subsystem for Linux (WSL).  Note that your home directory in WSL and your home directory in Native Windows are not the same!  Changes you make in WSL will not be reflected outside of WSL and vice versa.
 
-## "Normal" Windows
+## Native Windows
 
-"Normal" Windows includes Windows shells/environments that execute Windows binaries and use the standard Windows filesystems available in Explorer.  `aws-okta` generally works fine here but `aws-okta` must be run in cmd.exe or PowerShell (not ISE).  Environments where `aws-okta login` and `aws-okta exec` are known to work include:
+Native Windows includes Windows shells/environments that execute Windows binaries and use the standard Windows filesystems available in Explorer.  `aws-okta` generally works fine here but `aws-okta add` must be run in cmd.exe or PowerShell (not ISE) and network drives are known to cause problems with Go.  Environments where `aws-okta login` and `aws-okta exec` are known to work include:
 
 * cmd.exe
 * PowerShell
@@ -16,11 +16,13 @@ Environments where aws-okta works under Windows basically fall into 2 categories
 ### Installation
 
 1. Install [go for windows](https://golang.org/dl/) >= 1.10
-2. From your favorite shell `go get github.com/segmentio/aws-okta`
-3. Add `%USERPROFILE%\go\bin` to your PATH
-4. From a cmd.exe shell run `aws-okta add` - some shells lack the required functionality for this command to work but cmd.exe is consistent
-5. Follow the general instructions for configuring and using `aws-okta`
-6. To update `go get -u github.com/segmentio/aws-okta`
+2. If you're using network drives on your system make sure that `%GOPATH%` and `%GOROOT%` point to a LOCAL disk.  You may also need to download the zip distribution of golang and manually install on a local drive.
+3. Install gcc.  MinGW-w64 package is known to have issues while [Win-builds](http://win-builds.org/doku.php) 1.5.0 has been confirmed working.
+4. From your favorite shell `go get github.com/segmentio/aws-okta`
+5. Add `%USERPROFILE%\go\bin` to your PATH
+6. From a cmd.exe shell run `aws-okta add` - some shells lack the required functionality for this command to work but cmd.exe is consistent
+7. Follow the general instructions for configuring and using `aws-okta`
+8. To update `go get -u github.com/segmentio/aws-okta`
 
 ## Windows Subsystem for Linux
 
