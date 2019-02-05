@@ -20,6 +20,10 @@ You can install with `brew`:
 $ brew install aws-okta
 ```
 
+### Windows
+
+See [docs/windows.md](docs/windows.md) for information on getting this working with Windows.
+
 ## Usage
 
 ### Adding Okta credentials
@@ -170,10 +174,6 @@ $ make release-mac
 ## Analytics
 
 `aws-okta` includes some usage analytics code which Segment uses internally for tracking usage of internal tools.  This analytics code is turned off by default, and can only be enabled via a linker flag at build time, which we do not set for public github releases.
-
-## Windows
-
-See [docs/windows.md](docs/windows.md) for information on getting this working with Windows.
 
 ## Internals
 
