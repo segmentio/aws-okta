@@ -473,6 +473,7 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	}
 
 	transCfg := &http.Transport{
+		Proxy:               http.ProxyFromEnvironment,
 		TLSHandshakeTimeout: Timeout,
 	}
 	client = http.Client{
