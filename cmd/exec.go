@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+
+	log "github.com/sirupsen/logrus"
+
 	"os"
 	"os/exec"
 	"os/signal"
@@ -20,12 +23,21 @@ var (
 	assumeRoleTTL time.Duration
 )
 
+func mustListProfiles() lib.Profiles {
+  profiles, err := listProfiles()
+  if err != nil {
+    log.Panicf("Failed to list profiles: %v", err)
+  }
+  return profiles
+}
+
 // execCmd represents the exec command
 var execCmd = &cobra.Command{
-	Use:    "exec <profile> -- <command>",
-	Short:  "exec will run the command specified with aws credentials set in the environment",
-	RunE:   execRun,
-	PreRun: execPre,
+	Use:       "exec <profile> -- <command>",
+	Short:     "exec will run the command specified with aws credentials set in the environment",
+	RunE:      execRun,
+	PreRun:    execPre,
+	ValidArgs: listProfileNames(mustListProfiles()),
 }
 
 func init() {
