@@ -13,6 +13,8 @@ test: | govendor
 
 all: dist/aws-okta-$(VERSION)-darwin-amd64 dist/aws-okta-$(VERSION)-linux-amd64
 
+container-build: dist/aws-okta-$(VERSION)-linux-amd64
+
 clean:
 	rm -rf ./dist
 
@@ -27,7 +29,11 @@ dist/aws-okta-$(VERSION)-linux-amd64: | govendor dist/
 	govendor sync
 	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $@
 
+dist/aws-okta-$(VERSION)-win-amd64: | govendor dist/
+	govendor sync
+	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $@
+
 govendor:
 	go get -u github.com/kardianos/govendor
 
-.PHONY: clean all govendor
+.PHONY: clean all govendor container-build
