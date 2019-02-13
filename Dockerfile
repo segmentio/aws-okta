@@ -4,9 +4,17 @@ RUN apt-get update && apt-get -y install libusb-dev  libusb-1.0-0-dev && pkg-con
 COPY . .
 RUN make linux
 
-FROM debian:stretch-slim
+FROM debian:stretch-slim AS aws-okta-toolbox
 WORKDIR /app/
 RUN apt-get update && apt-get -y install libusb-1.0-0 ca-certificates python-pip && pip install awscli
+COPY --from=builder /go/src/github.com/segmentio/aws-okta/dist/aws-okta-*-linux-amd64 /app/aws-okta
+RUN useradd -u 10001 scratchuser
+USER scratchuser
+ENTRYPOINT ["/app/aws-okta"]
+
+FROM debian:stretch-slim
+WORKDIR /app/
+RUN apt-get update && apt-get -y install libusb-1.0-0 ca-certificates
 COPY --from=builder /go/src/github.com/segmentio/aws-okta/dist/aws-okta-*-linux-amd64 /app/aws-okta
 RUN useradd -u 10001 scratchuser
 USER scratchuser

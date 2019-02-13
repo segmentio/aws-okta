@@ -25,8 +25,17 @@ $ brew install aws-okta
 See [docs/windows.md](docs/windows.md) for information on getting this working with Windows.
 
 ### Docker
+
+With the provided Dockerfile you can build two different Docker images one without the AWS CLI (default one) and second one with AWS CLI inside the container.
+
 ```
 $ docker build . -t aws-okta
+```
+
+Docker with AWS CLI inside
+
+````
+$ docker build --target aws-okta-toolbox -t aws-okta-toolbox
 ```
 
 ## Usage
@@ -64,8 +73,11 @@ Global Flags:
   -d, --debug            Enable debug logging
 ```
 ### Exec Docker
+
+Example with AWS CLI docker
+
 ```
-docker run -ti -v /Users/XXX/.aws:/home/scratchuser/.aws -v  /Users/XXX/.aws-okta:/home/scratchuser/.aws-okta/ aws-okta  exec profile -- aws s3 ls
+docker run -ti -v /Users/XXX/.aws:/home/scratchuser/.aws -v  /Users/XXX/.aws-okta:/home/scratchuser/.aws-okta/ aws-okta-toolbox  exec profile -- aws s3 ls
 ```
 ### Exec for EKS and Kubernetes
 
