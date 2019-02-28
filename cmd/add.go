@@ -44,6 +44,11 @@ func add(cmd *cobra.Command, args []string) error {
 		log.Fatal(err)
 	}
 
+	if _, err := kr.Get("okta-creds"); err == nil {
+		log.Infof("Credentials already added.")
+		return nil
+	}
+
 	if analyticsEnabled && analyticsClient != nil {
 		analyticsClient.Enqueue(analytics.Track{
 			UserId: username,
