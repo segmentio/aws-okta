@@ -13,13 +13,7 @@ import (
 )
 
 const (
-	OktaServerUs      = "okta.com"
-	OktaServerEmea    = "okta-emea.com"
-	OktaServerPreview = "oktapreview.com"
-	OktaServerDefault = OktaServerUs
-
-	// deprecated; use OktaServerUs
-	OktaServer = OktaServerUs
+	OktaServerDefault = "okta.com"
 )
 
 type OktaCreds struct {

@@ -55,18 +55,6 @@ type SAMLAssertion struct {
 	RawData []byte
 }
 
-func getOktaDomain(region string) (string, error) {
-	switch region {
-	case "us":
-		return OktaServerUs, nil
-	case "emea":
-		return OktaServerEmea, nil
-	case "preview":
-		return OktaServerPreview, nil
-	}
-	return "", fmt.Errorf("invalid region %s", region)
-}
-
 func NewOktaSAMLClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string, mfaConfig MFAConfig) (*OktaSAMLClient, error) {
 	var domain string
 
