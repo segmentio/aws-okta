@@ -162,6 +162,14 @@ For Linux / Ubuntu add the following to your bash config / zshrc etc:
 export AWS_OKTA_BACKEND=secret-service
 ```
 
+## Local Development
+
+If you're developing in Linux, you'll need to get `libusb`. For Ubuntu, install the libusb-1.0-0-dev or use the `Dockerfile` provided in the repo.
+
+## Running Tests
+
+`make test`
+
 ## Releasing
 
 Pushing a new tag will cause Circle to automatically create and push a linux release.  After this is done, you should run (from a mac):
