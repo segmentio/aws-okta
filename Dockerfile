@@ -1,4 +1,4 @@
-from golang as build
+from golang:1.11 as build
 
 ENV SRC github.com/segmentio/aws-okta
 ARG VERSION
