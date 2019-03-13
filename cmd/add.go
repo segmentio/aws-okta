@@ -92,11 +92,10 @@ func add(cmd *cobra.Command, args []string) error {
 		return ErrFailedToValidateCredentials
 	}
 	keyLogFile := addTLSKeyLog(oktaClient)
-	defer func() {
-		if keyLogFile != nil {
-			keyLogFile.Close()
-		}
-	}()
+
+	if keyLogFile != nil {
+		defer keyLogFile.Close()
+	}
 
 	if err := creds.ValidateWithClient(oktaClient); err != nil {
 		log.Debugf("Failed to validate credentials: %s", err)
