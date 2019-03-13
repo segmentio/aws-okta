@@ -86,8 +86,19 @@ func add(cmd *cobra.Command, args []string) error {
 	// to centralize the MFA config logic
 	var dummyProfiles lib.Profiles
 	updateMfaConfig(cmd, dummyProfiles, "", &mfaConfig)
+	var oktaClient *lib.OktaClient
+	if oktaClient, err = lib.NewOktaClient(creds, "", "", mfaConfig); err != nil {
+		log.Debugf("Failed to initialize client: %s", err)
+		return ErrFailedToValidateCredentials
+	}
+	keyLogFile := addTLSKeyLog(oktaClient)
+	defer func() {
+		if keyLogFile != nil {
+			keyLogFile.Close()
+		}
+	}()
 
-	if err := creds.Validate(mfaConfig); err != nil {
+	if err := creds.ValidateWithClient(oktaClient); err != nil {
 		log.Debugf("Failed to validate credentials: %s", err)
 		return ErrFailedToValidateCredentials
 	}
@@ -98,9 +109,9 @@ func add(cmd *cobra.Command, args []string) error {
 	}
 
 	item := keyring.Item{
-		Key:   "okta-creds",
-		Data:  encoded,
-		Label: "okta credentials",
+		Key:                         "okta-creds",
+		Data:                        encoded,
+		Label:                       "okta credentials",
 		KeychainNotTrustApplication: false,
 	}
 

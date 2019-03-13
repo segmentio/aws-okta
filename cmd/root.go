@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/99designs/keyring"
@@ -20,6 +21,12 @@ var (
 	ErrFailedToSetCredentials      = errors.New("Failed to set credentials in your keyring")
 	ErrFailedToValidateCredentials = errors.New("Failed to validate credentials")
 )
+
+// if non-zero, will log TLS keys to this file
+var UseTLSKeyLogFile = "yes"
+
+// SSL to be consistent with other producers, like Firefox and Chrome
+const TLSKeyLogFileEnv = "SSLKEYLOGFILE"
 
 const (
 	// keep expected behavior pre-u2f with duo push
@@ -90,6 +97,24 @@ func prerun(cmd *cobra.Command, args []string) {
 				Set("aws-okta-version", version),
 		})
 	}
+}
+
+// addTLSKeyLog opens a TLS keylog and add its to oktaClient. Its return value
+// should be closed by the caller (if it isn't nil)
+func addTLSKeyLog(oktaClient *lib.OktaClient) (w io.WriteCloser) {
+	if UseTLSKeyLogFile != "" {
+		file := os.Getenv(TLSKeyLogFileEnv)
+		if file != "" {
+			w, err := os.OpenFile(file, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+			if err != nil {
+				log.Debugf("Failed to open TLS key log file %s: %s", file, err)
+			} else {
+				log.Infof("SECURITY WARNING: logging TLS keys to %s", file)
+				oktaClient.TLSKeyLogWriter = w
+			}
+		}
+	}
+	return w
 }
 
 func postrun(cmd *cobra.Command, args []string) {

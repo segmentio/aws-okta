@@ -3,9 +3,11 @@ package lib
 import (
 	"bufio"
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -28,6 +30,9 @@ type DuoClient struct {
 	Callback   string
 	Device     string
 	StateToken string
+	// Insecure! If set to non-nil, a TLS key log will be written here
+	// See https://golang.org/pkg/crypto/tls/#example_Config_keyLogWriter
+	TLSKeyLogWriter io.Writer
 }
 
 type StatusResp struct {
@@ -66,6 +71,23 @@ func NewDuoClient(host, signature, callback string) *DuoClient {
 	}
 }
 
+func (d *DuoClient) httpClient() *http.Client {
+	var httpClient http.Client
+	if d.TLSKeyLogWriter != nil {
+		log.Info("SECURITY WARNING: logging TLS keys for Duo")
+		httpClient = http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					KeyLogWriter: d.TLSKeyLogWriter,
+				},
+			},
+		}
+	} else {
+		httpClient = http.Client{}
+	}
+	return &httpClient
+}
+
 type FacetResponse struct {
 	TrustedFacets []struct {
 		Ids     []string `json:"ids"`
@@ -79,14 +101,12 @@ type FacetResponse struct {
 // U2F Signing Request returns some trusted urls that we need to lookup
 func (d *DuoClient) getTrustedFacet(appId string) (facetResponse *FacetResponse, err error) {
 
-	client := &http.Client{}
-
 	req, err := http.NewRequest("GET", appId, nil)
 	if err != nil {
 		return
 	}
 
-	res, err := client.Do(req)
+	res, err := d.httpClient().Do(req)
 	if err != nil {
 		return
 	}
@@ -248,10 +268,9 @@ func (d *DuoClient) DoAuth(tx string, inputSid string, inputCertsURL string) (si
 		d.Host, tx,
 	)
 
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
+	client := d.httpClient()
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
 	}
 
 	data := uniformResourceLocator.Values{}
@@ -308,7 +327,7 @@ func (d *DuoClient) DoU2FPromptFinish(sid string, sessionID string, resp *u2fhos
 
 	promptUrl := "https://" + d.Host + "/frame/prompt"
 
-	client := &http.Client{}
+	client := d.httpClient()
 
 	var respData = ResponseData{
 		SessionID:     sessionID,
@@ -373,7 +392,7 @@ func (d *DuoClient) DoPrompt(sid string) (txid string, err error) {
 
 	url := "https://" + d.Host + "/frame/prompt"
 
-	client := &http.Client{}
+	client := d.httpClient()
 
 	// Pick between device you want to use -- the flow are bit different depending on
 	// whether you want to use a token or a phone of some sort
@@ -433,7 +452,7 @@ func (d *DuoClient) DoStatus(txid, sid string) (auth string, status StatusResp, 
 
 	url := "https://" + d.Host + "/frame/status"
 
-	client := &http.Client{}
+	client := d.httpClient()
 
 	statusData := "sid=" + sid + "&txid=" + txid
 	req, err = http.NewRequest("POST", url, bytes.NewReader([]byte(statusData)))
@@ -469,7 +488,7 @@ func (d *DuoClient) DoStatus(txid, sid string) (auth string, status StatusResp, 
 }
 
 func (d *DuoClient) DoRedirect(url string, sid string) (string, error) {
-	client := http.Client{}
+	client := d.httpClient()
 	statusData := "sid=" + sid
 	url = "https://" + d.Host + url
 	req, err := http.NewRequest("POST", url, bytes.NewReader([]byte(statusData)))
@@ -512,7 +531,7 @@ func (d *DuoClient) DoCallback(auth string) (err error) {
 
 	sigResp := auth + ":" + app
 
-	client := &http.Client{}
+	client := d.httpClient()
 
 	callbackData := "stateToken=" + d.StateToken + "&sig_response=" + sigResp
 	req, err = http.NewRequest("POST", d.Callback, bytes.NewReader([]byte(callbackData)))

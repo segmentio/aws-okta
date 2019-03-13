@@ -2,9 +2,11 @@ package lib
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -51,6 +53,10 @@ type OktaClient struct {
 	BaseURL         *url.URL
 	Domain          string
 	MFAConfig       MFAConfig
+	// Insecure! If set to non-nil, a TLS key log will be written here
+	// See https://golang.org/pkg/crypto/tls/#example_Config_keyLogWriter
+	// TLSKeyLogWriter propagates to DuoClient
+	TLSKeyLogWriter io.Writer
 }
 
 type MFAConfig struct {
@@ -78,7 +84,10 @@ func (c *OktaCreds) Validate(mfaConfig MFAConfig) error {
 	if err != nil {
 		return err
 	}
+	return c.ValidateWithClient(o)
+}
 
+func (c *OktaCreds) ValidateWithClient(o *OktaClient) error {
 	if err := o.AuthenticateUser(); err != nil {
 		return err
 	}
@@ -338,11 +347,12 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, ok
 			// Contact the Duo to initiate Push notification
 			if f.Embedded.Verification.Host != "" {
 				o.DuoClient = &DuoClient{
-					Host:       f.Embedded.Verification.Host,
-					Signature:  f.Embedded.Verification.Signature,
-					Callback:   f.Embedded.Verification.Links.Complete.Href,
-					Device:     o.MFAConfig.DuoDevice,
-					StateToken: o.UserAuth.StateToken,
+					Host:            f.Embedded.Verification.Host,
+					Signature:       f.Embedded.Verification.Signature,
+					Callback:        f.Embedded.Verification.Links.Complete.Href,
+					Device:          o.MFAConfig.DuoDevice,
+					StateToken:      o.UserAuth.StateToken,
+					TLSKeyLogWriter: o.TLSKeyLogWriter,
 				}
 
 				log.Debugf("Host:%s\nSignature:%s\nStateToken:%s\n",
@@ -472,9 +482,15 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 		header = http.Header{}
 	}
 
+	var tlsClientConfig tls.Config
+	if o.TLSKeyLogWriter != nil {
+		log.Info("SECURITY WARNING: logging TLS keys for Okta")
+		tlsClientConfig.KeyLogWriter = o.TLSKeyLogWriter
+	}
 	transCfg := &http.Transport{
 		Proxy:               http.ProxyFromEnvironment,
 		TLSHandshakeTimeout: Timeout,
+		TLSClientConfig:     &tlsClientConfig,
 	}
 	client = http.Client{
 		Transport: transCfg,
@@ -561,9 +577,9 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	}
 
 	newCookieItem := keyring.Item{
-		Key:   p.OktaSessionCookieKey,
-		Data:  []byte(newSessionCookie),
-		Label: "okta session cookie",
+		Key:                         p.OktaSessionCookieKey,
+		Data:                        []byte(newSessionCookie),
+		Label:                       "okta session cookie",
 		KeychainNotTrustApplication: false,
 	}
 
