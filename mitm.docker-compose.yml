@@ -14,7 +14,7 @@ services:
     expose:
       - '8080'
     ports:
-      - '8081'
+      - '8081:8081'
 
   aws-okta:
     build:
