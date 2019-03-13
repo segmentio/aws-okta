@@ -1,0 +1,38 @@
+version: '3.4'
+
+services:
+  mitmproxy:
+    image: mitmproxy/mitmproxy
+    command: 
+      - mitmweb
+      - "--web-iface=0.0.0.0"
+
+    volumes:
+      - type: volume
+        target: /home/mitmproxy/.mitmproxy
+        source: mitmcerts
+    expose:
+      - '8080'
+    ports:
+      - '8081'
+
+  aws-okta:
+    build:
+      context: .
+      target: debug
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        ln -s /mnt/mitmcerts/mitmproxy-ca-cert.pem /usr/local/share/ca-certificates/mitmproxy.crt
+        update-ca-certificates
+        while true; do sleep 100; done
+    environment:
+      HTTP_PROXY: 'mitmproxy:8080'
+    volumes:
+      - type: volume
+        target: /mnt/mitmcerts
+        source: mitmcerts
+
+volumes:
+  mitmcerts:
+
