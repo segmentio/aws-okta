@@ -23,7 +23,7 @@ var (
 )
 
 // if non-zero, will log TLS keys to this file
-var UseTLSKeyLogFile = "yes"
+var UseTLSKeyLogFile = ""
 
 // SSL to be consistent with other producers, like Firefox and Chrome
 const TLSKeyLogFileEnv = "SSLKEYLOGFILE"
