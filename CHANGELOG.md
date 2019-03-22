@@ -1,3 +1,6 @@
+### 1.4.1
+* Add new environment variable AWS_KEYCLOAK_PROFILE, which is set to the aws role (eg. power-devx)
+
 ### 1.4.0
 * Add `each` subcommand to run something across many envs
 #### 1.4.0-a

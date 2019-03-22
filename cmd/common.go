@@ -64,6 +64,7 @@ func runWithAwsEnv(includeFullEnv bool, name string, arg ...string) error {
 		fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", *stscreds.AccessKeyId),
 		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", *stscreds.SecretAccessKey),
 		fmt.Sprintf("AWS_SESSION_TOKEN=%s", *stscreds.SessionToken),
+		fmt.Sprintf("AWS_KEYCLOAK_PROFILE=%s", awsrole),
 	}
 	if region != "" {
 		env = append(env, fmt.Sprintf("AWS_DEFAULT_REGION=%s", region))
