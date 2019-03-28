@@ -14,8 +14,8 @@ import (
 
 var (
 	organization string
-	oktaRegion   string
 	oktaDomain   string
+	oktaRegion   string
 )
 
 // addCmd represents the add command
@@ -27,10 +27,8 @@ var addCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(addCmd)
-	addCmd.Flags().StringVarP(&organization, "organization", "", "", "Okta organization name")
-	addCmd.Flags().StringVarP(&oktaRegion, "okta-region", "", "", "Okta region (us, emea, preview)")
-	addCmd.Flags().StringVarP(&oktaDomain, "okta-domain", "", "", "Okta domain (e.g. <orgname>.okta.com)")
-	addCmd.Flags().StringVarP(&username, "okta-username", "", "", "Okta username")
+	addCmd.Flags().StringVarP(&oktaDomain, "domain", "", "", "Okta domain (e.g. <orgname>.okta.com)")
+	addCmd.Flags().StringVarP(&username, "username", "", "", "Okta username")
 }
 
 func add(cmd *cobra.Command, args []string) error {
@@ -55,29 +53,38 @@ func add(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	// Ask Okta organization details and username if not given in command line arguments
-	if organization == "" {
+	// Ask Okta organization details if not given in command line argument
+	if oktaDomain == "" {
 		organization, err = lib.Prompt("Okta organization", false)
 		if err != nil {
 			return err
 		}
-	}
 
-	if oktaRegion == "" {
 		oktaRegion, err = lib.Prompt("Okta region ([us], emea, preview)", false)
 		if err != nil {
 			return err
 		}
-	}
-	if oktaRegion == "" {
-		oktaRegion = "us"
-	}
+		if oktaRegion == "" {
+			oktaRegion = "us"
+		}
 
-	if oktaDomain == "" {
-		oktaDomain, err = lib.Prompt("Okta domain ["+organization+".okta.com]", false)
+		tld, err := lib.GetOktaDomain(oktaRegion)
 		if err != nil {
 			return err
 		}
+		defaultOktaDomain := fmt.Sprintf("%s.%s", organization, tld)
+
+		oktaDomain, err = lib.Prompt("Okta domain ["+defaultOktaDomain+"]", false)
+		if err != nil {
+			return err
+		}
+		if oktaDomain == "" {
+			oktaDomain = defaultOktaDomain
+		}
+	}
+
+	// Set calculated Okta domain if left blank
+	if oktaDomain == "" {
 	}
 
 	if username == "" {

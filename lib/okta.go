@@ -86,7 +86,7 @@ func (c *OktaCreds) Validate(mfaConfig MFAConfig) error {
 	return nil
 }
 
-func getOktaDomain(region string) (string, error) {
+func GetOktaDomain(region string) (string, error) {
 	switch region {
 	case "us":
 		return OktaServerUs, nil
