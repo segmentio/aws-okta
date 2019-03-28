@@ -207,7 +207,7 @@ func (d *DuoClient) ChallengeU2f(verificationHost string) (err error) {
 	// immediately if successful, because it's a single check
 	// but for Push you get empty value and have to
 	// wait on second response post-push
-	if d.Device != "u2f" && d.Device != "token" {
+	if d.Device != "token" {
 		// This one should block untile 2fa completed
 		auth, _, err = d.DoStatus(txid, sid)
 		if err != nil {
@@ -349,7 +349,7 @@ func (d *DuoClient) DoU2FPromptFinish(sid string, sessionID string, resp *u2fhos
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Prompt request failed: %d", res.StatusCode)
+		err = fmt.Errorf("U2F Prompt request failed: %d", res.StatusCode)
 		return
 	}
 
