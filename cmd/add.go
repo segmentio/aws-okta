@@ -83,10 +83,6 @@ func add(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Set calculated Okta domain if left blank
-	if oktaDomain == "" {
-	}
-
 	if username == "" {
 		username, err = lib.Prompt("Okta username", false)
 		if err != nil {
