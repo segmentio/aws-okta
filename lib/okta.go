@@ -278,12 +278,18 @@ func (o *OktaClient) selectMFADevice() (*OktaUserAuthnFactor, error) {
 		log.Infof("%d: %s (%s)", i, f.Provider, f.FactorType)
 	}
 	i, err := Prompt("Select MFA method", false)
+	if i == "" {
+		return nil, errors.New("Invalid selection - Please use an option that is listed")
+	}
 	if err != nil {
 		return nil, err
 	}
 	factorIdx, err := strconv.Atoi(i)
 	if err != nil {
 		return nil, err
+	}
+	if factorIdx > (len(factors) - 1) {
+		return nil, errors.New("Invalid selection - Please use an option that is listed")
 	}
 	return &factors[factorIdx], nil
 }
