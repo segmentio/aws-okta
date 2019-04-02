@@ -12,6 +12,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	organization string
+	oktaDomain   string
+	oktaRegion   string
+)
+
 // addCmd represents the add command
 var addCmd = &cobra.Command{
 	Use:   "add",
@@ -21,6 +27,8 @@ var addCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(addCmd)
+	addCmd.Flags().StringVarP(&oktaDomain, "domain", "", "", "Okta domain (e.g. <orgname>.okta.com)")
+	addCmd.Flags().StringVarP(&username, "username", "", "", "Okta username")
 }
 
 func add(cmd *cobra.Command, args []string) error {
@@ -45,30 +53,44 @@ func add(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	// Ask username password from prompt
-	organization, err := lib.Prompt("Okta organization", false)
-	if err != nil {
-		return err
+	// Ask Okta organization details if not given in command line argument
+	if oktaDomain == "" {
+		organization, err = lib.Prompt("Okta organization", false)
+		if err != nil {
+			return err
+		}
+
+		oktaRegion, err = lib.Prompt("Okta region ([us], emea, preview)", false)
+		if err != nil {
+			return err
+		}
+		if oktaRegion == "" {
+			oktaRegion = "us"
+		}
+
+		tld, err := lib.GetOktaDomain(oktaRegion)
+		if err != nil {
+			return err
+		}
+		defaultOktaDomain := fmt.Sprintf("%s.%s", organization, tld)
+
+		oktaDomain, err = lib.Prompt("Okta domain ["+defaultOktaDomain+"]", false)
+		if err != nil {
+			return err
+		}
+		if oktaDomain == "" {
+			oktaDomain = defaultOktaDomain
+		}
 	}
 
-	oktaRegion, err := lib.Prompt("Okta region ([us], emea, preview)", false)
-	if err != nil {
-		return err
-	}
-	if oktaRegion == "" {
-		oktaRegion = "us"
-	}
-
-	oktaDomain, err := lib.Prompt("Okta domain ["+oktaRegion+".okta.com]", false)
-	if err != nil {
-		return err
+	if username == "" {
+		username, err = lib.Prompt("Okta username", false)
+		if err != nil {
+			return err
+		}
 	}
 
-	username, err := lib.Prompt("Okta username", false)
-	if err != nil {
-		return err
-	}
-
+	// Ask for password from prompt
 	password, err := lib.Prompt("Okta password", true)
 	if err != nil {
 		return err
@@ -98,9 +120,9 @@ func add(cmd *cobra.Command, args []string) error {
 	}
 
 	item := keyring.Item{
-		Key:   "okta-creds",
-		Data:  encoded,
-		Label: "okta credentials",
+		Key:                         "okta-creds",
+		Data:                        encoded,
+		Label:                       "okta credentials",
 		KeychainNotTrustApplication: false,
 	}
 
