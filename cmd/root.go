@@ -83,9 +83,9 @@ func prerun(cmd *cobra.Command, args []string) {
 			BatchSize: 1,
 		})
 
-		username = os.Getenv("USER")
+		usr := os.Getenv("USER")
 		analyticsClient.Enqueue(analytics.Identify{
-			UserId: username,
+			UserId: usr,
 			Traits: analytics.NewTraits().
 				Set("aws-okta-version", version),
 		})
