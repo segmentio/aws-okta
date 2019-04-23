@@ -5,11 +5,17 @@
 
 include Makefile
 
+# use bash so we can use set -o pipefail
+SHELL := /bin/bash
+
 # set --pre-release if not tagged or tree is dirty or there's a `-` in the tag
 ifneq (,$(findstring -,$(VERSION)))
 	GITHUB_RELEASE_FLAGS := "--pre-release"
 	PACKAGECLOUD_NAME_SUFFIX := "-prerelease"
 endif
+
+# TODO: use this consistently; 99% of the time, we don't want a v
+VERSION_NO_V := $(patsubst v%,%,$(VERSION))
 
 PACKAGECLOUD_DEB_DISTROS := \
 	debian/stretch \
@@ -41,7 +47,12 @@ github-release:
 	--repo aws-okta \
 	$(GITHUB_RELEASE_FLAGS) \
 	--tag $(VERSION) \
-	--name $(VERSION)
+	--name $(VERSION) || \
+	github-release info \
+	--security-token $$GH_LOGIN \
+	--user segmentio \
+	--repo aws-okta \
+	--tag $(VERSION)
 
 publish-github-darwin-bin: dist/aws-okta-$(VERSION)-darwin-amd64 | github-release
 	github-release upload \
@@ -50,6 +61,7 @@ publish-github-darwin-bin: dist/aws-okta-$(VERSION)-darwin-amd64 | github-releas
 	--repo aws-okta \
 	--tag $(VERSION) \
 	--name aws-okta-$(VERSION)-darwin-amd64 \
+	--replace \
 	--file $<
 
 publish-github-linux-bin: dist/aws-okta-$(VERSION)-linux-amd64 | github-release
@@ -59,6 +71,7 @@ publish-github-linux-bin: dist/aws-okta-$(VERSION)-linux-amd64 | github-release
 	--repo aws-okta \
 	--tag $(VERSION) \
 	--name aws-okta-$(VERSION)-linux-amd64 \
+	--replace \
 	--file $<
 
 publish-github-deb: dist/aws-okta_$(VERSION)_amd64.deb | github-release
@@ -68,6 +81,7 @@ publish-github-deb: dist/aws-okta_$(VERSION)_amd64.deb | github-release
 	--repo aws-okta \
 	--tag $(VERSION) \
 	--name aws-okta_$(VERSION)_amd64.deb \
+	--replace \
 	--file $<
 
 publish-github-rpm: dist/aws-okta_$(VERSION)_amd64.rpm | github-release
@@ -77,6 +91,7 @@ publish-github-rpm: dist/aws-okta_$(VERSION)_amd64.rpm | github-release
 	--repo aws-okta \
 	--tag $(VERSION) \
 	--name aws-okta_$(VERSION)_amd64.rpm \
+	--replace \
 	--file $<
 	
 publish-github-sha256sums: dist/aws-okta-$(VERSION).sha256sums | github-release
@@ -86,6 +101,7 @@ publish-github-sha256sums: dist/aws-okta-$(VERSION).sha256sums | github-release
 	--repo aws-okta \
 	--tag $(VERSION) \
 	--name aws-okta-$(VERSION).sha256sums \
+	--replace \
 	--file dist/aws-okta-$(VERSION).sha256sums
 
 packagecloud.conf.json:
@@ -95,13 +111,19 @@ packagecloud.conf.json:
 # so we attempt to filter that out
 
 publish-packagecloud-deb: dist/aws-okta_$(VERSION)_amd64.deb packagecloud.conf.json
-	@for v in $(PACKAGECLOUD_DEB_DISTROS); do \
+	@set -o pipefail; \
+	for v in $(PACKAGECLOUD_DEB_DISTROS); do \
+		(package_cloud yank --config packagecloud.conf.json segment/aws-okta$(PACKAGECLOUD_NAME_SUFFIX)/$$v aws-okta_$(VERSION_NO_V)_amd64.deb || true) | \
+			grep -v 'with token:' || true ; \
 		package_cloud push --config packagecloud.conf.json segment/aws-okta$(PACKAGECLOUD_NAME_SUFFIX)/$$v $< | \
 			grep -v 'with token:' ; \
 	done
 
 publish-packagecloud-rpm: dist/aws-okta_$(VERSION)_amd64.rpm packagecloud.conf.json
-	@for v in $(PACKAGECLOUD_RPM_DISTROS); do \
+	@set -o pipefail; \
+	for v in $(PACKAGECLOUD_RPM_DISTROS); do \
+		(package_cloud yank --config packagecloud.conf.json segment/aws-okta$(PACKAGECLOUD_NAME_SUFFIX)/$$v aws-okta-$(subst -,_,$(VERSION_NO_V))-1.x86_64.rpm || true) | \
+			grep -v 'with token:' || true ; \
 		package_cloud push --config packagecloud.conf.json segment/aws-okta$(PACKAGECLOUD_NAME_SUFFIX)/$$v $< | \
 			grep -v 'with token:' ; \
 	done
