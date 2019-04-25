@@ -11,7 +11,7 @@ import (
 	"net/url"
 
 	"github.com/99designs/keyring"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/lordbyron/oauth2-auth-cli"
 	"github.com/mulesoft-labs/aws-keycloak/provider/saml"
 )

@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/99designs/keyring"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 
@@ -23,6 +23,7 @@ var (
 
 const (
 	KeycloakConfigUrl = "https://wiki.corp.mulesoft.com/download/attachments/53909517/keycloak-config?api=v2"
+	KeycloakVersion   = "1.4.2"
 )
 
 // global flags
@@ -47,7 +48,7 @@ var RootCmd = &cobra.Command{
 	SilenceErrors:     true,
 	PersistentPreRunE: prerun,
 	RunE:              runCommand,
-	Version:           "1.4.1",
+	Version:           KeycloakVersion,
 }
 
 func runCommand(cmd *cobra.Command, args []string) error {

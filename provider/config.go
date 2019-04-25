@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	homedir "github.com/mitchellh/go-homedir"
 	ini "github.com/vaughan0/go-ini"
 )

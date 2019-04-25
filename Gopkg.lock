@@ -10,14 +10,6 @@
   revision = "ff690aee77e9b2c9631d43885d805f9b22817b82"
 
 [[projects]]
-  digest = "1:69b1cc331fca23d702bd72f860c6a647afd0aa9fcbc1d0659b1365e26546dd70"
-  name = "github.com/Sirupsen/logrus"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "bcd833dfe83d3cebad139e4a29ed79cb2318bf95"
-  version = "v1.2.0"
-
-[[projects]]
   branch = "master"
   digest = "1:d73d422b7f34d8e930d6d9c3ae6ce5c8f4a2c77e1ea43f7f127a5cd084e32ccb"
   name = "github.com/aulanov/go.dbus"
@@ -26,7 +18,7 @@
   revision = "25c3068a42a0b50b877953fb249dbcffc6bd1bca"
 
 [[projects]]
-  digest = "1:247fcfd895f74bf19014163bec26aa01c113c28f5f25c602d85e6439e77f0b46"
+  digest = "1:a205540424e2719453128a330565887552ee83b0a563809a3b96464a4384659d"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -38,6 +30,7 @@
     "aws/credentials",
     "aws/credentials/ec2rolecreds",
     "aws/credentials/endpointcreds",
+    "aws/credentials/processcreds",
     "aws/credentials/stscreds",
     "aws/csm",
     "aws/defaults",
@@ -59,8 +52,8 @@
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "333869724b050875e82f4e593488ad2464c41331"
-  version = "v1.15.83"
+  revision = "2024b98be3d7bca1d26036f16ef34b0275ebb562"
+  version = "v1.19.18"
 
 [[projects]]
   digest = "1:586992e81213a853bfe5c102709c0c92020d21b386907ceae783f13bbe899ad7"
@@ -96,12 +89,12 @@
   version = "v5.0"
 
 [[projects]]
-  digest = "1:bc38c7c481812e178d85160472e231c5e1c9a7f5845d67e23ee4e706933c10d8"
+  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
   name = "github.com/golang/mock"
   packages = ["gomock"]
   pruneopts = "UT"
-  revision = "c34cdb4725f4c3844d095133c6e40e448b86589b"
-  version = "v1.1.1"
+  revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:97df918963298c287643883209a2c3f642e6593379f97ab400c2a2e219ab647d"
@@ -128,11 +121,11 @@
   version = "v1.0"
 
 [[projects]]
-  digest = "1:e22af8c7518e1eab6f2eab2b7d7558927f816262586cd6ed9f349c97a6c285c4"
+  digest = "1:bb81097a5b62634f3e9fec1014657855610c82d19b9a40c17612e32651e35dca"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0b12d6b5"
+  revision = "c2b33e84"
 
 [[projects]]
   branch = "master"
@@ -152,11 +145,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:52251703a57761ad8de4126d2fb6b3506dbd2c53ef42453b88db785378570be9"
+  digest = "1:525ae652295f8d60d167ef6a6e0d5048390ae15484d1be590a3c6313fb6a267b"
   name = "github.com/lordbyron/oauth2-auth-cli"
   packages = ["."]
   pruneopts = "UT"
-  revision = "53089204fd14e027ef9de851e864cc77b562dd3f"
+  revision = "c9a64b4ef0b3775a8824104ab950c469b69022aa"
 
 [[projects]]
   branch = "master"
@@ -173,6 +166,14 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "8da3024e53de85cef9aac652d4144717f37ada86"
+
+[[projects]]
+  digest = "1:fd61cf4ae1953d55df708acb6b91492d538f49c305b364a014049914495db426"
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "8bdbc7bcc01dcbb8ec23dc8a28e332258d25251f"
+  version = "v1.4.1"
 
 [[projects]]
   branch = "master"
@@ -270,7 +271,6 @@
   analyzer-version = 1
   input-imports = [
     "github.com/99designs/keyring",
-    "github.com/Sirupsen/logrus",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/session",
@@ -278,6 +278,7 @@
     "github.com/golang/mock/gomock",
     "github.com/lordbyron/oauth2-auth-cli",
     "github.com/mitchellh/go-homedir",
+    "github.com/sirupsen/logrus",
     "github.com/skratchdot/open-golang/open",
     "github.com/spf13/cobra",
     "github.com/vaughan0/go-ini",

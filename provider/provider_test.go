@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/golang/mock/gomock"
 	"github.com/mulesoft-labs/aws-keycloak/provider"
