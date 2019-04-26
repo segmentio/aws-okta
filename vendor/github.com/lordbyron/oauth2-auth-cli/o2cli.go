@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	rndm "github.com/nmrshll/rndm-go"
 	"github.com/skratchdot/open-golang/open"
 )

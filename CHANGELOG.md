@@ -1,3 +1,6 @@
+### 1.4.2
+* Update the aws-sdk-go, gomock, and logrus versions.
+
 ### 1.4.1
 * Add new environment variable AWS_KEYCLOAK_PROFILE, which is set to the aws role (eg. power-devx)
 
