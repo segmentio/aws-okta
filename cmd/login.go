@@ -112,12 +112,9 @@ func loginRun(cmd *cobra.Command, args []string) error {
 	}
 
 	if _, ok := prof["aws_saml_url"]; ok {
-		oktaLogin(p)
-	} else {
-		federatedLogin(p, profile, profiles)
+		return oktaLogin(p)
 	}
-
-	return nil
+	return federatedLogin(p, profile, profiles)
 }
 
 func oktaLogin(p *lib.Provider) error {
