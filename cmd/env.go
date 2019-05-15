@@ -11,22 +11,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// shellCmd represents the shell command
-var shellCmd = &cobra.Command{
-	Use:       "shell <profile>",
-	Short:     "shell writes sourceable export statements for the specified profile",
-	RunE:      shellRun,
-	Example:   "source <$(aws-okta shell test)",
+// envCmd represents the env command
+var envCmd = &cobra.Command{
+	Use:       "env <profile>",
+	Short:     "env prints out export commands for the specified profile",
+	RunE:      envRun,
+	Example:   "source <$(aws-okta env test)",
 	ValidArgs: listProfileNames(mustListProfiles()),
 }
 
 func init() {
-	RootCmd.AddCommand(shellCmd)
-	shellCmd.Flags().DurationVarP(&sessionTTL, "session-ttl", "t", time.Hour, "Expiration time for okta role session")
-	shellCmd.Flags().DurationVarP(&assumeRoleTTL, "assume-role-ttl", "a", time.Hour, "Expiration time for assumed role")
+	RootCmd.AddCommand(envCmd)
+	envCmd.Flags().DurationVarP(&sessionTTL, "session-ttl", "t", time.Hour, "Expiration time for okta role session")
+	envCmd.Flags().DurationVarP(&assumeRoleTTL, "assume-role-ttl", "a", time.Hour, "Expiration time for assumed role")
 }
 
-func shellRun(cmd *cobra.Command, args []string) error {
+func envRun(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return ErrTooFewArguments
 	}
@@ -80,7 +80,7 @@ func shellRun(cmd *cobra.Command, args []string) error {
 				Set("backend", backend).
 				Set("aws-okta-version", version).
 				Set("profile", profile).
-				Set("command", "shell"),
+				Set("command", "env"),
 		})
 	}
 
