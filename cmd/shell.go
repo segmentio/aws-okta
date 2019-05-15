@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-
 	"os"
 	"time"
 
@@ -15,7 +14,7 @@ import (
 // shellCmd represents the shell command
 var shellCmd = &cobra.Command{
 	Use:       "shell <profile>",
-	Short:     "shell writes a sourceable export statements to set environment variables for the current shell for the specified profile",
+	Short:     "shell writes sourceable export statements for the specified profile",
 	RunE:      shellRun,
 	Example:   "source <$(aws-okta shell test)",
 	ValidArgs: listProfileNames(mustListProfiles()),
@@ -94,6 +93,7 @@ func shellRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
 	fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", creds.AccessKeyID)
 	fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", creds.SecretAccessKey)
 	fmt.Printf("export AWS_OKTA_PROFILE=%s\n", profile)
@@ -101,8 +101,8 @@ func shellRun(cmd *cobra.Command, args []string) error {
 	if region, ok := profiles[profile]["region"]; ok {
 		fmt.Printf("export AWS_DEFAULT_REGION=%s\n", region)
 		fmt.Printf("export AWS_REGION=%s\n", region)
-		os.Setenv("AWS_REGION", region)
 	}
+
 	if creds.SessionToken != "" {
 		fmt.Printf("export AWS_SESSION_TOKEN=%s\n", creds.SessionToken)
 		fmt.Printf("export AWS_SECURITY_TOKEN=%s\n", creds.SessionToken)
