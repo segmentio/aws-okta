@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-
 	"os"
 	"time"
 
@@ -12,22 +11,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// shellCmd represents the shell command
-var shellCmd = &cobra.Command{
-	Use:       "shell <profile>",
-	Short:     "shell writes a sourceable export statements to set environment variables for the current shell for the specified profile",
-	RunE:      shellRun,
-	Example:   "source <$(aws-okta shell test)",
+// envCmd represents the env command
+var envCmd = &cobra.Command{
+	Use:       "env <profile>",
+	Short:     "env prints out export commands for the specified profile",
+	RunE:      envRun,
+	Example:   "source <$(aws-okta env test)",
 	ValidArgs: listProfileNames(mustListProfiles()),
 }
 
 func init() {
-	RootCmd.AddCommand(shellCmd)
-	shellCmd.Flags().DurationVarP(&sessionTTL, "session-ttl", "t", time.Hour, "Expiration time for okta role session")
-	shellCmd.Flags().DurationVarP(&assumeRoleTTL, "assume-role-ttl", "a", time.Hour, "Expiration time for assumed role")
+	RootCmd.AddCommand(envCmd)
+	envCmd.Flags().DurationVarP(&sessionTTL, "session-ttl", "t", time.Hour, "Expiration time for okta role session")
+	envCmd.Flags().DurationVarP(&assumeRoleTTL, "assume-role-ttl", "a", time.Hour, "Expiration time for assumed role")
 }
 
-func shellRun(cmd *cobra.Command, args []string) error {
+func envRun(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return ErrTooFewArguments
 	}
@@ -81,7 +80,7 @@ func shellRun(cmd *cobra.Command, args []string) error {
 				Set("backend", backend).
 				Set("aws-okta-version", version).
 				Set("profile", profile).
-				Set("command", "shell"),
+				Set("command", "env"),
 		})
 	}
 
@@ -94,6 +93,7 @@ func shellRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
 	fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", creds.AccessKeyID)
 	fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", creds.SecretAccessKey)
 	fmt.Printf("export AWS_OKTA_PROFILE=%s\n", profile)
@@ -101,8 +101,8 @@ func shellRun(cmd *cobra.Command, args []string) error {
 	if region, ok := profiles[profile]["region"]; ok {
 		fmt.Printf("export AWS_DEFAULT_REGION=%s\n", region)
 		fmt.Printf("export AWS_REGION=%s\n", region)
-		os.Setenv("AWS_REGION", region)
 	}
+
 	if creds.SessionToken != "" {
 		fmt.Printf("export AWS_SESSION_TOKEN=%s\n", creds.SessionToken)
 		fmt.Printf("export AWS_SECURITY_TOKEN=%s\n", creds.SessionToken)
