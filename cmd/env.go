@@ -94,18 +94,18 @@ func envRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", creds.AccessKeyID)
-	fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", creds.SecretAccessKey)
-	fmt.Printf("export AWS_OKTA_PROFILE=%s\n", profile)
+	fmt.Printf("export AWS_ACCESS_KEY_ID=%q\n", creds.AccessKeyID)
+	fmt.Printf("export AWS_SECRET_ACCESS_KEY=%q\n", creds.SecretAccessKey)
+	fmt.Printf("export AWS_OKTA_PROFILE=%q\n", profile)
 
 	if region, ok := profiles[profile]["region"]; ok {
-		fmt.Printf("export AWS_DEFAULT_REGION=%s\n", region)
-		fmt.Printf("export AWS_REGION=%s\n", region)
+		fmt.Printf("export AWS_DEFAULT_REGION=%q\n", region)
+		fmt.Printf("export AWS_REGION=%q\n", region)
 	}
 
 	if creds.SessionToken != "" {
-		fmt.Printf("export AWS_SESSION_TOKEN=%s\n", creds.SessionToken)
-		fmt.Printf("export AWS_SECURITY_TOKEN=%s\n", creds.SessionToken)
+		fmt.Printf("export AWS_SESSION_TOKEN=%q\n", creds.SessionToken)
+		fmt.Printf("export AWS_SECURITY_TOKEN=%q\n", creds.SessionToken)
 	}
 
 	return nil
