@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
+	u2fhost "github.com/marshallbrekka/go-u2fhost"
 	"github.com/segmentio/aws-okta/lib/saml"
 	log "github.com/sirupsen/logrus"
 )
@@ -296,6 +297,7 @@ func (o *OktaClient) selectMFADevice() (*OktaUserAuthnFactor, error) {
 
 func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, error) {
 	var mfaCode string
+	var payload []byte
 	var err error
 	//Software and Hardware based OTP Tokens
 	if strings.Contains(oktaFactorType, "token") {
@@ -304,6 +306,10 @@ func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, 
 		if err != nil {
 			return nil, err
 		}
+		payload, err = json.Marshal(OktaStateToken{
+			StateToken: o.UserAuth.StateToken,
+			PassCode:   mfaCode,
+		})
 	} else if strings.Contains(oktaFactorType, "sms") {
 		log.Debug("SMS MFA")
 		payload, err := json.Marshal(OktaStateToken{
@@ -324,47 +330,129 @@ func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, 
 		if err != nil {
 			return nil, err
 		}
+		payload, err = json.Marshal(OktaStateToken{
+			StateToken: o.UserAuth.StateToken,
+			PassCode:   mfaCode,
+		})
+	} else if strings.Contains(oktaFactorType, "u2f") {
+		payload, err = o.u2fChallenge(oktaFactorId)
 	}
-	payload, err := json.Marshal(OktaStateToken{
+	return payload, err
+}
+
+func (o *OktaClient) u2fChallenge(oktaFactorID string) ([]byte, error) {
+	log.Debug("U2F")
+
+	u2fPayload, err := json.Marshal(OktaStateToken{
 		StateToken: o.UserAuth.StateToken,
-		PassCode:   mfaCode,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return payload, nil
+
+	log.Debug("Requesting U2F Verfication")
+	err = o.Get("POST", "api/v1/authn/factors/"+oktaFactorID+"/verify",
+		u2fPayload, o.UserAuth, "json",
+	)
+	if err != nil {
+		return nil, err
+	}
+	request := &u2fhost.AuthenticateRequest{
+		Challenge: o.UserAuth.Embedded.Factor.Embedded.Challenge.Nonce,
+		AppId:     o.UserAuth.Embedded.Factor.Profile.AppID,
+		Facet:	   o.UserAuth.Embedded.Factor.Profile.AppID,
+		KeyHandle: o.UserAuth.Embedded.Factor.Profile.CredentialID,
+	}
+
+	allDevices := u2fhost.Devices()
+	// Filter only the devices that can be opened.
+	openDevices := []u2fhost.Device{}
+	for i, device := range allDevices {
+		err := device.Open()
+		if err == nil {
+			openDevices = append(openDevices, allDevices[i])
+			defer func(i int) {
+				allDevices[i].Close()
+			}(i)
+		}
+	}
+
+	authTimeout := o.UserAuth.Embedded.Factor.Embedded.Challenge.TimeoutSeconds
+	if authTimeout == 0 {
+		authTimeout = 20
+	}
+
+	var response *u2fhost.AuthenticateResponse
+	prompted := false
+	timeout := time.After(time.Second * time.Duration(authTimeout))
+	interval := time.NewTicker(time.Millisecond * 250)
+	defer interval.Stop()
+	for {
+		if response != nil {
+			break
+		}
+		select {
+		case <-timeout:
+			log.Infof("Failed to get authentication response after %d seconds", authTimeout)
+			break
+		case <-interval.C:
+			for _, device := range openDevices {
+				response, err = device.Authenticate(request)
+				if err == nil {
+					break
+				} else if _, ok := err.(*u2fhost.TestOfUserPresenceRequiredError); ok {
+					if !prompted {
+						fmt.Println("Touch the flashing U2F device to authenticate...")
+					}
+					prompted = true
+				} else {
+					return nil, err
+				}
+			}
+		}
+	}
+
+	log.Debugf("Client Data: %s", response.ClientData)
+	log.Debugf("Signature Data: %s", response.SignatureData)
+
+	payload, err := json.Marshal(OktaU2FResponse{
+		StateToken:    o.UserAuth.StateToken,
+		ClientData:    response.ClientData,
+		SignatureData: response.SignatureData,
+	})
+
+	return payload, err
 }
 
 func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, oktaFactorId string) error {
+
 	//Initiate Push Notification
-	if o.UserAuth.Status == "MFA_CHALLENGE" {
+	if o.UserAuth.Status == "MFA_CHALLENGE" && oktaFactorProvider == "DUO" {
 		f := o.UserAuth.Embedded.Factor
 		errChan := make(chan error, 1)
 
-		if oktaFactorProvider == "DUO" {
-			// Contact the Duo to initiate Push notification
-			if f.Embedded.Verification.Host != "" {
-				o.DuoClient = &DuoClient{
-					Host:       f.Embedded.Verification.Host,
-					Signature:  f.Embedded.Verification.Signature,
-					Callback:   f.Embedded.Verification.Links.Complete.Href,
-					Device:     o.MFAConfig.DuoDevice,
-					StateToken: o.UserAuth.StateToken,
-				}
-
-				log.Debugf("Host:%s\nSignature:%s\nStateToken:%s\n",
-					f.Embedded.Verification.Host, f.Embedded.Verification.Signature,
-					o.UserAuth.StateToken)
-
-				go func() {
-					log.Debug("challenge u2f")
-					log.Info("Sending Push Notification...")
-					err := o.DuoClient.ChallengeU2f(f.Embedded.Verification.Host)
-					if err != nil {
-						errChan <- err
-					}
-				}()
+		// Contact the Duo to initiate Push notification
+		if f.Embedded.Verification.Host != "" {
+			o.DuoClient = &DuoClient{
+				Host:       f.Embedded.Verification.Host,
+				Signature:  f.Embedded.Verification.Signature,
+				Callback:   f.Embedded.Verification.Links.Complete.Href,
+				Device:     o.MFAConfig.DuoDevice,
+				StateToken: o.UserAuth.StateToken,
 			}
+
+			log.Debugf("Host:%s\nSignature:%s\nStateToken:%s\n",
+				f.Embedded.Verification.Host, f.Embedded.Verification.Signature,
+				o.UserAuth.StateToken)
+
+			go func() {
+				log.Debug("challenge u2f")
+				log.Info("Sending Push Notification...")
+				err := o.DuoClient.ChallengeU2f(f.Embedded.Verification.Host)
+				if err != nil {
+					errChan <- err
+				}
+			}()
 		}
 
 		// Poll Okta until authentication has been completed
@@ -418,12 +506,16 @@ func (o *OktaClient) challengeMFA() (err error) {
 	log.Debugf("Okta Factor Type: %s", oktaFactorType)
 
 	payload, err = o.preChallenge(oktaFactorId, oktaFactorType)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
 	err = o.Get("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify",
 		payload, &o.UserAuth, "json",
 	)
 	if err != nil {
-		return
+		return err
 	}
 
 	//Handle Push Notification
@@ -450,6 +542,8 @@ func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
 		} else {
 			err = fmt.Errorf("provider %s with factor push not supported", f.Provider)
 		}
+	case "u2f":
+		id = f.Id
 	default:
 		err = fmt.Errorf("factor %s not supported", f.FactorType)
 	}
@@ -505,11 +599,17 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 	}
 
 	if res, err = client.Do(req); err != nil {
-		return
+		return err
 	}
 	defer res.Body.Close()
 
+
 	if res.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		log.Debug(string(body))
 		err = fmt.Errorf("%s %v: %s", method, url, res.Status)
 	} else if recv != nil {
 		switch format {
@@ -526,8 +626,7 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 			}
 		}
 	}
-
-	return
+	return err
 }
 
 type OktaProvider struct {
@@ -572,9 +671,9 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	}
 
 	newCookieItem := keyring.Item{
-		Key:                         p.OktaSessionCookieKey,
-		Data:                        []byte(newSessionCookie),
-		Label:                       "okta session cookie",
+		Key:   p.OktaSessionCookieKey,
+		Data:  []byte(newSessionCookie),
+		Label: "okta session cookie",
 		KeychainNotTrustApplication: false,
 	}
 

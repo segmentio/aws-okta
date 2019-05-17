@@ -2,6 +2,8 @@ github.com/99designs/keyring v0.0.0-20180523072454-ccd0779e6f10 h1:sQgghNA6oD/My
 github.com/99designs/keyring v0.0.0-20180523072454-ccd0779e6f10/go.mod h1:aKt8W/yd91/xHY6ixZAJZ2vYbhr3pP8DcrvuGSGNPJk=
 github.com/99designs/keyring v0.0.0-20181012025958-ff690aee77e9 h1:jst3zUpvYIaHu9OIWsR7w6z7a9sDfdWiXRak7URECV8=
 github.com/99designs/keyring v0.0.0-20181012025958-ff690aee77e9/go.mod h1:aKt8W/yd91/xHY6ixZAJZ2vYbhr3pP8DcrvuGSGNPJk=
+github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053 h1:H/GMMKYPkEIC3DF/JWQz8Pdd+Feifov2EIgGfNpeogI=
+github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053/go.mod h1:xW8sBma2LE3QxFSzCnH9qe6gAE2yO9GvQaWwX89HxbE=
 github.com/aulanov/go.dbus v0.0.0-20150729231527-25c3068a42a0 h1:EEDvbomAQ+MFWqJ9FM6RXyJTkc4lckyWsbc5CGQkG1Y=
 github.com/aulanov/go.dbus v0.0.0-20150729231527-25c3068a42a0/go.mod h1:VHvUx+4lTCaJ8zUnEXF4cWEc9c8lnDt4PGLwlZ+3yaM=
 github.com/aws/aws-sdk-go v0.0.0-20170323003848-3bc643c63c6f h1:jUaGnP0b/8/iuYRSz0wldEkOmRa6Veb/bRy55KOdQwQ=
