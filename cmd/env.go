@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/99designs/keyring"
+	"github.com/alessio/shellescape"
 	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
 	"github.com/spf13/cobra"
@@ -94,18 +95,18 @@ func envRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("export AWS_ACCESS_KEY_ID=%q\n", creds.AccessKeyID)
-	fmt.Printf("export AWS_SECRET_ACCESS_KEY=%q\n", creds.SecretAccessKey)
-	fmt.Printf("export AWS_OKTA_PROFILE=%q\n", profile)
+	fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", shellescape.Quote(creds.AccessKeyID))
+	fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", shellescape.Quote(creds.SecretAccessKey))
+	fmt.Printf("export AWS_OKTA_PROFILE=%s\n", shellescape.Quote(profile))
 
 	if region, ok := profiles[profile]["region"]; ok {
-		fmt.Printf("export AWS_DEFAULT_REGION=%q\n", region)
-		fmt.Printf("export AWS_REGION=%q\n", region)
+		fmt.Printf("export AWS_DEFAULT_REGION=%s\n", shellescape.Quote(region))
+		fmt.Printf("export AWS_REGION=%s\n", shellescape.Quote(region))
 	}
 
 	if creds.SessionToken != "" {
-		fmt.Printf("export AWS_SESSION_TOKEN=%q\n", creds.SessionToken)
-		fmt.Printf("export AWS_SECURITY_TOKEN=%q\n", creds.SessionToken)
+		fmt.Printf("export AWS_SESSION_TOKEN=%s\n", shellescape.Quote(creds.SessionToken))
+		fmt.Printf("export AWS_SECURITY_TOKEN=%s\n", shellescape.Quote(creds.SessionToken))
 	}
 
 	return nil
