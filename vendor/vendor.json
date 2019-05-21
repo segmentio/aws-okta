@@ -9,6 +9,12 @@
 			"revisionTime": "2018-05-23T07:24:54Z"
 		},
 		{
+			"checksumSHA1": "LLc3AEusjGdcMCP7FxxAcwMs4oc=",
+			"path": "github.com/alessio/shellescape",
+			"revision": "b115ca0f905302485d44ac84863e041f5fc45a71",
+			"revisionTime": "2019-04-09T00:47:28Z"
+		},
+		{
 			"checksumSHA1": "bD0oh9rHp+3ElrjWtaou004QTt8=",
 			"path": "github.com/aulanov/go.dbus",
 			"revision": "25c3068a42a0b50b877953fb249dbcffc6bd1bca",
