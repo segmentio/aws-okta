@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/99designs/keyring"
@@ -19,6 +20,15 @@ var envCmd = &cobra.Command{
 	RunE:      envRun,
 	Example:   "source <$(aws-okta env test)",
 	ValidArgs: listProfileNames(mustListProfiles()),
+}
+
+func printExport(varName, varValue string) {
+	exportString := "export %s=%s\n"
+	myShell, hasShell := os.LookupEnv("SHELL")
+	if hasShell && strings.Contains(myShell, "fish") {
+		exportString = "set -x %s %s\n"
+	}
+	fmt.Printf(exportString, varName, varValue)
 }
 
 func init() {
@@ -95,18 +105,19 @@ func envRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", shellescape.Quote(creds.AccessKeyID))
-	fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", shellescape.Quote(creds.SecretAccessKey))
-	fmt.Printf("export AWS_OKTA_PROFILE=%s\n", shellescape.Quote(profile))
+	printExport("AWS_ACCESS_KEY_ID", shellescape.Quote(creds.AccessKeyID))
+	printExport("AWS_SECRET_ACCESS_KEY", shellescape.Quote(creds.SecretAccessKey))
+	printExport("AWS_OKTA_PROFILE", shellescape.Quote(profile))
 
 	if region, ok := profiles[profile]["region"]; ok {
-		fmt.Printf("export AWS_DEFAULT_REGION=%s\n", shellescape.Quote(region))
-		fmt.Printf("export AWS_REGION=%s\n", shellescape.Quote(region))
+		printExport("AWS_DEFAULT_REGION", shellescape.Quote(region))
+		printExport("AWS_REGION", shellescape.Quote(region))
+
 	}
 
 	if creds.SessionToken != "" {
-		fmt.Printf("export AWS_SESSION_TOKEN=%s\n", shellescape.Quote(creds.SessionToken))
-		fmt.Printf("export AWS_SECURITY_TOKEN=%s\n", shellescape.Quote(creds.SessionToken))
+		printExport("AWS_SESSION_TOKEN", shellescape.Quote(creds.SessionToken))
+		printExport("AWS_SECURITY_TOKEN", shellescape.Quote(creds.SessionToken))
 	}
 
 	return nil
