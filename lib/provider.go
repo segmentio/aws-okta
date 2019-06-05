@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	MaxSessionDuration    = time.Hour * 36
+	MaxSessionDuration    = time.Hour * 24 * 90
 	MinSessionDuration    = time.Minute * 15
 	MinAssumeRoleDuration = time.Minute * 15
 	MaxAssumeRoleDuration = time.Hour * 12
