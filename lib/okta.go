@@ -190,6 +190,7 @@ func (o *OktaClient) AuthenticateProfileWithRegion(profileARN string, duration t
 
 	// Attempt to reuse session cookie
 	var assertion SAMLAssertion
+
 	err := o.Get("GET", o.OktaAwsSAMLUrl, nil, &assertion, "saml")
 	if err != nil {
 		log.Debug("Failed to reuse session token, starting flow from start")

@@ -220,6 +220,7 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 			return sts.Credentials{}, errors.New("Source profile must provide `role_arn`")
 		}
 	}
+
 	provider := OktaProvider{
 		MFAConfig:            p.ProviderOptions.MFAConfig,
 		Keyring:              p.keyring,
@@ -250,10 +251,7 @@ func (p *Provider) GetSAMLLoginURL() (*url.URL, error) {
 	}
 	oktaSessionCookieKey := p.getOktaSessionCookieKey()
 
-	profileARN, ok := p.profiles[source]["role_arn"]
-	if !ok {
-		return &url.URL{}, errors.New("Source profile must provide `role_arn`")
-	}
+	profileARN := p.profiles[source]["role_arn"]
 
 	provider := OktaProvider{
 		MFAConfig:            p.ProviderOptions.MFAConfig,
