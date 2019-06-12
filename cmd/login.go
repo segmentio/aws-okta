@@ -22,6 +22,7 @@ var loginCmd = &cobra.Command{
 	Short:  "login will authenticate you through okta and allow you to access your AWS environment through a browser",
 	RunE:   loginRun,
 	PreRun: loginPre,
+	ValidArgs: listProfileNames(mustListProfiles()),
 }
 
 // Stdout is the bool for -stdout
