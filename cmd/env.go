@@ -17,7 +17,7 @@ var envCmd = &cobra.Command{
 	Use:       "env <profile>",
 	Short:     "env prints out export commands for the specified profile",
 	RunE:      envRun,
-	Example:   "source <$(aws-okta env test)",
+	Example:   "source <(aws-okta env test)",
 	ValidArgs: listProfileNames(mustListProfiles()),
 }
 
