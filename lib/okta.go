@@ -164,7 +164,7 @@ func (o *OktaClient) AuthenticateUser() error {
 	log.Debug("Step: 1")
 	err = o.Get("POST", "api/v1/authn", payload, &oktaUserAuthn, "json")
 	if err != nil {
-		return fmt.Errorf("Failed to authenticate with okta: %#v", err)
+		return fmt.Errorf("Failed to authenticate with okta. If your credentials have changed, use 'aws-okta add': %#v", err)
 	}
 
 	o.UserAuth = &oktaUserAuthn
