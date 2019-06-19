@@ -476,7 +476,11 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 			"Cache-Control": []string{"no-cache"},
 		}
 	} else {
-		header = http.Header{}
+		// disable gzip encoding; it was causing spurious EOFs
+		// for some users; see #148
+		header = http.Header{
+			"Accept-Encoding": []string{"identity"},
+		}
 	}
 
 	transCfg := &http.Transport{
