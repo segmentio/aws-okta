@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/segmentio/aws-okta/lib/mfa"
 	"github.com/segmentio/aws-okta/lib/saml"
 	log "github.com/sirupsen/logrus"
 )
@@ -297,6 +298,7 @@ func (o *OktaClient) selectMFADevice() (*OktaUserAuthnFactor, error) {
 func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, error) {
 	var mfaCode string
 	var err error
+
 	//Software and Hardware based OTP Tokens
 	if strings.Contains(oktaFactorType, "token") {
 		log.Debug("Token MFA")
@@ -325,6 +327,7 @@ func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, 
 			return nil, err
 		}
 	}
+
 	payload, err := json.Marshal(OktaStateToken{
 		StateToken: o.UserAuth.StateToken,
 		PassCode:   mfaCode,
@@ -365,8 +368,34 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, ok
 					}
 				}()
 			}
-		}
+		} else if oktaFactorProvider == "FIDO" {
+			f := o.UserAuth.Embedded.Factor
 
+			log.Debug("FIDO U2F Details:")
+			log.Debug("  ChallengeNonce: ", f.Embedded.Challenge.Nonce)
+			log.Debug("  AppId: ", f.Profile.AppId)
+			log.Debug("  CredentialId: ", f.Profile.CredentialId)
+			log.Debug("  StateToken: ", o.UserAuth.StateToken)
+
+			fidoClient, err := mfa.NewFidoClient(f.Embedded.Challenge.Nonce,
+				f.Profile.AppId,
+				f.Profile.Version,
+				f.Profile.CredentialId,
+				o.UserAuth.StateToken)
+			if err != nil {
+				return err
+			}
+
+			signedAssertion, err := fidoClient.ChallengeU2f()
+			if err != nil {
+				return err
+			}
+			// re-assign the payload to provide U2F responses.
+			payload, err = json.Marshal(signedAssertion)
+			if err != nil {
+				return err
+			}
+		}
 		// Poll Okta until authentication has been completed
 		for o.UserAuth.Status != "SUCCESS" {
 			select {
@@ -395,7 +424,6 @@ func (o *OktaClient) challengeMFA() (err error) {
 	var payload []byte
 	var oktaFactorType string
 
-	log.Debugf("%s", o.UserAuth.StateToken)
 	factor, err := o.selectMFADevice()
 	if err != nil {
 		log.Debug("Failed to select MFA device")
@@ -443,6 +471,8 @@ func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
 	case "token:hardware":
 		id = f.Id
 	case "sms":
+		id = f.Id
+	case "u2f":
 		id = f.Id
 	case "push":
 		if f.Provider == "OKTA" || f.Provider == "DUO" {
