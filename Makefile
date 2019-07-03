@@ -7,9 +7,8 @@
 VERSION := $(shell git describe --tags --always --dirty="-dev")
 LDFLAGS := -ldflags='-X "main.Version=$(VERSION)"'
 
-test: | govendor
-	govendor sync
-	go test -v ./...
+test:
+	GO111MODULE=on go test -v ./...
 
 all: dist/aws-okta-$(VERSION)-darwin-amd64 dist/aws-okta-$(VERSION)-linux-amd64
 
@@ -19,15 +18,10 @@ clean:
 dist/:
 	mkdir -p dist
 
-dist/aws-okta-$(VERSION)-darwin-amd64: | govendor dist/
-	govendor sync
-	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $@
+dist/aws-okta-$(VERSION)-darwin-amd64: | dist/
+	GOOS=darwin GOARCH=amd64 GO111MODULE=on go build $(LDFLAGS) -o $@
 
-dist/aws-okta-$(VERSION)-linux-amd64: | govendor dist/
-	govendor sync
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $@
+dist/aws-okta-$(VERSION)-linux-amd64: | dist/
+	GOOS=linux GOARCH=amd64 GO111MODULE=on go build $(LDFLAGS) -o $@
 
-govendor:
-	go get -u github.com/kardianos/govendor
-
-.PHONY: clean all govendor
+.PHONY: clean all

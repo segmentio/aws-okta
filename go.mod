@@ -2,6 +2,7 @@ module github.com/segmentio/aws-okta
 
 require (
 	github.com/99designs/keyring v0.0.0-20181012025958-ff690aee77e9
+	github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053
 	github.com/aulanov/go.dbus v0.0.0-20150729231527-25c3068a42a0 // indirect
 	github.com/aws/aws-sdk-go v0.0.0-20170323003848-3bc643c63c6f
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
@@ -11,7 +12,6 @@ require (
 	github.com/godbus/dbus v0.0.0-20180201030542-885f9cc04c9c // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
 	github.com/keybase/go-keychain v0.0.0-20180801170200-15d3657f24fc // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect

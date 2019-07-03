@@ -1,0 +1,89 @@
+# github.com/99designs/keyring v0.0.0-20181012025958-ff690aee77e9
+github.com/99designs/keyring
+# github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053
+github.com/alessio/shellescape
+# github.com/aulanov/go.dbus v0.0.0-20150729231527-25c3068a42a0
+github.com/aulanov/go.dbus
+# github.com/aws/aws-sdk-go v0.0.0-20170323003848-3bc643c63c6f
+github.com/aws/aws-sdk-go/aws
+github.com/aws/aws-sdk-go/aws/credentials
+github.com/aws/aws-sdk-go/aws/session
+github.com/aws/aws-sdk-go/service/sts
+github.com/aws/aws-sdk-go/aws/awserr
+github.com/aws/aws-sdk-go/aws/endpoints
+github.com/aws/aws-sdk-go/aws/client
+github.com/aws/aws-sdk-go/aws/corehandlers
+github.com/aws/aws-sdk-go/aws/credentials/stscreds
+github.com/aws/aws-sdk-go/aws/defaults
+github.com/aws/aws-sdk-go/aws/request
+github.com/aws/aws-sdk-go/aws/awsutil
+github.com/aws/aws-sdk-go/aws/client/metadata
+github.com/aws/aws-sdk-go/aws/signer/v4
+github.com/aws/aws-sdk-go/private/protocol/query
+github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds
+github.com/aws/aws-sdk-go/aws/credentials/endpointcreds
+github.com/aws/aws-sdk-go/aws/ec2metadata
+github.com/aws/aws-sdk-go/private/protocol/rest
+github.com/aws/aws-sdk-go/private/protocol/query/queryutil
+github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
+github.com/aws/aws-sdk-go/private/protocol
+# github.com/danieljoos/wincred v1.0.1
+github.com/danieljoos/wincred
+# github.com/dvsekhvalnov/jose2go v0.0.0-20170629143815-9f050a91b1f2
+github.com/dvsekhvalnov/jose2go
+github.com/dvsekhvalnov/jose2go/aes
+github.com/dvsekhvalnov/jose2go/arrays
+github.com/dvsekhvalnov/jose2go/base64url
+github.com/dvsekhvalnov/jose2go/compact
+github.com/dvsekhvalnov/jose2go/kdf
+github.com/dvsekhvalnov/jose2go/keys/ecc
+github.com/dvsekhvalnov/jose2go/padding
+# github.com/go-ini/ini v1.39.0
+github.com/go-ini/ini
+# github.com/godbus/dbus v0.0.0-20180201030542-885f9cc04c9c
+github.com/godbus/dbus
+# github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c
+github.com/gsterjov/go-libsecret
+# github.com/inconshreveable/mousetrap v1.0.0
+github.com/inconshreveable/mousetrap
+# github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
+github.com/jmespath/go-jmespath
+# github.com/keybase/go-keychain v0.0.0-20180801170200-15d3657f24fc
+github.com/keybase/go-keychain
+# github.com/konsorten/go-windows-terminal-sequences v1.0.2
+github.com/konsorten/go-windows-terminal-sequences
+# github.com/marshallbrekka/go-u2fhost v0.0.0-20170128051651-72b0e7a3f583
+github.com/marshallbrekka/go-u2fhost
+github.com/marshallbrekka/go-u2fhost/bytes
+github.com/marshallbrekka/go-u2fhost/hid
+# github.com/marshallbrekka/go.hid v0.0.0-20161227002717-2c1c4616a9e7
+github.com/marshallbrekka/go.hid
+# github.com/mitchellh/go-homedir v0.0.0-20161203194507-b8bc1bf76747
+github.com/mitchellh/go-homedir
+# github.com/segmentio/analytics-go v3.0.1+incompatible
+github.com/segmentio/analytics-go
+# github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c
+github.com/segmentio/backo-go
+# github.com/sirupsen/logrus v1.4.1
+github.com/sirupsen/logrus
+# github.com/skratchdot/open-golang v0.0.0-20160302144031-75fb7ed4208c
+github.com/skratchdot/open-golang/open
+# github.com/spf13/cobra v0.0.0-20170621173259-31694f19adee
+github.com/spf13/cobra
+# github.com/spf13/pflag v1.0.0
+github.com/spf13/pflag
+# github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec
+github.com/vaughan0/go-ini
+# github.com/vitaminwater/cgo.wchar v0.0.0-20160320123332-5dd6f4be3f2a
+github.com/vitaminwater/cgo.wchar
+# github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c
+github.com/xtgo/uuid
+# golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
+golang.org/x/crypto/ssh/terminal
+# golang.org/x/net v0.0.0-20190311183353-d8887717615a
+golang.org/x/net/html
+golang.org/x/net/publicsuffix
+golang.org/x/net/html/atom
+# golang.org/x/sys v0.0.0-20190516110030-61b9204099cb
+golang.org/x/sys/unix
+golang.org/x/sys/windows
