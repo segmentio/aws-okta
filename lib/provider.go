@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"time"
 
+	sessioncacheorig "github.com/segmentio/aws-okta/internal/sessioncache/orig"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/99designs/keyring"
@@ -65,7 +66,7 @@ type Provider struct {
 	profile                string
 	expires                time.Time
 	keyring                keyring.Keyring
-	sessions               *KeyringSessions
+	sessions               *sessioncacheorig.SessionCache
 	profiles               Profiles
 	defaultRoleSessionName string
 }
@@ -78,7 +79,7 @@ func NewProvider(k keyring.Keyring, profile string, opts ProviderOptions) (*Prov
 	return &Provider{
 		ProviderOptions: opts,
 		keyring:         k,
-		sessions:        &KeyringSessions{k, opts.Profiles},
+		sessions:        &sessioncacheorig.SessionCache{k, map[string]map[string]string(opts.Profiles)},
 		profile:         profile,
 		profiles:        opts.Profiles,
 	}, nil

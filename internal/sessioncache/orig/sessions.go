@@ -1,4 +1,4 @@
-package lib
+package orig
 
 import (
 	"crypto/md5"
@@ -20,21 +20,32 @@ type awsSession struct {
 	Name string
 }
 
-type KeyringSessions struct {
+type SessionCache struct {
 	Keyring  keyring.Keyring
-	Profiles Profiles
+	Profiles map[string]map[string]string
 }
 
-func NewKeyringSessions(k keyring.Keyring, p Profiles) (*KeyringSessions, error) {
-	return &KeyringSessions{
-		Keyring:  k,
-		Profiles: p,
+// sourceProfile returns either the defined source_profile or p if none exists
+//
+// copied from lib; this will go away shortly
+func sourceProfile(p string, from map[string]map[string]string) string {
+	if conf, ok := from[p]; ok {
+		if source := conf["source_profile"]; source != "" {
+			return source
+		}
+	}
+	return p
+}
+
+func New(k keyring.Keyring, p map[string]map[string]string) (*SessionCache, error) {
+	return &SessionCache{
+		Keyring: k,
 	}, nil
 }
 
 // key returns a key for the keyring item. This is a string containing the source profile name,
 // the profile name, and a hash of the duration
-func (s *KeyringSessions) key(profile string, duration time.Duration) string {
+func (s *SessionCache) key(profile string, duration time.Duration) string {
 	// nick: I don't understand this at all. This key function is roughly:
 	// sourceProfileName + hex(md5(duration + json(profiles[profile])))
 	// - why md5?
@@ -52,7 +63,7 @@ func (s *KeyringSessions) key(profile string, duration time.Duration) string {
 	return fmt.Sprintf("%s session (%x)", source, hex.EncodeToString(hasher.Sum(nil))[0:10])
 }
 
-func (s *KeyringSessions) Retrieve(profile string, duration time.Duration) (sts.Credentials, string, error) {
+func (s *SessionCache) Retrieve(profile string, duration time.Duration) (sts.Credentials, string, error) {
 	var session awsSession
 	item, err := s.Keyring.Get(s.key(profile, duration))
 	if err != nil {
@@ -70,7 +81,7 @@ func (s *KeyringSessions) Retrieve(profile string, duration time.Duration) (sts.
 	return session.Credentials, session.Name, nil
 }
 
-func (s *KeyringSessions) Store(profile string, sessionName string, creds sts.Credentials, duration time.Duration) error {
+func (s *SessionCache) Store(profile string, sessionName string, creds sts.Credentials, duration time.Duration) error {
 	session := awsSession{Credentials: creds, Name: sessionName}
 	bytes, err := json.Marshal(session)
 	if err != nil {
@@ -88,7 +99,7 @@ func (s *KeyringSessions) Store(profile string, sessionName string, creds sts.Cr
 	return nil
 }
 
-func (s *KeyringSessions) Delete(profile string) (n int, err error) {
+func (s *SessionCache) Delete(profile string) (n int, err error) {
 	keys, err := s.Keyring.Keys()
 	if err != nil {
 		return n, err
