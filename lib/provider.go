@@ -6,13 +6,15 @@ import (
 	"net/url"
 	"time"
 
-	sessioncacheorig "github.com/segmentio/aws-okta/internal/sessioncache/orig"
+	"github.com/segmentio/aws-okta/internal/sessioncache"
+	sessioncache_keyorig "github.com/segmentio/aws-okta/internal/sessioncache/keyorig"
+	sessioncache_storeitempersession "github.com/segmentio/aws-okta/internal/sessioncache/storeitempersession"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/99designs/keyring"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
+	aws_session "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 )
 
@@ -66,7 +68,7 @@ type Provider struct {
 	profile                string
 	expires                time.Time
 	keyring                keyring.Keyring
-	sessions               *sessioncacheorig.SessionCache
+	sessions               *sessioncache_storeitempersession.Store
 	profiles               Profiles
 	defaultRoleSessionName string
 }
@@ -79,7 +81,7 @@ func NewProvider(k keyring.Keyring, profile string, opts ProviderOptions) (*Prov
 	return &Provider{
 		ProviderOptions: opts,
 		keyring:         k,
-		sessions:        &sessioncacheorig.SessionCache{k, map[string]map[string]string(opts.Profiles)},
+		sessions:        &sessioncache_storeitempersession.Store{k},
 		profile:         profile,
 		profiles:        opts.Profiles,
 	}, nil
@@ -98,44 +100,60 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	if !ok {
 		return credentials.Value{}, fmt.Errorf("missing profile named %s", p.profile)
 	}
-	session, name, err := p.sessions.Retrieve(source, profileConf, p.SessionDuration)
+	key := sessioncache_keyorig.Key{
+		ProfileName: source,
+		ProfileConf: profileConf,
+		Duration:    p.SessionDuration,
+	}
+
+	var cachedSession *sessioncache.Session
+	cachedSession, err := p.sessions.Retrieve(key)
 	// TODO(nick): should this be set even if err != nil? It's probably invalid
-	p.defaultRoleSessionName = name
+	p.defaultRoleSessionName = cachedSession.Name
 	if err != nil {
-		session, err = p.getSamlSessionCreds()
+		creds, err := p.getSamlSessionCreds()
 		if err != nil {
 			return credentials.Value{}, err
 		}
-		p.sessions.Store(source, profileConf, p.roleSessionName(), session, p.SessionDuration)
+		newSession := sessioncache.Session{
+			Name:        p.roleSessionName(),
+			Credentials: creds,
+		}
+		//TODO(nick): this error should DEFINITELY be checked
+		p.sessions.Store(key, &newSession)
+
+		cachedSession = &newSession
 	}
 
+	creds := cachedSession.Credentials
+
 	log.Debugf(" Using session %s, expires in %s",
-		(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
-		session.Expiration.Sub(time.Now()).String())
+		(*(creds.AccessKeyId))[len(*(creds.AccessKeyId))-4:],
+		creds.Expiration.Sub(time.Now()).String())
 
 	// If sourceProfile returns the same source then we do not need to assume a
 	// second role. Not assuming a second role allows us to assume IDP enabled
 	// roles directly.
 	if p.profile != source {
 		if role, ok := p.profiles[p.profile]["role_arn"]; ok {
-			session, err = p.assumeRoleFromSession(session, role)
+			creds, err = p.assumeRoleFromSession(creds, role)
 			if err != nil {
 				return credentials.Value{}, err
 			}
 
 			log.Debugf("using role %s expires in %s",
-				(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
-				session.Expiration.Sub(time.Now()).String())
+				(*(creds.AccessKeyId))[len(*(creds.AccessKeyId))-4:],
+				creds.Expiration.Sub(time.Now()).String())
 		}
 	}
 
-	p.SetExpiration(*session.Expiration, window)
-	p.expires = *session.Expiration
+	p.SetExpiration(*(creds.Expiration), window)
+	p.expires = *(creds.Expiration)
 
 	value := credentials.Value{
-		AccessKeyID:     *session.AccessKeyId,
-		SecretAccessKey: *session.SecretAccessKey,
-		SessionToken:    *session.SessionToken,
+		AccessKeyID:     *(creds.AccessKeyId),
+		SecretAccessKey: *(creds.SecretAccessKey),
+		SessionToken:    *(creds.SessionToken),
 		ProviderName:    "okta",
 	}
 
@@ -222,7 +240,7 @@ func (p *Provider) GetSAMLLoginURL() (*url.URL, error) {
 
 // assumeRoleFromSession takes a session created with an okta SAML login and uses that to assume a role
 func (p *Provider) assumeRoleFromSession(creds sts.Credentials, roleArn string) (sts.Credentials, error) {
-	client := sts.New(session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
+	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
 		*creds.AccessKeyId,
 		*creds.SecretAccessKey,
 		*creds.SessionToken,
