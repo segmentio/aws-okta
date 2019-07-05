@@ -45,27 +45,31 @@ func New(k keyring.Keyring, p map[string]map[string]string) (*SessionCache, erro
 
 // key returns a key for the keyring item. This is a string containing the source profile name,
 // the profile name, and a hash of the duration
-func (s *SessionCache) key(profile string, duration time.Duration) string {
+//
+// this is a copy of KeyringSessions.key and should preserve behavior, *except* that it assumes `profileName`
+// is a valid and existing profile name
+func key(profileName string, profileConf map[string]string, duration time.Duration) string {
 	// nick: I don't understand this at all. This key function is roughly:
-	// sourceProfileName + hex(md5(duration + json(profiles[profile])))
+	// sourceProfileName + hex(md5(duration + json(profileConf)))
 	// - why md5?
 	// - why the JSON of the whole profile? (especially strange considering JSON map order is undetermined)
 	// TODO(nick): document this
-	source := sourceProfile(profile, s.Profiles)
+	var source string
+	if source = profileConf["source_profile"]; source != "" {
+		source = profileName
+	}
 	hasher := md5.New()
 	hasher.Write([]byte(duration.String()))
 
-	if p, ok := s.Profiles[profile]; ok {
-		enc := json.NewEncoder(hasher)
-		enc.Encode(p)
-	}
+	enc := json.NewEncoder(hasher)
+	enc.Encode(profileConf)
 
 	return fmt.Sprintf("%s session (%x)", source, hex.EncodeToString(hasher.Sum(nil))[0:10])
 }
 
-func (s *SessionCache) Retrieve(profile string, duration time.Duration) (sts.Credentials, string, error) {
+func (s *SessionCache) Retrieve(profileName string, profileConf map[string]string, duration time.Duration) (sts.Credentials, string, error) {
 	var session awsSession
-	item, err := s.Keyring.Get(s.key(profile, duration))
+	item, err := s.Keyring.Get(key(profileName, profileConf, duration))
 	if err != nil {
 		return session.Credentials, session.Name, err
 	}
@@ -81,17 +85,17 @@ func (s *SessionCache) Retrieve(profile string, duration time.Duration) (sts.Cre
 	return session.Credentials, session.Name, nil
 }
 
-func (s *SessionCache) Store(profile string, sessionName string, creds sts.Credentials, duration time.Duration) error {
+func (s *SessionCache) Store(profileName string, profileConf map[string]string, sessionName string, creds sts.Credentials, duration time.Duration) error {
 	session := awsSession{Credentials: creds, Name: sessionName}
 	bytes, err := json.Marshal(session)
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("Writing session for %s to keyring", profile)
+	log.Debugf("Writing session for %s to keyring", profileName)
 	s.Keyring.Set(keyring.Item{
-		Key:                         s.key(profile, duration),
-		Label:                       "aws session for " + profile,
+		Key:                         key(profileName, profileConf, duration),
+		Label:                       "aws session for " + profileName,
 		Data:                        bytes,
 		KeychainNotTrustApplication: false,
 	})
@@ -99,14 +103,18 @@ func (s *SessionCache) Store(profile string, sessionName string, creds sts.Crede
 	return nil
 }
 
-func (s *SessionCache) Delete(profile string) (n int, err error) {
+func (s *SessionCache) Delete(profileName string, profileConf map[string]string) (n int, err error) {
 	keys, err := s.Keyring.Keys()
 	if err != nil {
 		return n, err
 	}
 
 	for _, k := range keys {
-		if strings.HasPrefix(k, fmt.Sprintf("%s session", sourceProfile(profile, s.Profiles))) {
+		var source string
+		if source = profileConf["source_profile"]; source != "" {
+			source = profileName
+		}
+		if strings.HasPrefix(k, fmt.Sprintf("%s session", source)) {
 			if err = s.Keyring.Remove(k); err != nil {
 				return n, err
 			}

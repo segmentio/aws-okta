@@ -94,7 +94,11 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 
 	// TODO(nick): why are we using the source profile name and not the actual profile's name?
 	source := sourceProfile(p.profile, p.profiles)
-	session, name, err := p.sessions.Retrieve(source, p.SessionDuration)
+	profileConf, ok := p.profiles[p.profile]
+	if !ok {
+		return credentials.Value{}, fmt.Errorf("missing profile named %s", p.profile)
+	}
+	session, name, err := p.sessions.Retrieve(source, profileConf, p.SessionDuration)
 	// TODO(nick): should this be set even if err != nil? It's probably invalid
 	p.defaultRoleSessionName = name
 	if err != nil {
@@ -102,7 +106,7 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 		if err != nil {
 			return credentials.Value{}, err
 		}
-		p.sessions.Store(source, p.roleSessionName(), session, p.SessionDuration)
+		p.sessions.Store(source, profileConf, p.roleSessionName(), session, p.SessionDuration)
 	}
 
 	log.Debugf(" Using session %s, expires in %s",
