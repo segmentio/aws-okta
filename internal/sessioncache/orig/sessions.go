@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -101,26 +100,4 @@ func (s *SessionCache) Store(profileName string, profileConf map[string]string, 
 	})
 
 	return nil
-}
-
-func (s *SessionCache) Delete(profileName string, profileConf map[string]string) (n int, err error) {
-	keys, err := s.Keyring.Keys()
-	if err != nil {
-		return n, err
-	}
-
-	for _, k := range keys {
-		var source string
-		if source = profileConf["source_profile"]; source != "" {
-			source = profileName
-		}
-		if strings.HasPrefix(k, fmt.Sprintf("%s session", source)) {
-			if err = s.Keyring.Remove(k); err != nil {
-				return n, err
-			}
-			n++
-		}
-	}
-
-	return
 }
