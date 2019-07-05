@@ -32,7 +32,14 @@ func NewKeyringSessions(k keyring.Keyring, p Profiles) (*KeyringSessions, error)
 	}, nil
 }
 
+// key returns a key for the keyring item. This is a string containing the source profile name,
+// the profile name, and a hash of the duration
 func (s *KeyringSessions) key(profile string, duration time.Duration) string {
+	// nick: I don't understand this at all. This key function is roughly:
+	// sourceProfileName + hex(md5(duration + json(profiles[profile])))
+	// - why md5?
+	// - why the JSON of the whole profile? (especially strange considering JSON map order is undetermined)
+	// TODO(nick): document this
 	source := sourceProfile(profile, s.Profiles)
 	hasher := md5.New()
 	hasher.Write([]byte(duration.String()))
@@ -72,9 +79,9 @@ func (s *KeyringSessions) Store(profile string, sessionName string, creds sts.Cr
 
 	log.Debugf("Writing session for %s to keyring", profile)
 	s.Keyring.Set(keyring.Item{
-		Key:   s.key(profile, duration),
-		Label: "aws session for " + profile,
-		Data:  bytes,
+		Key:                         s.key(profile, duration),
+		Label:                       "aws session for " + profile,
+		Data:                        bytes,
 		KeychainNotTrustApplication: false,
 	})
 

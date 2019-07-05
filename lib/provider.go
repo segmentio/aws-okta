@@ -91,8 +91,10 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 		window = time.Minute * 5
 	}
 
+	// TODO(nick): why are we using the source profile name and not the actual profile's name?
 	source := sourceProfile(p.profile, p.profiles)
 	session, name, err := p.sessions.Retrieve(source, p.SessionDuration)
+	// TODO(nick): should this be set even if err != nil? It's probably invalid
 	p.defaultRoleSessionName = name
 	if err != nil {
 		session, err = p.getSamlSessionCreds()
@@ -236,6 +238,9 @@ func (p *Provider) assumeRoleFromSession(creds sts.Credentials, roleArn string) 
 	return *resp.Credentials, nil
 }
 
+// roleSessionName returns the profile's `role_session_name` if set, or the
+// provider's defaultRoleSessionName if set. If neither is set, returns some
+// arbitrary unique string
 func (p *Provider) roleSessionName() string {
 	if name := p.profiles[p.profile]["role_session_name"]; name != "" {
 		return name
