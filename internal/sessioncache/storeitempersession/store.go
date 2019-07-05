@@ -20,7 +20,7 @@ func New(k keyring.Keyring) (*Store, error) {
 	}, nil
 }
 
-func (s *Store) Retrieve(k sessioncache.Key) (*sessioncache.Session, error) {
+func (s *Store) Get(k sessioncache.Key) (*sessioncache.Session, error) {
 	item, err := s.Keyring.Get(k.Key())
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func (s *Store) Retrieve(k sessioncache.Key) (*sessioncache.Session, error) {
 	return &session, nil
 }
 
-func (s *Store) Store(k sessioncache.Key, session *sessioncache.Session) error {
+func (s *Store) Put(k sessioncache.Key, session *sessioncache.Session) error {
 	bytes, err := session.Bytes()
 	if err != nil {
 		return err

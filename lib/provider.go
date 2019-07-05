@@ -107,7 +107,7 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	}
 
 	var cachedSession *sessioncache.Session
-	cachedSession, err := p.sessions.Retrieve(key)
+	cachedSession, err := p.sessions.Get(key)
 	// TODO(nick): should this be set even if err != nil? It's probably invalid
 	p.defaultRoleSessionName = cachedSession.Name
 	if err != nil {
@@ -120,7 +120,7 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 			Credentials: creds,
 		}
 		//TODO(nick): this error should DEFINITELY be checked
-		p.sessions.Store(key, &newSession)
+		p.sessions.Put(key, &newSession)
 
 		cachedSession = &newSession
 	}
