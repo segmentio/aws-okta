@@ -4,12 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -133,29 +131,6 @@ func (d *DuoClient) ChallengeU2f(verificationHost string) (err error) {
 	}
 
 	if status.Response.StatusCode == "u2f_sent" {
-		var response *u2fhost.AuthenticateResponse
-		allDevices := u2fhost.Devices()
-		// Filter only the devices that can be opened.
-		openDevices := []u2fhost.Device{}
-		for i, device := range allDevices {
-			err := device.Open()
-			if err == nil {
-				openDevices = append(openDevices, allDevices[i])
-				defer func(i int) {
-					allDevices[i].Close()
-				}(i)
-			}
-		}
-		if len(openDevices) == 0 {
-			return errors.New("no open u2f devices")
-		}
-
-		var (
-			err error
-		)
-		prompted := false
-		timeout := time.After(time.Second * 25)
-		interval := time.NewTicker(time.Millisecond * 250)
 		facet := "https://" + verificationHost
 		log.Debugf("Facet: %s", facet)
 		var req = &u2fhost.AuthenticateRequest{
@@ -164,33 +139,12 @@ func (d *DuoClient) ChallengeU2f(verificationHost string) (err error) {
 			KeyHandle: status.Response.U2FSignRequest[0].KeyHandle,
 			Facet:     facet,
 		}
-		defer interval.Stop()
-		for {
-			if response != nil {
-				break
-			}
-			select {
-			case <-timeout:
-				fmt.Println("Failed to get registration response after 25 seconds")
-				break
-			case <-interval.C:
-				for _, device := range openDevices {
-					response, err = device.Authenticate(req)
-					if err == nil {
-						log.Printf("Authentication succeeded, continuing")
-					} else if _, ok := err.(*u2fhost.TestOfUserPresenceRequiredError); ok {
-						if !prompted {
-							fmt.Println("Touch the flashing U2F device to authenticate...")
-							fmt.Println()
-						}
-						prompted = true
-					} else {
-						fmt.Printf("Got status response %#v\n", err)
-						break
-					}
-				}
-			}
+
+		response, err := authenticateU2FRequest(req, 25)
+		if err != nil {
+			return err
 		}
+
 		//log.Debugf("response: %#v", response)
 		//if response != nil {
 		txid, err = d.DoU2FPromptFinish(sid, status.Response.U2FSignRequest[0].SessionID, response)
