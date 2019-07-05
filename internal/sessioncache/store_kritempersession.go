@@ -1,4 +1,4 @@
-package storeitempersession
+package sessioncache
 
 import (
 	"encoding/json"
@@ -6,27 +6,20 @@ import (
 	"time"
 
 	"github.com/99designs/keyring"
-	"github.com/segmentio/aws-okta/internal/sessioncache"
-	"github.com/segmentio/kit/log"
+	log "github.com/sirupsen/logrus"
 )
 
-type Store struct {
+type KrItemPerSessionStore struct {
 	Keyring keyring.Keyring
 }
 
-func New(k keyring.Keyring) (*Store, error) {
-	return &Store{
-		Keyring: k,
-	}, nil
-}
-
-func (s *Store) Get(k sessioncache.Key) (*sessioncache.Session, error) {
+func (s *KrItemPerSessionStore) Get(k Key) (*Session, error) {
 	item, err := s.Keyring.Get(k.Key())
 	if err != nil {
 		return nil, err
 	}
 
-	var session sessioncache.Session
+	var session Session
 
 	if err = json.Unmarshal(item.Data, &session); err != nil {
 		return nil, err
@@ -39,7 +32,7 @@ func (s *Store) Get(k sessioncache.Key) (*sessioncache.Session, error) {
 	return &session, nil
 }
 
-func (s *Store) Put(k sessioncache.Key, session *sessioncache.Session) error {
+func (s *KrItemPerSessionStore) Put(k Key, session *Session) error {
 	bytes, err := session.Bytes()
 	if err != nil {
 		return err

@@ -1,4 +1,4 @@
-package keyorig
+package sessioncache
 
 import (
 	"crypto/md5"
@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type Key struct {
+type OrigKey struct {
 	ProfileName string
 	ProfileConf map[string]string
 	Duration    time.Duration
@@ -19,7 +19,7 @@ type Key struct {
 //
 // this is a copy of KeyringSessions.key and should preserve behavior, *except* that it assumes `profileName`
 // is a valid and existing profile name
-func (k Key) Key() string {
+func (k OrigKey) Key() string {
 	// nick: I don't understand this at all. This key function is roughly:
 	// sourceProfileName + hex(md5(duration + json(profileConf)))
 	// - why md5?

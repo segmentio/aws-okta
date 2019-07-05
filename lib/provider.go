@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/segmentio/aws-okta/internal/sessioncache"
-	sessioncache_keyorig "github.com/segmentio/aws-okta/internal/sessioncache/keyorig"
-	sessioncache_storeitempersession "github.com/segmentio/aws-okta/internal/sessioncache/storeitempersession"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/99designs/keyring"
@@ -68,7 +66,7 @@ type Provider struct {
 	profile                string
 	expires                time.Time
 	keyring                keyring.Keyring
-	sessions               *sessioncache_storeitempersession.Store
+	sessions               *sessioncache.KrItemPerSessionStore
 	profiles               Profiles
 	defaultRoleSessionName string
 }
@@ -81,7 +79,7 @@ func NewProvider(k keyring.Keyring, profile string, opts ProviderOptions) (*Prov
 	return &Provider{
 		ProviderOptions: opts,
 		keyring:         k,
-		sessions:        &sessioncache_storeitempersession.Store{k},
+		sessions:        &sessioncache.KrItemPerSessionStore{k},
 		profile:         profile,
 		profiles:        opts.Profiles,
 	}, nil
@@ -100,7 +98,7 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	if !ok {
 		return credentials.Value{}, fmt.Errorf("missing profile named %s", p.profile)
 	}
-	key := sessioncache_keyorig.Key{
+	key := sessioncache.OrigKey{
 		ProfileName: source,
 		ProfileConf: profileConf,
 		Duration:    p.SessionDuration,
