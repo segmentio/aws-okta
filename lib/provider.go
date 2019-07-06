@@ -60,13 +60,18 @@ func (o ProviderOptions) ApplyDefaults() ProviderOptions {
 	return o
 }
 
+type sessionCacheInterface interface {
+	Get(sessioncache.Key) (*sessioncache.Session, error)
+	Put(sessioncache.Key, *sessioncache.Session) error
+}
+
 type Provider struct {
 	credentials.Expiry
 	ProviderOptions
 	profile                string
 	expires                time.Time
 	keyring                keyring.Keyring
-	sessions               *sessioncache.KrItemPerSessionStore
+	sessions               sessionCacheInterface
 	profiles               Profiles
 	defaultRoleSessionName string
 }
