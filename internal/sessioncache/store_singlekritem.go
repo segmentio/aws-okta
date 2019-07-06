@@ -1,0 +1,119 @@
+package sessioncache
+
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/pkg/errors"
+
+	"github.com/99designs/keyring"
+	log "github.com/sirupsen/logrus"
+)
+
+// TODO: make this configurable
+const KeyringItemKey = "session-cache"
+const KeyringItemLabel = "aws-okta session cache"
+
+const V1alpha1 = "v1alpha1"
+const VLatest = V1alpha1
+
+type singleKrItemDb struct {
+	// eg `v1alpha1`, `v1`
+	// expecting this schema might evolve
+	version string
+
+	sequence int64
+
+	sessions map[string]Session
+}
+
+// SingleKrItemStore stores all sessions in a single keyring item
+//
+// This is mostly for MacOS keychain, where because we don't sign aws-okta properly, the
+// user needs to reauth the aws-okta binary for every item on every upgrade. By collapsing
+// all sessions into a single item, we only need to reauth once per upgrade/build
+type SingleKrItemStore struct {
+	Keyring keyring.Keyring
+}
+
+func (s *SingleKrItemStore) getDb() (*singleKrItemDb, error) {
+	item, err := s.Keyring.Get(KeyringItemKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var unmarshalled singleKrItemDb
+	if err := json.Unmarshal(item.Data, &unmarshalled); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshall db from keyring item")
+	}
+
+	switch unmarshalled.version {
+	case VLatest:
+		return &unmarshalled, nil
+	}
+	return nil, fmt.Errorf("unsupported db version %s", unmarshalled.version)
+}
+
+func (s *SingleKrItemStore) Get(k Key) (*Session, error) {
+	keyStr := k.Key()
+
+	currentDb, err := s.getDb()
+	if err != nil {
+		log.Debugf("cache get `%s`: miss (read error): %s", keyStr, err)
+		return nil, err
+	}
+
+	session, ok := currentDb.sessions[keyStr]
+	if !ok {
+		log.Debugf("cache get `%s`: miss", keyStr)
+		return nil, errors.New("Session not found")
+	}
+
+	if session.Expiration.Before(time.Now()) {
+		log.Debugf("cache get `%s`: expired", keyStr)
+		return nil, errors.New("Session expired")
+	}
+
+	log.Debugf("cache get `%s`: hit", keyStr)
+	return &session, nil
+}
+
+func (s *SingleKrItemStore) Put(k Key, session *Session) error {
+	keyStr := k.Key()
+
+	currentDb, err := s.getDb()
+	if err != nil {
+		log.Debugf("cache put `%s`: error (reading): %s", keyStr, err)
+		return err
+	}
+
+	// lazily copy session
+	mySession := *session
+	currentDb.sessions[keyStr] = mySession
+	currentDb.sequence += 1
+
+	bytes, err := json.Marshal(currentDb)
+	if err != nil {
+		log.Debugf("cache put `%s`: error (marshalling): %s", keyStr, err)
+		return err
+	}
+
+	// TODO: check that the sequence number hasn't changed behind our backs
+	// Unfortunately, it seems like keyring (and MacOS keychain in general)
+	// offer no "check and set" operation that would guarantee this would work;
+	// at best, we could only make the window smaller :/
+	item := keyring.Item{
+		Key:                         KeyringItemKey,
+		Label:                       KeyringItemLabel,
+		Data:                        bytes,
+		KeychainNotTrustApplication: false,
+	}
+	if err := s.Keyring.Set(item); err != nil {
+		log.Debugf("cache put `%s`: error (writing): %s", keyStr, err)
+		return err
+	}
+	log.Debugf("cache put `%s`: success", keyStr)
+
+	return nil
+}
