@@ -29,7 +29,7 @@ func (s *KrItemPerSessionStore) Get(k Key) (*Session, error) {
 	}
 
 	if session.Expiration.Before(time.Now()) {
-		log.Debugf("cache get `%s`: expired: %s", keyStr)
+		log.Debugf("cache get `%s`: expired", keyStr)
 		return nil, errors.New("Session is expired")
 	}
 
