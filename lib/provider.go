@@ -32,6 +32,10 @@ type ProviderOptions struct {
 	ExpiryWindow       time.Duration
 	Profiles           Profiles
 	MFAConfig          MFAConfig
+
+	// if true, use store_singlekritem SessionCache (new)
+	// if false, use store_kritempersession SessionCache (old)
+	SessionCacheSingleItem bool
 }
 
 func (o ProviderOptions) Validate() error {
@@ -60,7 +64,7 @@ func (o ProviderOptions) ApplyDefaults() ProviderOptions {
 	return o
 }
 
-type sessionCacheInterface interface {
+type SessionCacheInterface interface {
 	Get(sessioncache.Key) (*sessioncache.Session, error)
 	Put(sessioncache.Key, *sessioncache.Session) error
 }
@@ -71,7 +75,7 @@ type Provider struct {
 	profile                string
 	expires                time.Time
 	keyring                keyring.Keyring
-	sessions               sessionCacheInterface
+	sessions               SessionCacheInterface
 	profiles               Profiles
 	defaultRoleSessionName string
 }
@@ -81,10 +85,18 @@ func NewProvider(k keyring.Keyring, profile string, opts ProviderOptions) (*Prov
 	if err := opts.Validate(); err != nil {
 		return nil, err
 	}
+	var sessions SessionCacheInterface
+
+	if opts.SessionCacheSingleItem {
+		sessions = &sessioncache.KrItemPerSessionStore{k}
+	} else {
+		sessions = &sessioncache.SingleKrItemStore{k}
+	}
+
 	return &Provider{
 		ProviderOptions: opts,
 		keyring:         k,
-		sessions:        &sessioncache.KrItemPerSessionStore{k},
+		sessions:        sessions,
 		profile:         profile,
 		profiles:        opts.Profiles,
 	}, nil

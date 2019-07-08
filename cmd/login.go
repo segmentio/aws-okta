@@ -18,10 +18,10 @@ import (
 
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
-	Use:    "login <profile>",
-	Short:  "login will authenticate you through okta and allow you to access your AWS environment through a browser",
-	RunE:   loginRun,
-	PreRun: loginPre,
+	Use:       "login <profile>",
+	Short:     "login will authenticate you through okta and allow you to access your AWS environment through a browser",
+	RunE:      loginRun,
+	PreRun:    loginPre,
 	ValidArgs: listProfileNames(mustListProfiles()),
 }
 
@@ -106,6 +106,8 @@ func loginRun(cmd *cobra.Command, args []string) error {
 				Set("command", "login"),
 		})
 	}
+
+	opts.SessionCacheSingleItem = flagSessionCacheSingleItem
 
 	p, err := lib.NewProvider(kr, profile, opts)
 	if err != nil {

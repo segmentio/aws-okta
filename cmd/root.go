@@ -1,11 +1,12 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/99designs/keyring"
+	"github.com/pkg/errors"
 	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
 	log "github.com/sirupsen/logrus"
@@ -28,15 +29,18 @@ const (
 
 // global flags
 var (
-	backend           string
-	mfaConfig         lib.MFAConfig
-	debug             bool
-	version           string
-	analyticsWriteKey string
-	analyticsEnabled  bool
-	analyticsClient   analytics.Client
-	username          string
+	backend                    string
+	mfaConfig                  lib.MFAConfig
+	debug                      bool
+	version                    string
+	analyticsWriteKey          string
+	analyticsEnabled           bool
+	analyticsClient            analytics.Client
+	username                   string
+	flagSessionCacheSingleItem bool
 )
+
+const envSessionCacheSingleItem = "AWS_OKTA_SESSION_CACHE_SINGLE_ITEM"
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -45,6 +49,7 @@ var RootCmd = &cobra.Command{
 	SilenceUsage:      true,
 	SilenceErrors:     true,
 	PersistentPreRun:  prerun,
+	PersistentPreRunE: prerunE,
 	PersistentPostRun: postrun,
 }
 
@@ -62,6 +67,20 @@ func Execute(vers string, writeKey string) {
 		}
 		os.Exit(1)
 	}
+}
+
+func prerunE(cmd *cobra.Command, args []string) error {
+	if !cmd.Flags().Lookup("session-cache-single-item").Changed {
+		val, ok := os.LookupEnv(envSessionCacheSingleItem)
+		if ok {
+			valb, err := strconv.ParseBool(val)
+			if err != nil {
+				return errors.Wrapf(err, "couldn't parse as bool: %s", val)
+			}
+			flagSessionCacheSingleItem = valb
+		}
+	}
+	return nil
 }
 
 func prerun(cmd *cobra.Command, args []string) {
@@ -108,6 +127,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&mfaConfig.DuoDevice, "mfa-duo-device", "", "phone1", "Device to use phone1, phone2, u2f or token")
 	RootCmd.PersistentFlags().StringVarP(&backend, "backend", "b", "", fmt.Sprintf("Secret backend to use %s", backendsAvailable))
 	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
+	RootCmd.PersistentFlags().BoolVarP(&flagSessionCacheSingleItem, "session-cache-single-item", "", false, fmt.Sprintf("(alpha) Enable single-item session cache; aka %s", envSessionCacheSingleItem))
 }
 
 func updateMfaConfig(cmd *cobra.Command, profiles lib.Profiles, profile string, config *lib.MFAConfig) {
