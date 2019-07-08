@@ -48,7 +48,6 @@ var RootCmd = &cobra.Command{
 	Short:             "aws-okta allows you to authenticate with AWS using your okta credentials",
 	SilenceUsage:      true,
 	SilenceErrors:     true,
-	PersistentPreRun:  prerun,
 	PersistentPreRunE: prerunE,
 	PersistentPostRun: postrun,
 }
@@ -70,20 +69,6 @@ func Execute(vers string, writeKey string) {
 }
 
 func prerunE(cmd *cobra.Command, args []string) error {
-	if !cmd.Flags().Lookup("session-cache-single-item").Changed {
-		val, ok := os.LookupEnv(envSessionCacheSingleItem)
-		if ok {
-			valb, err := strconv.ParseBool(val)
-			if err != nil {
-				return errors.Wrapf(err, "couldn't parse as bool: %s", val)
-			}
-			flagSessionCacheSingleItem = valb
-		}
-	}
-	return nil
-}
-
-func prerun(cmd *cobra.Command, args []string) {
 	// Load backend from env var if not set as a flag
 	if !cmd.Flags().Lookup("backend").Changed {
 		backendFromEnv, ok := os.LookupEnv("AWS_OKTA_BACKEND")
@@ -94,6 +79,17 @@ func prerun(cmd *cobra.Command, args []string) {
 
 	if debug {
 		log.SetLevel(log.DebugLevel)
+	}
+
+	if !cmd.Flags().Lookup("session-cache-single-item").Changed {
+		val, ok := os.LookupEnv(envSessionCacheSingleItem)
+		if ok {
+			valb, err := strconv.ParseBool(val)
+			if err != nil {
+				return errors.Wrapf(err, "couldn't parse as bool: %s", val)
+			}
+			flagSessionCacheSingleItem = valb
+		}
 	}
 
 	if analyticsEnabled {
@@ -109,6 +105,7 @@ func prerun(cmd *cobra.Command, args []string) {
 				Set("aws-okta-version", version),
 		})
 	}
+	return nil
 }
 
 func postrun(cmd *cobra.Command, args []string) {

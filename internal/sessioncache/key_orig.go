@@ -26,7 +26,7 @@ func (k OrigKey) Key() string {
 	// - why the JSON of the whole profile? (especially strange considering JSON map order is undetermined)
 	// TODO(nick): document this
 	var source string
-	if source = k.ProfileConf["source_profile"]; source != "" {
+	if source = k.ProfileConf["source_profile"]; source == "" {
 		source = k.ProfileName
 	}
 	hasher := md5.New()

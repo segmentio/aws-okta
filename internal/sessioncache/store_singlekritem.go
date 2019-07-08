@@ -2,7 +2,6 @@ package sessioncache
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,17 +14,10 @@ import (
 const KeyringItemKey = "session-cache"
 const KeyringItemLabel = "aws-okta session cache"
 
-const V1alpha1 = "v1alpha1"
-const VLatest = V1alpha1
-
 type singleKrItemDb struct {
-	// eg `v1alpha1`, `v1`
-	// expecting this schema might evolve
-	version string
+	Sequence int64
 
-	sequence int64
-
-	sessions map[string]Session
+	Sessions map[string]Session
 }
 
 // SingleKrItemStore stores all sessions in a single keyring item
@@ -39,6 +31,7 @@ type SingleKrItemStore struct {
 
 func (s *SingleKrItemStore) getDb() (*singleKrItemDb, error) {
 	item, err := s.Keyring.Get(KeyringItemKey)
+
 	if err != nil {
 		return nil, err
 	}
@@ -48,11 +41,7 @@ func (s *SingleKrItemStore) getDb() (*singleKrItemDb, error) {
 		return nil, errors.Wrap(err, "failed to unmarshall db from keyring item")
 	}
 
-	switch unmarshalled.version {
-	case VLatest:
-		return &unmarshalled, nil
-	}
-	return nil, fmt.Errorf("unsupported db version %s", unmarshalled.version)
+	return &unmarshalled, nil
 }
 
 func (s *SingleKrItemStore) Get(k Key) (*Session, error) {
@@ -64,7 +53,7 @@ func (s *SingleKrItemStore) Get(k Key) (*Session, error) {
 		return nil, err
 	}
 
-	session, ok := currentDb.sessions[keyStr]
+	session, ok := currentDb.Sessions[keyStr]
 	if !ok {
 		log.Debugf("cache get `%s`: miss", keyStr)
 		return nil, errors.New("Session not found")
@@ -83,17 +72,20 @@ func (s *SingleKrItemStore) Put(k Key, session *Session) error {
 	keyStr := k.Key()
 
 	currentDb, err := s.getDb()
-	if err != nil {
+	if err == keyring.ErrKeyNotFound || currentDb.Sessions == nil {
+		log.Debugf("cache put: new db")
+		currentDb = &singleKrItemDb{
+			Sessions: map[string]Session{},
+		}
+	} else if err != nil {
 		log.Debugf("cache put `%s`: error (reading): %s", keyStr, err)
 		return err
 	}
 
-	// lazily copy session
-	mySession := *session
-	currentDb.sessions[keyStr] = mySession
-	currentDb.sequence += 1
+	currentDb.Sessions[keyStr] = *session
+	currentDb.Sequence += 1
 
-	bytes, err := json.Marshal(currentDb)
+	bytes, err := json.Marshal(*currentDb)
 	if err != nil {
 		log.Debugf("cache put `%s`: error (marshalling): %s", keyStr, err)
 		return err

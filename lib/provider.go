@@ -88,9 +88,11 @@ func NewProvider(k keyring.Keyring, profile string, opts ProviderOptions) (*Prov
 	var sessions SessionCacheInterface
 
 	if opts.SessionCacheSingleItem {
-		sessions = &sessioncache.KrItemPerSessionStore{k}
-	} else {
+		log.Debugf("Using SingleKrItemStore")
 		sessions = &sessioncache.SingleKrItemStore{k}
+	} else {
+		log.Debugf("Using KrItemPerSessionStore")
+		sessions = &sessioncache.KrItemPerSessionStore{k}
 	}
 
 	return &Provider{
@@ -123,8 +125,6 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 
 	var cachedSession *sessioncache.Session
 	cachedSession, err := p.sessions.Get(key)
-	// TODO(nick): should this be set even if err != nil? It's probably invalid
-	p.defaultRoleSessionName = cachedSession.Name
 	if err != nil {
 		creds, err := p.getSamlSessionCreds()
 		if err != nil {
@@ -140,6 +140,8 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 		cachedSession = &newSession
 	}
 
+	// TODO(nick): not really clear why this is done
+	p.defaultRoleSessionName = cachedSession.Name
 	creds := cachedSession.Credentials
 
 	log.Debugf(" Using session %s, expires in %s",
