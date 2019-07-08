@@ -4,8 +4,8 @@
 #
 # This makefile is meant for humans
 
-VERSION := $(shell git describe --tags --always --dirty="-dev")
-LDFLAGS := -ldflags='-X "main.Version=$(VERSION)"'
+VERSION := $(shell go list -f '{{ .Module.Version }}' .)
+LDFLAGS :=
 
 test:
 	GO111MODULE=on go test -v ./...
