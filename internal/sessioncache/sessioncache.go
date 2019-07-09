@@ -6,6 +6,7 @@ package sessioncache
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/aws/aws-sdk-go/service/sts"
 )
@@ -24,3 +25,5 @@ func (s *Session) Bytes() ([]byte, error) {
 type Key interface {
 	Key() string
 }
+
+var ErrSessionExpired = errors.New("session expired")

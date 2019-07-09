@@ -2,11 +2,13 @@ package sessioncache
 
 import (
 	"encoding/json"
-	"errors"
 	"time"
 
 	"github.com/99designs/keyring"
 	log "github.com/sirupsen/logrus"
+
+	// use xerrors until 1.13 is stable/oldest supported version
+	"golang.org/x/xerrors"
 )
 
 // KrItemPerSessionStore stores one session in one keyring item
@@ -18,24 +20,29 @@ type KrItemPerSessionStore struct {
 	Keyring keyring.Keyring
 }
 
+// Get returns the session from the keyring at k.Key()
+//
+// If the keyring item is not found, returns wrapped keyring.ErrKeyNotFound
+//
+// If the session is found, but is expired, returns wrapped ErrSessionExpired
 func (s *KrItemPerSessionStore) Get(k Key) (*Session, error) {
 	keyStr := k.Key()
 	item, err := s.Keyring.Get(keyStr)
 	if err != nil {
 		log.Debugf("cache get `%s`: miss (read error): %s", keyStr, err)
-		return nil, err
+		return nil, xerrors.Errorf("failed Keyring.Get(%q): %w", keyStr, err)
 	}
 
 	var session Session
 
 	if err = json.Unmarshal(item.Data, &session); err != nil {
 		log.Debugf("cache get `%s`: miss (unmarshal error): %s", keyStr, err)
-		return nil, err
+		return nil, xerrors.Errorf("failed unmarshal for %q: %w", keyStr, err)
 	}
 
 	if session.Expiration.Before(time.Now()) {
 		log.Debugf("cache get `%s`: expired", keyStr)
-		return nil, errors.New("Session is expired")
+		return nil, xerrors.Errorf("%q expired at %s: %w", keyStr, session.Expiration, ErrSessionExpired)
 	}
 
 	log.Debugf("cache get `%s`: hit", keyStr)

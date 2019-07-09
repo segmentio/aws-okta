@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/99designs/keyring"
 	log "github.com/sirupsen/logrus"
+
+	// use xerrors until 1.13 is stable/oldest supported version
+	"golang.org/x/xerrors"
 )
 
 // TODO: make this configurable
@@ -27,39 +28,48 @@ type SingleKrItemStore struct {
 	Keyring keyring.Keyring
 }
 
+// getDb gets our item from the keyring and unmarshals it
+//
+// if the keyring item is not found, returns wrapped keyring.ErrKeyNotFound
 func (s *SingleKrItemStore) getDb() (*singleKrItemDb, error) {
 	item, err := s.Keyring.Get(KeyringItemKey)
 
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("failed Keyring.Get(%q): %w", KeyringItemKey, err)
 	}
 
 	var unmarshalled singleKrItemDb
 	if err := json.Unmarshal(item.Data, &unmarshalled); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshall db from keyring item")
+		return nil, xerrors.Errorf("failed unmarshal for %q: %w", KeyringItemKey, err)
 	}
 
 	return &unmarshalled, nil
 }
 
+// Get loads the db from the keyring, and returns the session at k.Key()
+//
+// If the keyring item is not found (the db hasn't been written) or the key is
+// not found, returns wrapped keyring.ErrKeyNotFound
+//
+// If the session is found, but is expired, returns wrapped ErrSessionExpired
 func (s *SingleKrItemStore) Get(k Key) (*Session, error) {
 	keyStr := k.Key()
 
 	currentDb, err := s.getDb()
 	if err != nil {
 		log.Debugf("cache get `%s`: miss (read error): %s", keyStr, err)
-		return nil, err
+		return nil, xerrors.Errorf("failed loading db for %q: %w", keyStr, err)
 	}
 
 	session, ok := currentDb.Sessions[keyStr]
 	if !ok {
 		log.Debugf("cache get `%s`: miss", keyStr)
-		return nil, errors.New("Session not found")
+		return nil, xerrors.Errorf("failed finding session for %q: %w", keyStr, keyring.ErrKeyNotFound)
 	}
 
 	if session.Expiration.Before(time.Now()) {
 		log.Debugf("cache get `%s`: expired", keyStr)
-		return nil, errors.New("Session expired")
+		return nil, xerrors.Errorf("session expired for %q: %w", keyStr, ErrSessionExpired)
 	}
 
 	log.Debugf("cache get `%s`: hit", keyStr)
@@ -70,14 +80,14 @@ func (s *SingleKrItemStore) Put(k Key, session *Session) error {
 	keyStr := k.Key()
 
 	currentDb, err := s.getDb()
-	if err == keyring.ErrKeyNotFound || currentDb.Sessions == nil {
+	if xerrors.Is(err, keyring.ErrKeyNotFound) || (currentDb != nil && currentDb.Sessions == nil) {
 		log.Debugf("cache put: new db")
 		currentDb = &singleKrItemDb{
 			Sessions: map[string]Session{},
 		}
 	} else if err != nil {
 		log.Debugf("cache put `%s`: error (reading): %s", keyStr, err)
-		return err
+		return xerrors.Errorf("loading db for %q: %w", keyStr, err)
 	}
 
 	currentDb.Sessions[keyStr] = *session
@@ -85,7 +95,7 @@ func (s *SingleKrItemStore) Put(k Key, session *Session) error {
 	bytes, err := json.Marshal(*currentDb)
 	if err != nil {
 		log.Debugf("cache put `%s`: error (marshalling): %s", keyStr, err)
-		return err
+		return xerrors.Errorf("marshalling db for %q: %w", keyStr, err)
 	}
 
 	// TODO: check that the db hasn't changed behind our backs
@@ -100,7 +110,7 @@ func (s *SingleKrItemStore) Put(k Key, session *Session) error {
 	}
 	if err := s.Keyring.Set(item); err != nil {
 		log.Debugf("cache put `%s`: error (writing): %s", keyStr, err)
-		return err
+		return xerrors.Errorf("writing db for %q: %w", keyStr, err)
 	}
 	log.Debugf("cache put `%s`: success", keyStr)
 
