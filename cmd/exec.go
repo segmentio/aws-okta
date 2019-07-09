@@ -24,11 +24,11 @@ var (
 )
 
 func mustListProfiles() lib.Profiles {
-  profiles, err := listProfiles()
-  if err != nil {
-    log.Panicf("Failed to list profiles: %v", err)
-  }
-  return profiles
+	profiles, err := listProfiles()
+	if err != nil {
+		log.Panicf("Failed to list profiles: %v", err)
+	}
+	return profiles
 }
 
 // execCmd represents the exec command
@@ -165,6 +165,8 @@ func execRun(cmd *cobra.Command, args []string) error {
 				Set("command", "exec"),
 		})
 	}
+
+	opts.SessionCacheSingleItem = flagSessionCacheSingleItem
 
 	p, err := lib.NewProvider(kr, profile, opts)
 	if err != nil {

@@ -1,18 +1,23 @@
 package lib
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
 
+	"errors"
+
+	"github.com/segmentio/aws-okta/internal/sessioncache"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/99designs/keyring"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
+	aws_session "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
+
+	// use xerrors until 1.13 is stable/oldest supported version
+	"golang.org/x/xerrors"
 )
 
 const (
@@ -31,6 +36,10 @@ type ProviderOptions struct {
 	ExpiryWindow       time.Duration
 	Profiles           Profiles
 	MFAConfig          MFAConfig
+
+	// if true, use store_singlekritem SessionCache (new)
+	// if false, use store_kritempersession SessionCache (old)
+	SessionCacheSingleItem bool
 }
 
 func (o ProviderOptions) Validate() error {
@@ -59,13 +68,18 @@ func (o ProviderOptions) ApplyDefaults() ProviderOptions {
 	return o
 }
 
+type SessionCacheInterface interface {
+	Get(sessioncache.Key) (*sessioncache.Session, error)
+	Put(sessioncache.Key, *sessioncache.Session) error
+}
+
 type Provider struct {
 	credentials.Expiry
 	ProviderOptions
 	profile                string
 	expires                time.Time
 	keyring                keyring.Keyring
-	sessions               *KeyringSessions
+	sessions               SessionCacheInterface
 	profiles               Profiles
 	defaultRoleSessionName string
 }
@@ -75,10 +89,20 @@ func NewProvider(k keyring.Keyring, profile string, opts ProviderOptions) (*Prov
 	if err := opts.Validate(); err != nil {
 		return nil, err
 	}
+	var sessions SessionCacheInterface
+
+	if opts.SessionCacheSingleItem {
+		log.Debugf("Using SingleKrItemStore")
+		sessions = &sessioncache.SingleKrItemStore{k}
+	} else {
+		log.Debugf("Using KrItemPerSessionStore")
+		sessions = &sessioncache.KrItemPerSessionStore{k}
+	}
+
 	return &Provider{
 		ProviderOptions: opts,
 		keyring:         k,
-		sessions:        &KeyringSessions{k, opts.Profiles},
+		sessions:        sessions,
 		profile:         profile,
 		profiles:        opts.Profiles,
 	}, nil
@@ -91,44 +115,66 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 		window = time.Minute * 5
 	}
 
+	// TODO(nick): why are we using the source profile name and not the actual profile's name?
 	source := sourceProfile(p.profile, p.profiles)
-	session, name, err := p.sessions.Retrieve(source, p.SessionDuration)
-	p.defaultRoleSessionName = name
-	if err != nil {
-		session, err = p.getSamlSessionCreds()
-		if err != nil {
-			return credentials.Value{}, err
-		}
-		p.sessions.Store(source, p.roleSessionName(), session, p.SessionDuration)
+	profileConf, ok := p.profiles[p.profile]
+	if !ok {
+		return credentials.Value{}, fmt.Errorf("missing profile named %s", p.profile)
+	}
+	key := sessioncache.OrigKey{
+		ProfileName: source,
+		ProfileConf: profileConf,
+		Duration:    p.SessionDuration,
 	}
 
-	log.Debugf(" Using session %s, expires in %s",
-		(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
-		session.Expiration.Sub(time.Now()).String())
+	var creds sts.Credentials
+	if cachedSession, err := p.sessions.Get(key); err != nil {
+		creds, err = p.getSamlSessionCreds()
+		if err != nil {
+			return credentials.Value{}, xerrors.Errorf("getting creds via SAML: %w", err)
+		}
+		newSession := sessioncache.Session{
+			Name:        p.roleSessionName(),
+			Credentials: creds,
+		}
+		if err = p.sessions.Put(key, &newSession); err != nil {
+			return credentials.Value{}, xerrors.Errorf("putting to sessioncache", err)
+		}
+
+		// TODO(nick): not really clear why this is done
+		p.defaultRoleSessionName = newSession.Name
+	} else {
+		creds = cachedSession.Credentials
+		p.defaultRoleSessionName = cachedSession.Name
+	}
+
+	log.Debugf("Using session %s, expires in %s",
+		(*(creds.AccessKeyId))[len(*(creds.AccessKeyId))-4:],
+		creds.Expiration.Sub(time.Now()).String())
 
 	// If sourceProfile returns the same source then we do not need to assume a
 	// second role. Not assuming a second role allows us to assume IDP enabled
 	// roles directly.
 	if p.profile != source {
 		if role, ok := p.profiles[p.profile]["role_arn"]; ok {
-			session, err = p.assumeRoleFromSession(session, role)
+			creds, err := p.assumeRoleFromSession(creds, role)
 			if err != nil {
 				return credentials.Value{}, err
 			}
 
 			log.Debugf("using role %s expires in %s",
-				(*session.AccessKeyId)[len(*session.AccessKeyId)-4:],
-				session.Expiration.Sub(time.Now()).String())
+				(*(creds.AccessKeyId))[len(*(creds.AccessKeyId))-4:],
+				creds.Expiration.Sub(time.Now()).String())
 		}
 	}
 
-	p.SetExpiration(*session.Expiration, window)
-	p.expires = *session.Expiration
+	p.SetExpiration(*(creds.Expiration), window)
+	p.expires = *(creds.Expiration)
 
 	value := credentials.Value{
-		AccessKeyID:     *session.AccessKeyId,
-		SecretAccessKey: *session.SecretAccessKey,
-		SessionToken:    *session.SessionToken,
+		AccessKeyID:     *(creds.AccessKeyId),
+		SecretAccessKey: *(creds.SecretAccessKey),
+		SessionToken:    *(creds.SessionToken),
 		ProviderName:    "okta",
 	}
 
@@ -215,7 +261,7 @@ func (p *Provider) GetSAMLLoginURL() (*url.URL, error) {
 
 // assumeRoleFromSession takes a session created with an okta SAML login and uses that to assume a role
 func (p *Provider) assumeRoleFromSession(creds sts.Credentials, roleArn string) (sts.Credentials, error) {
-	client := sts.New(session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
+	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
 		*creds.AccessKeyId,
 		*creds.SecretAccessKey,
 		*creds.SessionToken,
@@ -236,6 +282,9 @@ func (p *Provider) assumeRoleFromSession(creds sts.Credentials, roleArn string) 
 	return *resp.Credentials, nil
 }
 
+// roleSessionName returns the profile's `role_session_name` if set, or the
+// provider's defaultRoleSessionName if set. If neither is set, returns some
+// arbitrary unique string
 func (p *Provider) roleSessionName() string {
 	if name := p.profiles[p.profile]["role_session_name"]; name != "" {
 		return name

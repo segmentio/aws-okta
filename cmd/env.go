@@ -85,6 +85,8 @@ func envRun(cmd *cobra.Command, args []string) error {
 		})
 	}
 
+	opts.SessionCacheSingleItem = flagSessionCacheSingleItem
+
 	p, err := lib.NewProvider(kr, profile, opts)
 	if err != nil {
 		return err

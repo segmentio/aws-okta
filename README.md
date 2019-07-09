@@ -162,6 +162,14 @@ For Linux / Ubuntu add the following to your bash config / zshrc etc:
 export AWS_OKTA_BACKEND=secret-service
 ```
 
+## --session-cache-single-item aka AWS_OKTA_SESSION_CACHE_SINGLE_ITEM (alpha)
+
+This flag enables a new secure session cache that stores all sessions in the same keyring item. For macOS users, this means drastically fewer authorization prompts when upgrading or running local builds.
+
+No provision is made to migrate sessions between session caches.
+
+Implemented in [https://github.com/segmentio/aws-okta/issues/146](#146).
+
 ## Local Development
 
 If you're developing in Linux, you'll need to get `libusb`. For Ubuntu, install the libusb-1.0-0-dev or use the `Dockerfile` provided in the repo.

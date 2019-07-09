@@ -18,7 +18,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/marshallbrekka/go-u2fhost v0.0.0-20170128051651-72b0e7a3f583
 	github.com/marshallbrekka/go.hid v0.0.0-20161227002717-2c1c4616a9e7 // indirect
-	github.com/mitchellh/go-homedir v0.0.0-20161203194507-b8bc1bf76747
+	github.com/mitchellh/go-homedir v1.0.0
 	github.com/segmentio/analytics-go v3.0.1+incompatible
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
 	github.com/sirupsen/logrus v1.4.1
@@ -27,12 +27,14 @@ require (
 	github.com/spf13/cobra v0.0.0-20170621173259-31694f19adee
 	github.com/spf13/pflag v1.0.0 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
+	github.com/stretchr/testify v1.3.0
 	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec
 	github.com/vitaminwater/cgo.wchar v0.0.0-20160320123332-5dd6f4be3f2a // indirect
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 	golang.org/x/net v0.0.0-20190311183353-d8887717615a
 	golang.org/x/sys v0.0.0-20190516110030-61b9204099cb // indirect
+	golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/ini.v1 v1.42.0 // indirect
 )
