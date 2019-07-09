@@ -19,9 +19,9 @@ dist/:
 	mkdir -p dist
 
 dist/aws-okta-$(VERSION)-darwin-amd64: | dist/
-	GOOS=darwin GOARCH=amd64 GO111MODULE=on go build $(LDFLAGS) -o $@
+	GOOS=darwin GOARCH=amd64 GO111MODULE=on go build -mod=vendor $(LDFLAGS) -o $@
 
 dist/aws-okta-$(VERSION)-linux-amd64: | dist/
-	GOOS=linux GOARCH=amd64 GO111MODULE=on go build $(LDFLAGS) -o $@
+	GOOS=linux GOARCH=amd64 GO111MODULE=on go build -mod=vendor $(LDFLAGS) -o $@
 
 .PHONY: clean all
