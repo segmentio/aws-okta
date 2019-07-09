@@ -5,12 +5,14 @@ import (
 	"os"
 	"strconv"
 
+	"errors"
+
 	"github.com/99designs/keyring"
-	"github.com/pkg/errors"
 	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"golang.org/x/xerrors"
 )
 
 // Errors returned from frontend commands
@@ -86,7 +88,7 @@ func prerunE(cmd *cobra.Command, args []string) error {
 		if ok {
 			valb, err := strconv.ParseBool(val)
 			if err != nil {
-				return errors.Wrapf(err, "couldn't parse as bool: %s", val)
+				return xerrors.Errorf("couldn't parse as bool: %s: %w", val, err)
 			}
 			flagSessionCacheSingleItem = valb
 		}

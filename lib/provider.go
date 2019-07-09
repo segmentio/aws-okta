@@ -5,7 +5,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/segmentio/aws-okta/internal/sessioncache"
 	log "github.com/sirupsen/logrus"
 
@@ -14,6 +15,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	aws_session "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
+
+	// use xerrors until 1.13 is stable/oldest supported version
+	"golang.org/x/xerrors"
 )
 
 const (
@@ -127,14 +131,14 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	if cachedSession, err := p.sessions.Get(key); err != nil {
 		creds, err = p.getSamlSessionCreds()
 		if err != nil {
-			return credentials.Value{}, errors.Wrap(err, "getting creds via SAML")
+			return credentials.Value{}, xerrors.Errorf("getting creds via SAML: %w", err)
 		}
 		newSession := sessioncache.Session{
 			Name:        p.roleSessionName(),
 			Credentials: creds,
 		}
 		if err = p.sessions.Put(key, &newSession); err != nil {
-			return credentials.Value{}, errors.Wrap(err, "putting to sessioncache")
+			return credentials.Value{}, xerrors.Errorf("putting to sessioncache", err)
 		}
 
 		// TODO(nick): not really clear why this is done
