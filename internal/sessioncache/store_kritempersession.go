@@ -9,6 +9,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// KrItemPerSessionStore stores one session in one keyring item
+//
+// This is the classic session store implementation. Its main drawback is that on macOS,
+// without code signing, you need to reauthorize the binary between upgrades *for each
+// item*.
 type KrItemPerSessionStore struct {
 	Keyring keyring.Keyring
 }

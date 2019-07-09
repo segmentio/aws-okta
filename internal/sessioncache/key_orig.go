@@ -14,7 +14,7 @@ type OrigKey struct {
 	Duration    time.Duration
 }
 
-// key returns a key for the keyring item. This is a string containing the source profile name,
+// Key returns a key for the keyring item. This is a string containing the source profile name,
 // the profile name, and a hash of the duration
 //
 // this is a copy of KeyringSessions.key and should preserve behavior, *except* that it assumes `profileName`
