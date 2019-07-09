@@ -1,11 +1,11 @@
 package lib
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/segmentio/aws-okta/internal/sessioncache"
 	log "github.com/sirupsen/logrus"
 
@@ -123,28 +123,28 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 		Duration:    p.SessionDuration,
 	}
 
-	var cachedSession *sessioncache.Session
-	cachedSession, err := p.sessions.Get(key)
-	if err != nil {
-		creds, err := p.getSamlSessionCreds()
+	var creds sts.Credentials
+	if cachedSession, err := p.sessions.Get(key); err != nil {
+		creds, err = p.getSamlSessionCreds()
 		if err != nil {
-			return credentials.Value{}, err
+			return credentials.Value{}, errors.Wrap(err, "getting creds via SAML")
 		}
 		newSession := sessioncache.Session{
 			Name:        p.roleSessionName(),
 			Credentials: creds,
 		}
-		//TODO(nick): this error should DEFINITELY be checked
-		p.sessions.Put(key, &newSession)
+		if err = p.sessions.Put(key, &newSession); err != nil {
+			return credentials.Value{}, errors.Wrap(err, "putting to sessioncache")
+		}
 
-		cachedSession = &newSession
+		// TODO(nick): not really clear why this is done
+		p.defaultRoleSessionName = newSession.Name
+	} else {
+		creds = cachedSession.Credentials
+		p.defaultRoleSessionName = cachedSession.Name
 	}
 
-	// TODO(nick): not really clear why this is done
-	p.defaultRoleSessionName = cachedSession.Name
-	creds := cachedSession.Credentials
-
-	log.Debugf(" Using session %s, expires in %s",
+	log.Debugf("Using session %s, expires in %s",
 		(*(creds.AccessKeyId))[len(*(creds.AccessKeyId))-4:],
 		creds.Expiration.Sub(time.Now()).String())
 
@@ -153,7 +153,7 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	// roles directly.
 	if p.profile != source {
 		if role, ok := p.profiles[p.profile]["role_arn"]; ok {
-			creds, err = p.assumeRoleFromSession(creds, role)
+			creds, err := p.assumeRoleFromSession(creds, role)
 			if err != nil {
 				return credentials.Value{}, err
 			}
