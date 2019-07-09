@@ -15,8 +15,6 @@ const KeyringItemKey = "session-cache"
 const KeyringItemLabel = "aws-okta session cache"
 
 type singleKrItemDb struct {
-	Sequence int64
-
 	Sessions map[string]Session
 }
 
@@ -83,7 +81,6 @@ func (s *SingleKrItemStore) Put(k Key, session *Session) error {
 	}
 
 	currentDb.Sessions[keyStr] = *session
-	currentDb.Sequence += 1
 
 	bytes, err := json.Marshal(*currentDb)
 	if err != nil {
@@ -91,7 +88,7 @@ func (s *SingleKrItemStore) Put(k Key, session *Session) error {
 		return err
 	}
 
-	// TODO: check that the sequence number hasn't changed behind our backs
+	// TODO: check that the db hasn't changed behind our backs
 	// Unfortunately, it seems like keyring (and MacOS keychain in general)
 	// offer no "check and set" operation that would guarantee this would work;
 	// at best, we could only make the window smaller :/
