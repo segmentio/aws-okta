@@ -8,30 +8,47 @@ import (
 	"log"
 )
 
+// A BackendType is an identifier for a credential storage service
+type BackendType string
+
 // All currently supported secure storage backends
 const (
-	InvalidBackend       BackendType = "invalid"
+	InvalidBackend       BackendType = ""
 	SecretServiceBackend BackendType = "secret-service"
 	KeychainBackend      BackendType = "keychain"
 	KWalletBackend       BackendType = "kwallet"
 	WinCredBackend       BackendType = "wincred"
 	FileBackend          BackendType = "file"
+	PassBackend          BackendType = "pass"
 )
 
-type BackendType string
+// This order makes sure the OS-specific backends
+// are picked over the more generic backends.
+var backendOrder = []BackendType{
+	// Windows
+	WinCredBackend,
+	// MacOS
+	KeychainBackend,
+	// Linux
+	SecretServiceBackend,
+	KWalletBackend,
+	// General
+	PassBackend,
+	FileBackend,
+}
 
 var supportedBackends = map[BackendType]opener{}
 
 // AvailableBackends provides a slice of all available backend keys on the current OS
 func AvailableBackends() []BackendType {
 	b := []BackendType{}
-	for k := range supportedBackends {
-		if k != FileBackend {
+	for _, k := range backendOrder {
+		_, ok := supportedBackends[k]
+		if ok {
 			b = append(b, k)
 		}
 	}
-	// make sure FileBackend is last
-	return append(b, FileBackend)
+	return b
 }
 
 type opener func(cfg Config) (Keyring, error)
@@ -83,10 +100,10 @@ type Keyring interface {
 var ErrNoAvailImpl = errors.New("Specified keyring backend not available")
 
 // ErrKeyNotFound is returned by Keyring Get when the item is not on the keyring
-var ErrKeyNotFound = errors.New("The specified item could not be found in the keyring.")
+var ErrKeyNotFound = errors.New("The specified item could not be found in the keyring")
 
 var (
-	// Whether to print debugging output
+	// Debug specifies whether to print debugging output
 	Debug bool
 )
 

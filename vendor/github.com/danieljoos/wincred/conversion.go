@@ -1,3 +1,5 @@
+// +build windows
+
 package wincred
 
 import (
@@ -37,6 +39,11 @@ func utf16ToByte(wstr []uint16) (result []byte) {
 	return
 }
 
+// utf16FromString creates a UTF16 char array from a string.
+func utf16FromString(str string) []uint16 {
+	return syscall.StringToUTF16(str)
+}
+
 // goBytes copies the given C byte array to a Go byte array (see `C.GoBytes`).
 // This function avoids having cgo as dependency.
 func goBytes(src uintptr, len uint32) []byte {
@@ -53,7 +60,7 @@ func goBytes(src uintptr, len uint32) []byte {
 }
 
 // Convert the given CREDENTIAL struct to a more usable structure
-func nativeToCredential(cred *nativeCREDENTIAL) (result *Credential) {
+func sysToCredential(cred *sysCREDENTIAL) (result *Credential) {
 	if cred == nil {
 		return nil
 	}
@@ -66,7 +73,7 @@ func nativeToCredential(cred *nativeCREDENTIAL) (result *Credential) {
 	result.Persist = CredentialPersistence(cred.Persist)
 	result.CredentialBlob = goBytes(cred.CredentialBlob, cred.CredentialBlobSize)
 	result.Attributes = make([]CredentialAttribute, cred.AttributeCount)
-	attrSlice := *(*[]nativeCREDENTIAL_ATTRIBUTE)(unsafe.Pointer(&reflect.SliceHeader{
+	attrSlice := *(*[]sysCREDENTIAL_ATTRIBUTE)(unsafe.Pointer(&reflect.SliceHeader{
 		Data: cred.Attributes,
 		Len:  int(cred.AttributeCount),
 		Cap:  int(cred.AttributeCount),
@@ -81,11 +88,11 @@ func nativeToCredential(cred *nativeCREDENTIAL) (result *Credential) {
 
 // Convert the given Credential object back to a CREDENTIAL struct, which can be used for calling the
 // Windows APIs
-func nativeFromCredential(cred *Credential) (result *nativeCREDENTIAL) {
+func sysFromCredential(cred *Credential) (result *sysCREDENTIAL) {
 	if cred == nil {
 		return nil
 	}
-	result = new(nativeCREDENTIAL)
+	result = new(sysCREDENTIAL)
 	result.Flags = 0
 	result.Type = 0
 	result.TargetName, _ = syscall.UTF16PtrFromString(cred.TargetName)
@@ -99,7 +106,7 @@ func nativeFromCredential(cred *Credential) (result *nativeCREDENTIAL) {
 	}
 	result.Persist = uint32(cred.Persist)
 	result.AttributeCount = uint32(len(cred.Attributes))
-	attributes := make([]nativeCREDENTIAL_ATTRIBUTE, len(cred.Attributes))
+	attributes := make([]sysCREDENTIAL_ATTRIBUTE, len(cred.Attributes))
 	if len(attributes) > 0 {
 		result.Attributes = uintptr(unsafe.Pointer(&attributes[0]))
 	} else {

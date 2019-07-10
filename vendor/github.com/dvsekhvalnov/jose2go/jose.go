@@ -160,10 +160,6 @@ func SignBytes(payload []byte, signingAlg string, key interface{}, options ...fu
 		//make sure defaults and requires are managed by us
 		cfg.Headers["alg"] = signingAlg
 
-		if _, typ := cfg.Headers["typ"]; !typ {
-			cfg.Headers["typ"] = "JWT"
-		}
-
 		paloadBytes := payload
 		var header []byte
 		var signature []byte
