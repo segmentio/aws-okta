@@ -30,7 +30,7 @@ var Stdout bool
 
 func init() {
 	RootCmd.AddCommand(loginCmd)
-	loginCmd.Flags().BoolVarP(&Stdout, "stdout", "", false, "Print login URL to stdout instead of opening in default browser")
+	loginCmd.Flags().BoolVarP(&Stdout, "stdout", "s", false, "Print login URL to stdout instead of opening in default browser")
 	loginCmd.Flags().DurationVarP(&sessionTTL, "session-ttl", "t", time.Hour, "Expiration time for okta role session")
 	loginCmd.Flags().DurationVarP(&assumeRoleTTL, "assume-role-ttl", "a", time.Hour, "Expiration time for assumed role")
 }
