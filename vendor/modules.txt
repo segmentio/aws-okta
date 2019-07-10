@@ -5,30 +5,32 @@ github.com/alessio/shellescape
 # github.com/aulanov/go.dbus v0.0.0-20150729231527-25c3068a42a0
 github.com/aulanov/go.dbus
 # github.com/aws/aws-sdk-go v0.0.0-20170323003848-3bc643c63c6f
+github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/credentials
 github.com/aws/aws-sdk-go/aws/session
-github.com/aws/aws-sdk-go/service/sts
+github.com/aws/aws-sdk-go/aws/awsutil
+github.com/aws/aws-sdk-go/aws/client
+github.com/aws/aws-sdk-go/aws/client/metadata
+github.com/aws/aws-sdk-go/aws/request
+github.com/aws/aws-sdk-go/aws/signer/v4
+github.com/aws/aws-sdk-go/private/protocol/query
 github.com/aws/aws-sdk-go/aws/awserr
 github.com/aws/aws-sdk-go/aws/endpoints
-github.com/aws/aws-sdk-go/aws/client
 github.com/aws/aws-sdk-go/aws/corehandlers
 github.com/aws/aws-sdk-go/aws/credentials/stscreds
 github.com/aws/aws-sdk-go/aws/defaults
-github.com/aws/aws-sdk-go/aws/request
-github.com/aws/aws-sdk-go/aws/awsutil
-github.com/aws/aws-sdk-go/aws/client/metadata
-github.com/aws/aws-sdk-go/aws/signer/v4
-github.com/aws/aws-sdk-go/private/protocol/query
-github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds
-github.com/aws/aws-sdk-go/aws/credentials/endpointcreds
-github.com/aws/aws-sdk-go/aws/ec2metadata
 github.com/aws/aws-sdk-go/private/protocol/rest
 github.com/aws/aws-sdk-go/private/protocol/query/queryutil
 github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
+github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds
+github.com/aws/aws-sdk-go/aws/credentials/endpointcreds
+github.com/aws/aws-sdk-go/aws/ec2metadata
 github.com/aws/aws-sdk-go/private/protocol
 # github.com/danieljoos/wincred v1.0.1
 github.com/danieljoos/wincred
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
 # github.com/dvsekhvalnov/jose2go v0.0.0-20170629143815-9f050a91b1f2
 github.com/dvsekhvalnov/jose2go
 github.com/dvsekhvalnov/jose2go/aes
@@ -58,8 +60,10 @@ github.com/marshallbrekka/go-u2fhost/bytes
 github.com/marshallbrekka/go-u2fhost/hid
 # github.com/marshallbrekka/go.hid v0.0.0-20161227002717-2c1c4616a9e7
 github.com/marshallbrekka/go.hid
-# github.com/mitchellh/go-homedir v0.0.0-20161203194507-b8bc1bf76747
+# github.com/mitchellh/go-homedir v1.0.0
 github.com/mitchellh/go-homedir
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
 # github.com/segmentio/analytics-go v3.0.1+incompatible
 github.com/segmentio/analytics-go
 # github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c
@@ -72,6 +76,8 @@ github.com/skratchdot/open-golang/open
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.0
 github.com/spf13/pflag
+# github.com/stretchr/testify v1.3.0
+github.com/stretchr/testify/assert
 # github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec
 github.com/vaughan0/go-ini
 # github.com/vitaminwater/cgo.wchar v0.0.0-20160320123332-5dd6f4be3f2a
@@ -87,3 +93,6 @@ golang.org/x/net/html/atom
 # golang.org/x/sys v0.0.0-20190516110030-61b9204099cb
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+# golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522
+golang.org/x/xerrors
+golang.org/x/xerrors/internal

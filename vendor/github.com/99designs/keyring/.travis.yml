@@ -1,0 +1,18 @@
+language: go
+
+go:
+  - "1.10.x"
+  - "1.11.x"
+
+os:
+  - linux
+  - osx
+
+before_install:
+  - go get -u github.com/kardianos/govendor
+
+script:
+  - govendor status
+  - diff -u <(echo -n) <(gofmt -d $(git ls-files '*.go' | grep -v ^vendor/))
+  - go vet ./...
+  - go test -race ./...

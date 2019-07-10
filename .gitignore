@@ -1,6 +1,5 @@
 *~
 *.sw[a-z]
-vendor/*/
 dist/
 packagecloud.conf.json
 aws-okta
