@@ -1,7 +1,7 @@
 module github.com/segmentio/aws-okta
 
 require (
-	github.com/99designs/keyring v0.0.0-20190519035117-cc31b704f07c
+	github.com/99designs/keyring v1.0.0
 	github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053
 	github.com/aws/aws-sdk-go v0.0.0-20170323003848-3bc643c63c6f
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect

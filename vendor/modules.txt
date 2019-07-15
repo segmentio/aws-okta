@@ -1,4 +1,4 @@
-# github.com/99designs/keyring v0.0.0-20190519035117-cc31b704f07c
+# github.com/99designs/keyring v1.0.0
 github.com/99designs/keyring
 # github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053
 github.com/alessio/shellescape
