@@ -117,3 +117,10 @@ workflows:
             # release only on tag push events like vX[.Y.Z...][-whatever]
             tags:
               only: /v[0-9]+(\.[0-9]+)*(-[a-zA-Z0-9-]+)?/
+orbs:
+  salus: federacy/salus@2.5.1
+
+workflows:
+  main:
+    jobs:
+      - salus/scan
