@@ -1,5 +1,5 @@
-github.com/99designs/keyring v0.0.0-20190519035117-cc31b704f07c h1:S8zy0PqiOD64rBdjd/X9qlbijKhyK9psOkM1DMAkGEU=
-github.com/99designs/keyring v0.0.0-20190519035117-cc31b704f07c/go.mod h1:qVCfjMddwdzjgy848stNe9eTPmovvxF1lhJvOD6LUEo=
+github.com/99designs/keyring v1.0.0 h1:O2nCc8QRO2yeO7ncdR7bd17cdofhM8AXug42ahzEswU=
+github.com/99designs/keyring v1.0.0/go.mod h1:qVCfjMddwdzjgy848stNe9eTPmovvxF1lhJvOD6LUEo=
 github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053 h1:H/GMMKYPkEIC3DF/JWQz8Pdd+Feifov2EIgGfNpeogI=
 github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053/go.mod h1:xW8sBma2LE3QxFSzCnH9qe6gAE2yO9GvQaWwX89HxbE=
 github.com/aws/aws-sdk-go v0.0.0-20170323003848-3bc643c63c6f h1:jUaGnP0b/8/iuYRSz0wldEkOmRa6Veb/bRy55KOdQwQ=
