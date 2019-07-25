@@ -27,7 +27,9 @@ PACKAGECLOUD_DEB_DISTROS := \
 
 PACKAGECLOUD_RPM_DISTROS := \
 	fedora/27 \
-	fedora/28
+	fedora/28 \
+	fedora/29 \
+	fedora/30
 
 publish: publish-github publish-packagecloud
 
