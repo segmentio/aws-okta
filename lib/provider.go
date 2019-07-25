@@ -157,7 +157,8 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	// roles directly.
 	if p.profile != source {
 		if role, ok := p.profiles[p.profile]["role_arn"]; ok {
-			creds, err := p.assumeRoleFromSession(creds, role)
+			var err error
+			creds, err = p.assumeRoleFromSession(creds, role)
 			if err != nil {
 				return credentials.Value{}, err
 			}
