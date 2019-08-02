@@ -7,12 +7,12 @@ import (
 	"os"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/golang/mock/gomock"
 	"github.com/mulesoft-labs/aws-keycloak/provider"
 	"github.com/mulesoft-labs/aws-keycloak/provider/mock_provider"
 	"github.com/mulesoft-labs/aws-keycloak/provider/saml"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -49,7 +49,7 @@ func TestRetrieve(t *testing.T) {
 
 	a := mock_provider.NewMockAwsProviderIf(ctrl)
 	a.EXPECT().CheckAlreadyAuthd(awsrole).Return(sts.Credentials{}, errors.New("not authd"))
-	a.EXPECT().AssumeRoleWithSAML(saml.RolePrincipal{"arn:aws:iam::003617316831:role/keycloak-admin-identity", "arn:aws:iam::003617316831:saml-provider/keycloak-provider"}, gomock.Any()).Return(goodcreds, nil)
+	a.EXPECT().AssumeRoleWithSAML(saml.RolePrincipal{Role: "arn:aws:iam::003617316831:role/keycloak-admin-identity", Principal: "arn:aws:iam::003617316831:saml-provider/keycloak-provider"}, gomock.Any()).Return(goodcreds, nil)
 	a.EXPECT().StoreAwsCreds(goodcreds, awsrole)
 
 	p := provider.Provider{
