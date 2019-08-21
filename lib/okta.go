@@ -438,6 +438,12 @@ func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
 	switch f.FactorType {
 	case "web":
 		id = f.Id
+	case "token":
+		if f.Provider == "SYMANTEC" {
+			id = f.Id
+		} else {
+			err = fmt.Errorf("provider %s with factor token not supported", f.Provider)
+		}
 	case "token:software:totp":
 		id = f.Id
 	case "token:hardware":
