@@ -187,7 +187,7 @@ func (p *Provider) getSamlURL() (string, error) {
 	if err != nil {
 		return "", errors.New("aws_saml_url missing from ~/.aws/config")
 	}
-	log.Debugf("Using aws_saml_url from profile: %s", profile)
+	log.Debugf("Using aws_saml_url from profile %s: %s", profile, oktaAwsSAMLUrl)
 	return oktaAwsSAMLUrl, nil
 }
 

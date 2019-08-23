@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/segmentio/aws-okta/lib/saml"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 )
 
@@ -16,6 +17,7 @@ func GetRoleFromSAML(resp *saml.Response, profileARN string) (string, string, er
 	for _, a := range resp.Assertion.AttributeStatement.Attributes {
 		if strings.HasSuffix(a.Name, "SAML/Attributes/Role") {
 			for _, v := range a.AttributeValues {
+				log.Debugf("Got SAML role attribute: %s", v.Value)
 				tokens := strings.Split(v.Value, ",")
 				if len(tokens) != 2 {
 					continue
