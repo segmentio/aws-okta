@@ -212,7 +212,13 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 
 	// Step 4 : Assume Role with SAML
 	samlSess := session.Must(session.NewSession())
-	svc := sts.New(samlSess)
+	var svc *sts.STS
+	if assertion.Resp.Destination == "https://signin.amazonaws-us-gov.com/saml" {
+		svc = sts.New(samlSess, aws.NewConfig().WithRegion("us-gov-west-1"))
+	} else {
+		svc = sts.New(samlSess)
+	}
+	log.Debugf("SAML assertion has destination %s, STS client is configured with endpoint %s\n", assertion.Resp.Destination, svc.Client.ClientInfo.Endpoint)
 
 	samlParams := &sts.AssumeRoleWithSAMLInput{
 		PrincipalArn:    aws.String(principal),
