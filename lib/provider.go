@@ -221,6 +221,10 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 		OktaAwsSAMLUrl:       oktaAwsSAMLUrl,
 		OktaSessionCookieKey: oktaSessionCookieKey,
 	}
+	
+	if region := p.profiles[source]["region"]; region != "" {
+		provider.AwsRegion = region
+	}
 
 	creds, oktaUsername, err := provider.Retrieve()
 	if err != nil {
@@ -251,6 +255,10 @@ func (p *Provider) GetSAMLLoginURL() (*url.URL, error) {
 		SessionDuration:      p.SessionDuration,
 		OktaAwsSAMLUrl:       oktaAwsSAMLUrl,
 		OktaSessionCookieKey: oktaSessionCookieKey,
+	}
+
+	if region := p.profiles[source]["region"]; region != "" {
+		provider.AwsRegion = region
 	}
 
 	loginURL, err := provider.GetSAMLLoginURL()

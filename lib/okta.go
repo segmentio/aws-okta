@@ -185,7 +185,7 @@ func (o *OktaClient) AuthenticateUser() error {
 	return nil
 }
 
-func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, string, error) {
+func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration, region string) (sts.Credentials, string, error) {
 
 	// Attempt to reuse session cookie
 	var assertion SAMLAssertion
@@ -211,7 +211,17 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 	}
 
 	// Step 4 : Assume Role with SAML
-	samlSess := session.Must(session.NewSession())
+	log.Debug("Step 4: Assume Role with SAML")
+	var samlSess *session.Session
+	if region != "" {
+		log.Debugf("Using region: %s\n", region)
+		conf := &aws.Config{
+			Region: aws.String(region),
+		}
+		samlSess = session.Must(session.NewSession(conf))
+	} else {
+		samlSess = session.Must(session.NewSession())
+	}
 	svc := sts.New(samlSess)
 
 	samlParams := &sts.AssumeRoleWithSAMLInput{
@@ -539,6 +549,7 @@ type OktaProvider struct {
 	// to be stored in the keyring.
 	OktaSessionCookieKey string
 	MFAConfig            MFAConfig
+	AwsRegion			 string
 }
 
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
@@ -566,7 +577,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 		return sts.Credentials{}, "", err
 	}
 
-	creds, newSessionCookie, err := oktaClient.AuthenticateProfile(p.ProfileARN, p.SessionDuration)
+	creds, newSessionCookie, err := oktaClient.AuthenticateProfile(p.ProfileARN, p.SessionDuration, p.AwsRegion)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
