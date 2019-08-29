@@ -555,7 +555,7 @@ type OktaProvider struct {
 	// to be stored in the keyring.
 	OktaSessionCookieKey string
 	MFAConfig            MFAConfig
-	AwsRegion  string
+	AwsRegion            string
 }
 
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
