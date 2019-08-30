@@ -1,9 +1,13 @@
 package cmd
 
+// N.B. This file implements an ancillary command that is only included in this
+// repository for convenience. As a result, it is maintained by @apechimp.
+// Please request a review from him if you are submitting a pull request
+// against this file.
+
 import (
 	"fmt"
 	"os"
-	"os/user"
 	"time"
 
 	"github.com/99designs/keyring"
@@ -13,23 +17,25 @@ import (
 	ini "gopkg.in/ini.v1"
 )
 
-// exportCmd represents the export command
-var exportCmd = &cobra.Command{
-	Use:       "export <profile>",
-	Short:     "export copies credentials the specified profile to your .aws/credentials file",
-	RunE:      exportRun,
-	Example:   "aws-okta export test",
+// writeToCredentialsCmd represents the write-to-credentials command
+var writeToCredentialsCmd = &cobra.Command{
+	Use: "write-to-credentials <profile> <credentials-file>",
+	// N.B. The credentials file is a required argument so that the command makes
+	// it clear which file will be written to.
+	Short:     "write-to-credentials writes credentials for the specified profile to the specified credentials file",
+	RunE:      writeToCredentialsRun,
+	Example:   "aws-okta write-to-credentials test ~/.aws/credentials",
 	ValidArgs: listProfileNames(mustListProfiles()),
 }
 
 func init() {
-	RootCmd.AddCommand(exportCmd)
-	exportCmd.Flags().DurationVarP(&sessionTTL, "session-ttl", "t", time.Hour, "Expiration time for okta role session")
-	exportCmd.Flags().DurationVarP(&assumeRoleTTL, "assume-role-ttl", "a", time.Hour, "Expiration time for assumed role")
+	RootCmd.AddCommand(writeToCredentialsCmd)
+	writeToCredentialsCmd.Flags().DurationVarP(&sessionTTL, "session-ttl", "t", time.Hour, "Expiration time for okta role session")
+	writeToCredentialsCmd.Flags().DurationVarP(&assumeRoleTTL, "assume-role-ttl", "a", time.Hour, "Expiration time for assumed role")
 }
 
-func exportRun(cmd *cobra.Command, args []string) error {
-	if len(args) < 1 {
+func writeToCredentialsRun(cmd *cobra.Command, args []string) error {
+	if len(args) < 2 {
 		return ErrTooFewArguments
 	}
 
@@ -57,6 +63,12 @@ func exportRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	credFilePath := args[1]
+	_, err = os.Stat(credFilePath)
+	if err != nil {
+		return err
+	}
+
 	opts := lib.ProviderOptions{
 		MFAConfig:          mfaConfig,
 		Profiles:           profiles,
@@ -82,7 +94,7 @@ func exportRun(cmd *cobra.Command, args []string) error {
 				Set("backend", backend).
 				Set("aws-okta-version", version).
 				Set("profile", profile).
-				Set("command", "export"),
+				Set("command", "writeToCredentials"),
 		})
 	}
 
@@ -97,11 +109,6 @@ func exportRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	u, err := user.Current()
-	if err != nil {
-		return err
-	}
-	credFilePath := u.HomeDir + "/.aws/credentials"
 	credIni, err := ini.Load(credFilePath)
 	if err != nil {
 		return err
