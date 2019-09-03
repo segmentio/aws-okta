@@ -28,5 +28,5 @@ require (
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7
 	golang.org/x/sys v0.0.0-20190710143415-6ec70d6a5542 // indirect
 	golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522
-	gopkg.in/ini.v1 v1.42.0 // indirect
+	gopkg.in/ini.v1 v1.42.0
 )

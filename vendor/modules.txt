@@ -94,3 +94,5 @@ golang.org/x/sys/windows
 # golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
+# gopkg.in/ini.v1 v1.42.0
+gopkg.in/ini.v1
