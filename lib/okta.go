@@ -185,7 +185,7 @@ func (o *OktaClient) AuthenticateUser() error {
 	return nil
 }
 
-func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, string, error) {
+func (o *OktaClient) AuthenticateProfileWithRegion(profileARN string, duration time.Duration, region string) (sts.Credentials, string, error) {
 
 	// Attempt to reuse session cookie
 	var assertion SAMLAssertion
@@ -211,14 +211,18 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 	}
 
 	// Step 4 : Assume Role with SAML
-	samlSess := session.Must(session.NewSession())
-	var svc *sts.STS
-	if assertion.Resp.Destination == "https://signin.amazonaws-us-gov.com/saml" {
-		svc = sts.New(samlSess, aws.NewConfig().WithRegion("us-gov-west-1"))
+	log.Debug("Step 4: Assume Role with SAML")
+	var samlSess *session.Session
+	if region != "" {
+		log.Debugf("Using region: %s\n", region)
+		conf := &aws.Config{
+			Region: aws.String(region),
+		}
+		samlSess = session.Must(session.NewSession(conf))
 	} else {
-		svc = sts.New(samlSess)
+		samlSess = session.Must(session.NewSession())
 	}
-	log.Debugf("SAML assertion has destination %s, STS client is configured with endpoint %s\n", assertion.Resp.Destination, svc.Client.ClientInfo.Endpoint)
+	svc := sts.New(samlSess)
 
 	samlParams := &sts.AssumeRoleWithSAMLInput{
 		PrincipalArn:    aws.String(principal),
@@ -243,6 +247,11 @@ func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Durati
 	}
 
 	return *samlResp.Credentials, sessionCookie, nil
+}
+
+
+func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, string, error) {
+    return o.AuthenticateProfileWithRegion(profileARN, duration, "")
 }
 
 func selectMFADeviceFromConfig(o *OktaClient) (*OktaUserAuthnFactor, error) {
@@ -551,6 +560,7 @@ type OktaProvider struct {
 	// to be stored in the keyring.
 	OktaSessionCookieKey string
 	MFAConfig            MFAConfig
+	AwsRegion            string
 }
 
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
@@ -578,7 +588,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 		return sts.Credentials{}, "", err
 	}
 
-	creds, newSessionCookie, err := oktaClient.AuthenticateProfile(p.ProfileARN, p.SessionDuration)
+	creds, newSessionCookie, err := oktaClient.AuthenticateProfileWithRegion(p.ProfileARN, p.SessionDuration, p.AwsRegion)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
