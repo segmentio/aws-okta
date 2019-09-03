@@ -298,3 +298,22 @@ func (p *Provider) roleSessionName() string {
 	// Try to work out a role name that will hopefully end up unique.
 	return fmt.Sprintf("%d", time.Now().UTC().UnixNano())
 }
+
+func (p *Provider) GetRoleARN() (string, error) {
+	creds, err := p.getSamlSessionCreds()
+	if err != nil {
+		return "", err
+	}
+	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
+		*creds.AccessKeyId,
+		*creds.SecretAccessKey,
+		*creds.SessionToken,
+	)}))
+
+	indentity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		return "", err
+	}
+	arn := *indentity.Arn
+	return arn, nil
+}
