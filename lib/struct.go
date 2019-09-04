@@ -30,10 +30,18 @@ type OktaUserAuthnFactor struct {
 	FactorType string                      `json:"factorType"`
 	Provider   string                      `json:"provider"`
 	Embedded   OktaUserAuthnFactorEmbedded `json:"_embedded"`
+	Profile    OktaUserAuthnFactorProfile  `json:"profile"`
+}
+
+type OktaUserAuthnFactorProfile struct {
+	CredentialId string `json:"credentialId"`
+	AppId        string `json:"appId"`
+	Version      string `json:"version"`
 }
 
 type OktaUserAuthnFactorEmbedded struct {
 	Verification OktaUserAuthnFactorEmbeddedVerification `json:"verification"`
+	Challenge    OktaUserAuthnFactorEmbeddedChallenge    `json:"challenge"`
 }
 
 type OktaUserAuthnFactorEmbeddedVerification struct {
@@ -43,6 +51,10 @@ type OktaUserAuthnFactorEmbeddedVerification struct {
 	Links        OktaUserAuthnFactorEmbeddedVerificationLinks `json:"_links"`
 }
 
+type OktaUserAuthnFactorEmbeddedChallenge struct {
+	Nonce           string `json:"nonce"`
+	TimeoutSeconnds int    `json:"timeoutSeconds"`
+}
 type OktaUserAuthnFactorEmbeddedVerificationLinks struct {
 	Complete OktaUserAuthnFactorEmbeddedVerificationLinksComplete `json:"complete"`
 }
