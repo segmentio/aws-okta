@@ -1,8 +1,25 @@
 version: 2
 jobs:
-  test:
+
+  test-build-golang-prev:
     docker:
       - image: circleci/golang:1.12
+    steps:
+      - checkout
+      - run:
+          name: Install linux dependencies - libusb
+          command: |
+            sudo apt update -q
+            sudo apt install -yq libusb-dev libusb-1.0.0-dev
+      - run:
+          name: Test
+          command: |
+            go build -mod=vendor
+            ./aws-okta version
+
+  test:
+    docker:
+      - image: circleci/golang:1.13
     working_directory: /go/src/github.com/segmentio/aws-okta
     steps:
       - checkout
@@ -30,7 +47,7 @@ jobs:
 
   dist-linux:
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.13
     working_directory: /go/src/github.com/segmentio/aws-okta
     steps:
       - checkout
@@ -53,7 +70,7 @@ jobs:
 
   publish-packagecloud:
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.13
     working_directory: /go/src/github.com/segmentio/aws-okta
     steps:
       - checkout
@@ -71,7 +88,7 @@ jobs:
 
   publish-github-linux:
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.13
     working_directory: /go/src/github.com/segmentio/aws-okta
     steps:
       - checkout
@@ -90,6 +107,7 @@ workflows:
   test-dist-publish-linux:
     jobs:
       - test
+      - test-build-golang-prev
       - dist-linux:
           # needed to ensure dist happens on tag events
           filters:
