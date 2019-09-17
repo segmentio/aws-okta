@@ -75,7 +75,7 @@ type OktaCreds struct {
 
 func (c *OktaCreds) Validate(mfaConfig MFAConfig) error {
 	// OktaClient assumes we're doing some AWS SAML calls, but Validate doesn't
-	o, err := NewOktaClient(*c, "", "", mfaConfig)
+	o, err := NewOktaClient(*c, "", "", "", mfaConfig)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func GetOktaDomain(region string) (string, error) {
 	return "", fmt.Errorf("invalid region %s", region)
 }
 
-func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string, mfaConfig MFAConfig) (*OktaClient, error) {
+func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string, deviceToken string, mfaConfig MFAConfig) (*OktaClient, error) {
 	var domain string
 
 	// maintain compatibility for deprecated creds.Organization
@@ -129,6 +129,15 @@ func NewOktaClient(creds OktaCreds, oktaAwsSAMLUrl string, sessionCookie string,
 			{
 				Name:  "sid",
 				Value: sessionCookie,
+			},
+		})
+	}
+
+	if deviceToken != "" {
+		jar.SetCookies(base, []*http.Cookie{
+			{
+				Name:  "DT",
+				Value: deviceToken,
 			},
 		})
 	}
@@ -186,7 +195,7 @@ func (o *OktaClient) AuthenticateUser() error {
 	return nil
 }
 
-func (o *OktaClient) AuthenticateProfileWithRegion(profileARN string, duration time.Duration, region string) (sts.Credentials, string, error) {
+func (o *OktaClient) AuthenticateProfileWithRegion(profileARN string, duration time.Duration, region string) (sts.Credentials, string, string, error) {
 
 	// Attempt to reuse session cookie
 	var assertion SAMLAssertion
@@ -195,20 +204,20 @@ func (o *OktaClient) AuthenticateProfileWithRegion(profileARN string, duration t
 		log.Debug("Failed to reuse session token, starting flow from start")
 
 		if err := o.AuthenticateUser(); err != nil {
-			return sts.Credentials{}, "", err
+			return sts.Credentials{}, "", "", err
 		}
 
 		// Step 3 : Get SAML Assertion and retrieve IAM Roles
 		log.Debug("Step: 3")
 		if err = o.Get("GET", o.OktaAwsSAMLUrl+"?onetimetoken="+o.UserAuth.SessionToken,
 			nil, &assertion, "saml"); err != nil {
-			return sts.Credentials{}, "", err
+			return sts.Credentials{}, "", "", err
 		}
 	}
 
 	principal, role, err := GetRoleFromSAML(assertion.Resp, profileARN)
 	if err != nil {
-		return sts.Credentials{}, "", err
+		return sts.Credentials{}, "", "", err
 	}
 
 	// Step 4 : Assume Role with SAML
@@ -236,22 +245,26 @@ func (o *OktaClient) AuthenticateProfileWithRegion(profileARN string, duration t
 	if err != nil {
 		log.WithField("role", role).Errorf(
 			"error assuming role with SAML: %s", err.Error())
-		return sts.Credentials{}, "", err
+		return sts.Credentials{}, "", "", err
 	}
 
 	var sessionCookie string
+	var deviceToken string
 	cookies := o.CookieJar.Cookies(o.BaseURL)
 	for _, cookie := range cookies {
 		if cookie.Name == "sid" {
 			sessionCookie = cookie.Value
 		}
+		if cookie.Name == "DT" {
+			deviceToken = cookie.Value
+		}
 	}
 
-	return *samlResp.Credentials, sessionCookie, nil
+	return *samlResp.Credentials, sessionCookie, deviceToken, nil
 }
 
 
-func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, string, error) {
+func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, string, string, error) {
     return o.AuthenticateProfileWithRegion(profileARN, duration, "")
 }
 
@@ -613,12 +626,18 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 		sessionCookie = string(cookieItem.Data)
 	}
 
-	oktaClient, err := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie, p.MFAConfig)
+	var deviceToken string
+	dcookieItem, err := p.Keyring.Get("DT")
+	if err == nil {
+		deviceToken = string(dcookieItem.Data)
+	}
+
+	oktaClient, err := NewOktaClient(oktaCreds, p.OktaAwsSAMLUrl, sessionCookie, deviceToken, p.MFAConfig)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
 
-	creds, newSessionCookie, err := oktaClient.AuthenticateProfileWithRegion(p.ProfileARN, p.SessionDuration, p.AwsRegion)
+	creds, newSessionCookie, newDeviceToken, err := oktaClient.AuthenticateProfileWithRegion(p.ProfileARN, p.SessionDuration, p.AwsRegion)
 	if err != nil {
 		return sts.Credentials{}, "", err
 	}
@@ -631,6 +650,15 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	}
 
 	p.Keyring.Set(newCookieItem)
+
+	dnewCookieItem := keyring.Item{
+		Key:                         "DT",
+		Data:                        []byte(newDeviceToken),
+		Label:                       "okta deviceToken",
+		KeychainNotTrustApplication: false,
+	}
+
+	p.Keyring.Set(dnewCookieItem)
 
 	return creds, oktaCreds.Username, err
 }
