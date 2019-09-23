@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/99designs/keyring"
@@ -97,9 +98,17 @@ func envRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	roleARN, err := p.GetRoleARN(&creds)
+	if err != nil {
+		return err
+	}
+	role := strings.Split(roleARN, "/")[1]
+
 	fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", shellescape.Quote(creds.AccessKeyID))
 	fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", shellescape.Quote(creds.SecretAccessKey))
 	fmt.Printf("export AWS_OKTA_PROFILE=%s\n", shellescape.Quote(profile))
+	fmt.Printf("export AWS_OKTA_ASSUMED_ROLE_ARN=%s\n", shellescape.Quote(roleARN))
+	fmt.Printf("export AWS_OKTA_ASSUMED_ROLE=%s\n", shellescape.Quote(role))
 
 	if region, ok := profiles[profile]["region"]; ok {
 		fmt.Printf("export AWS_DEFAULT_REGION=%s\n", shellescape.Quote(region))
