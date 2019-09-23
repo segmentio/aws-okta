@@ -66,10 +66,14 @@ func sourceProfile(p string, from Profiles) string {
 	return p
 }
 
-func (p Profiles) GetValue(profile string, config_key string) (string, string, error) {
+func (p Profiles) GetValue(profile string, config_key string, recursive bool) (string, string, error) {
 	config_value, ok := p[profile][config_key]
 	if ok {
 		return config_value, profile, nil
+	}
+
+	if !recursive {
+		return "", "", fmt.Errorf("Could not find %s in %s", config_key, profile)
 	}
 
 	// Lookup from the `source_profile`, if it exists
