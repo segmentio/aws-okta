@@ -307,19 +307,18 @@ func (p *Provider) roleSessionName() string {
 	return fmt.Sprintf("%d", time.Now().UTC().UnixNano())
 }
 
-func (p *Provider) GetRoleARN() (string, error) {
-	creds, err := p.getSamlSessionCreds()
-	if err != nil {
-		return "", err
-	}
+// GetRoleARN makes a call to AWS to get-caller-identity and returns the
+// assumed role's name and ARN.
+func (p *Provider) GetRoleARN(c *credentials.Value) (string, error) {
 	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
-		*creds.AccessKeyId,
-		*creds.SecretAccessKey,
-		*creds.SessionToken,
+		c.AccessKeyID,
+		c.SecretAccessKey,
+		c.SessionToken,
 	)}))
 
 	indentity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
+		log.Errorf("Error getting caller identity: %s", err.Error())
 		return "", err
 	}
 	arn := *indentity.Arn
