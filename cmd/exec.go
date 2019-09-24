@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	log "github.com/sirupsen/logrus"
 
 	"os"
@@ -200,11 +199,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	roleARN, err := lib.GetRoleARN(credentials.Value{
-		AccessKeyID:     creds.AccessKeyID,
-		SecretAccessKey: creds.SecretAccessKey,
-		SessionToken:    creds.SessionToken,
-	})
+	roleARN, err := p.GetRoleARNWithRegion(creds)
 	if err != nil {
 		return err
 	}
