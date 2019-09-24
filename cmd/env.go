@@ -3,10 +3,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/99designs/keyring"
 	"github.com/alessio/shellescape"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
 	"github.com/spf13/cobra"
@@ -97,9 +99,22 @@ func envRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// TODO: deduplicate this code from exec.go
+	roleARN, err := lib.GetRoleARN(credentials.Value{
+		AccessKeyID:     creds.AccessKeyID,
+		SecretAccessKey: creds.SecretAccessKey,
+		SessionToken:    creds.SessionToken,
+	})
+	if err != nil {
+		return err
+	}
+	role := strings.Split(roleARN, "/")[1]
+
 	fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", shellescape.Quote(creds.AccessKeyID))
 	fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", shellescape.Quote(creds.SecretAccessKey))
 	fmt.Printf("export AWS_OKTA_PROFILE=%s\n", shellescape.Quote(profile))
+	fmt.Printf("export AWS_OKTA_ASSUMED_ROLE_ARN=%s\n", shellescape.Quote(roleARN))
+	fmt.Printf("export AWS_OKTA_ASSUMED_ROLE=%s\n", shellescape.Quote(role))
 
 	if region, ok := profiles[profile]["region"]; ok {
 		fmt.Printf("export AWS_DEFAULT_REGION=%s\n", shellescape.Quote(region))

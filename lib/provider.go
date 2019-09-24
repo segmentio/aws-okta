@@ -221,7 +221,7 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 		OktaAwsSAMLUrl:       oktaAwsSAMLUrl,
 		OktaSessionCookieKey: oktaSessionCookieKey,
 	}
-	
+
 	if region := p.profiles[source]["region"]; region != "" {
 		provider.AwsRegion = region
 	}
@@ -307,19 +307,28 @@ func (p *Provider) roleSessionName() string {
 	return fmt.Sprintf("%d", time.Now().UTC().UnixNano())
 }
 
+// GetRoleARN uses p to establish temporary credentials then calls
+// lib.GetRoleARN with them to get the role's ARN
 func (p *Provider) GetRoleARN() (string, error) {
 	creds, err := p.getSamlSessionCreds()
 	if err != nil {
 		return "", err
 	}
-	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
-		*creds.AccessKeyId,
-		*creds.SecretAccessKey,
-		*creds.SessionToken,
-	)}))
+	return GetRoleARN(credentials.Value{
+		AccessKeyID:     *creds.AccessKeyId,
+		SecretAccessKey: *creds.SecretAccessKey,
+		SessionToken:    *creds.SessionToken,
+	})
+}
+
+// GetRoleARN makes a call to AWS to get-caller-identity and returns the
+// assumed role's name and ARN.
+func GetRoleARN(c credentials.Value) (string, error) {
+	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentialsFromCreds(c)}))
 
 	indentity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
+		log.Errorf("Error getting caller identity: %s", err.Error())
 		return "", err
 	}
 	arn := *indentity.Arn
