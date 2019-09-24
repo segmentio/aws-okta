@@ -3,7 +3,9 @@ package lib
 import (
 	"encoding/base64"
 	"encoding/xml"
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/segmentio/aws-okta/lib/saml"
@@ -11,9 +13,22 @@ import (
 	"golang.org/x/net/html"
 )
 
-//TODO: Move those functions into saml package
-
 func GetRoleFromSAML(resp *saml.Response, profileARN string) (string, string, error) {
+
+	roles, err := GetAssumableRolesFromSAML(resp)
+	if err != nil {
+		return "", "", err
+	}
+	role, err := GetRole(roles, profileARN)
+	if err != nil {
+		return "", "", err
+	}
+	return role.Principal, role.Role, nil
+}
+
+func GetAssumableRolesFromSAML(resp *saml.Response) (saml.AssumableRoles, error) {
+	roleList := []saml.AssumableRole{}
+
 	for _, a := range resp.Assertion.AttributeStatement.Attributes {
 		if strings.HasSuffix(a.Name, "SAML/Attributes/Role") {
 			for _, v := range a.AttributeValues {
@@ -34,20 +49,67 @@ func GetRoleFromSAML(resp *saml.Response, profileARN string) (string, string, er
 				// In practice, though, Okta SAML integrations with AWS will succeed
 				// with either the role or principal ARN first, and these `if` statements
 				// allow that behavior in this program.
-				if tokens[0] == profileARN {
-					// if true, Role attribute is formatted like:
-					// arn:aws:iam::account:role/roleName,arn:aws:iam::ACCOUNT:saml-provider/provider
-					return tokens[1], tokens[0], nil
-				} else if tokens[1] == profileARN {
+				if strings.Contains(tokens[0], ":saml-provider/") {
 					// if true, Role attribute is formatted like:
 					// arn:aws:iam::ACCOUNT:saml-provider/provider,arn:aws:iam::account:role/roleName
-					return tokens[0], tokens[1], nil
+					roleList = append(roleList, saml.AssumableRole{Role: tokens[1],
+						Principal: tokens[0]})
+				} else if strings.Contains(tokens[1], ":saml-provider/") {
+					// if true, Role attribute is formatted like:
+					// arn:aws:iam::account:role/roleName,arn:aws:iam::ACCOUNT:saml-provider/provider
+					roleList = append(roleList, saml.AssumableRole{Role: tokens[0],
+						Principal: tokens[1]})
+				} else {
+					return saml.AssumableRoles{}, fmt.Errorf("Unable to get roles from %s", v.Value)
 				}
+
 			}
 		}
 	}
+	return roleList, nil
+}
 
-	return "", "", fmt.Errorf("Role '%s' not authorized by Okta.  Contact Okta admin to make sure that the AWS app is configured properly.", profileARN)
+func GetRole(roleList saml.AssumableRoles, profileARN string) (saml.AssumableRole, error) {
+
+	// if the user doesn't have any roles they can assume return an error.
+	if len(roleList) == 0 {
+		return saml.AssumableRole{}, fmt.Errorf("There are no roles that can be assumed")
+	}
+
+	// A role arn was provided as part of the profile, we will assume that role.
+	if profileARN != "" {
+		for _, arole := range roleList {
+			if profileARN == arole.Role {
+				return arole, nil
+			}
+		}
+		return saml.AssumableRole{}, fmt.Errorf("ARN isn't valid")
+	}
+
+	// if the user only has one role assume that role without prompting.
+	if len(roleList) == 1 {
+		return roleList[0], nil
+	}
+
+	for i, arole := range roleList {
+		fmt.Printf("%d - %s\n", i, arole.Role)
+	}
+
+	i, err := Prompt("Select Role to Assume", false)
+	if err != nil {
+		return saml.AssumableRole{}, err
+	}
+	if i == "" {
+		return saml.AssumableRole{}, errors.New("Invalid selection - Please use an option that is listed")
+	}
+	factorIdx, err := strconv.Atoi(i)
+	if err != nil {
+		return saml.AssumableRole{}, err
+	}
+	if factorIdx > (len(roleList) - 1) {
+		return saml.AssumableRole{}, errors.New("Invalid selection - Please use an option that is listed")
+	}
+	return roleList[factorIdx], nil
 }
 
 func ParseSAML(body []byte, resp *SAMLAssertion) (err error) {
