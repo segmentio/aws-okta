@@ -36,7 +36,7 @@ type ProviderOptions struct {
 	ExpiryWindow       time.Duration
 	Profiles           Profiles
 	MFAConfig          MFAConfig
-
+	AssumeRoleArn      string
 	// if true, use store_singlekritem SessionCache (new)
 	// if false, use store_kritempersession SessionCache (old)
 	SessionCacheSingleItem bool
@@ -201,6 +201,8 @@ func (p *Provider) getOktaSessionCookieKey() string {
 }
 
 func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
+	var profileARN string
+	var ok bool
 	source := sourceProfile(p.profile, p.profiles)
 	oktaAwsSAMLUrl, err := p.getSamlURL()
 	if err != nil {
@@ -208,11 +210,16 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	}
 	oktaSessionCookieKey := p.getOktaSessionCookieKey()
 
-	profileARN, ok := p.profiles[source]["role_arn"]
-	if !ok {
-		return sts.Credentials{}, errors.New("Source profile must provide `role_arn`")
+	// if the assumable role is passed it have it override what is in the profile
+	if p.AssumeRoleArn != "" {
+		profileARN = p.AssumeRoleArn
+		log.Debug("Overriding Assumable role with: ", profileARN)
+	} else {
+		profileARN, ok = p.profiles[source]["role_arn"]
+		if !ok {
+			return sts.Credentials{}, errors.New("Source profile must provide `role_arn`")
+		}
 	}
-
 	provider := OktaProvider{
 		MFAConfig:            p.ProviderOptions.MFAConfig,
 		Keyring:              p.keyring,

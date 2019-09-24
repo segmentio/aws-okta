@@ -22,6 +22,7 @@ import (
 var (
 	sessionTTL    time.Duration
 	assumeRoleTTL time.Duration
+	assumeRoleARN string
 )
 
 func mustListProfiles() lib.Profiles {
@@ -45,6 +46,7 @@ func init() {
 	RootCmd.AddCommand(execCmd)
 	execCmd.Flags().DurationVarP(&sessionTTL, "session-ttl", "t", time.Hour, "Expiration time for okta role session")
 	execCmd.Flags().DurationVarP(&assumeRoleTTL, "assume-role-ttl", "a", time.Hour, "Expiration time for assumed role")
+	execCmd.Flags().StringVarP(&assumeRoleARN, "assume-role-arn", "r", "", "Role arn to assume, overrides arn in profile")
 }
 
 func loadDurationFlagFromEnv(cmd *cobra.Command, flagName string, envVar string, val *time.Duration) error {
@@ -64,6 +66,21 @@ func loadDurationFlagFromEnv(cmd *cobra.Command, flagName string, envVar string,
 
 	cmd.Flags().Lookup(flagName).Changed = true
 	*val = dur
+	return nil
+}
+
+func loadStringFlagFromEnv(cmd *cobra.Command, flagName string, envVar string, val *string) error {
+	if cmd.Flags().Lookup(flagName).Changed {
+		return nil
+	}
+
+	fromEnv, ok := os.LookupEnv(envVar)
+	if !ok {
+		return nil
+	}
+
+	cmd.Flags().Lookup(flagName).Changed = true
+	*val = fromEnv
 	return nil
 }
 
@@ -89,6 +106,9 @@ func execPre(cmd *cobra.Command, args []string) {
 
 	if err := loadDurationFlagFromEnv(cmd, "assume-role-ttl", "AWS_ASSUME_ROLE_TTL", &assumeRoleTTL); err != nil {
 		fmt.Fprintln(os.Stderr, "warning: failed to parse duration from AWS_ASSUME_ROLE_TTL")
+	}
+	if err := loadStringFlagFromEnv(cmd, "assume-role-arn", "AWS_ASSUME_ROLE_ARN", &assumeRoleARN); err != nil {
+		fmt.Fprintln(os.Stderr, "warning: failed to parse duration from AWS_ASSUME_ROLE_ARN")
 	}
 }
 
@@ -143,6 +163,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 		Profiles:           profiles,
 		SessionDuration:    sessionTTL,
 		AssumeRoleDuration: assumeRoleTTL,
+		AssumeRoleArn:      assumeRoleARN,
 	}
 
 	var allowedBackends []keyring.BackendType
