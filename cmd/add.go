@@ -13,9 +13,10 @@ import (
 )
 
 var (
-	organization string
-	oktaDomain   string
-	oktaRegion   string
+	organization    string
+	oktaDomain      string
+	oktaRegion      string
+	oktaAccountName string
 )
 
 // addCmd represents the add command
@@ -29,6 +30,7 @@ func init() {
 	RootCmd.AddCommand(addCmd)
 	addCmd.Flags().StringVarP(&oktaDomain, "domain", "", "", "Okta domain (e.g. <orgname>.okta.com)")
 	addCmd.Flags().StringVarP(&username, "username", "", "", "Okta username")
+	addCmd.Flags().StringVarP(&oktaAccountName, "account", "", "", "Okta account name")
 }
 
 func add(cmd *cobra.Command, args []string) error {
@@ -89,6 +91,13 @@ func add(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
+	
+	if oktaAccountName == "" {
+	    oktaAccountName = "okta-creds"
+	} else {
+	    oktaAccountName = "okta-creds-" + oktaAccountName
+	}
+	log.Debugf("Keyring key: %s", oktaAccountName)
 
 	// Ask for password from prompt
 	password, err := lib.Prompt("Okta password", true)
@@ -120,7 +129,7 @@ func add(cmd *cobra.Command, args []string) error {
 	}
 
 	item := keyring.Item{
-		Key:                         "okta-creds",
+		Key:                         oktaAccountName,
 		Data:                        encoded,
 		Label:                       "okta credentials",
 		KeychainNotTrustApplication: false,

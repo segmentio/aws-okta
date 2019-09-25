@@ -126,6 +126,27 @@ role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
 
 The configuration above means that you can use multiple Okta Apps at the same time and switch between them easily.
 
+#### Multiple Okta accounts
+setup accounts:
+```ini
+aws-okta add --account=account-a
+aws-okta add --account=account-b
+```
+
+define keyring key for each profile:
+```ini
+[profile account-a]
+# This is a distinct Okta App
+aws_saml_url = home/amazon_aws/woezQTbGWUaLSrYDvINU/214
+role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
+okta_account_name = account-a
+
+[profile account-b]
+aws_saml_url = home/amazon_aws/woezQTbGaDAA4rYDvINU/123
+role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
+okta_account_name = account-b
+```
+
 #### Configuring Okta session and AWS assume role TTLs
 
 The default TTLs for both Okta sessions and AWS assumed roles is 1 hour.  This means that aws-okta will re-authenticate to Okta and AWS credentials will expire every hour.  In addition to specifying the Okta session and AWS assume role TTLs with the command-line flags, they can be set using the `AWS_SESSION_TTL` and `AWS_ASSUME_ROLE_TTL` environment variables respectively.

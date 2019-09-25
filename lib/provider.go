@@ -200,6 +200,15 @@ func (p *Provider) getOktaSessionCookieKey() string {
 	return oktaSessionCookieKey
 }
 
+func (p *Provider) getOktaAccountName() string {
+	oktaAccountName, profile, err := p.profiles.GetValue(p.profile, "okta_account_name")
+	if err != nil {
+		return "okta-creds"
+	}
+	log.Debugf("Using okta_account_name: %s from profile: %s", oktaAccountName, profile)
+	return "okta-creds-" + oktaAccountName
+}
+
 func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	var profileARN string
 	var ok bool
@@ -209,6 +218,7 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 		return sts.Credentials{}, err
 	}
 	oktaSessionCookieKey := p.getOktaSessionCookieKey()
+	oktaAccountName := p.getOktaAccountName()
 
 	// if the assumable role is passed it have it override what is in the profile
 	if p.AssumeRoleArn != "" {
@@ -228,6 +238,7 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 		SessionDuration:      p.SessionDuration,
 		OktaAwsSAMLUrl:       oktaAwsSAMLUrl,
 		OktaSessionCookieKey: oktaSessionCookieKey,
+		OktaAccountName:      oktaAccountName,
 	}
 
 	if region := p.profiles[source]["region"]; region != "" {
@@ -250,6 +261,7 @@ func (p *Provider) GetSAMLLoginURL() (*url.URL, error) {
 		return &url.URL{}, err
 	}
 	oktaSessionCookieKey := p.getOktaSessionCookieKey()
+	oktaAccountName := p.getOktaAccountName()
 
 	profileARN := p.profiles[source]["role_arn"]
 
@@ -260,6 +272,7 @@ func (p *Provider) GetSAMLLoginURL() (*url.URL, error) {
 		SessionDuration:      p.SessionDuration,
 		OktaAwsSAMLUrl:       oktaAwsSAMLUrl,
 		OktaSessionCookieKey: oktaSessionCookieKey,
+		OktaAccountName:      oktaAccountName,
 	}
 
 	if region := p.profiles[source]["region"]; region != "" {
