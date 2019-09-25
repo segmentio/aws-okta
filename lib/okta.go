@@ -596,10 +596,10 @@ type OktaProvider struct {
 }
 
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
-	log.Debug("using okta provider (%s)", p.OktaAccountName)
+	log.Debugf("Using okta provider (%s)", p.OktaAccountName)
 	item, err := p.Keyring.Get(p.OktaAccountName)
 	if err != nil {
-		log.Debugf("couldnt get okta creds from keyring: %s", err)
+		log.Debugf("Couldnt get okta creds from keyring: %s", err)
 		return sts.Credentials{}, "", err
 	}
 

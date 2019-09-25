@@ -97,7 +97,7 @@ func add(cmd *cobra.Command, args []string) error {
 	} else {
 	    oktaAccountName = "okta-creds-" + oktaAccountName
 	}
-	log.Debugf("keyring key: %s", oktaAccountName)
+	log.Debugf("Keyring key: %s", oktaAccountName)
 
 	// Ask for password from prompt
 	password, err := lib.Prompt("Okta password", true)

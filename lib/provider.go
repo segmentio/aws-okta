@@ -205,7 +205,7 @@ func (p *Provider) getOktaAccountName() string {
 	if err != nil {
 		return "okta-creds"
 	}
-	log.Debugf("Using okta_account_name from profile: %s", profile)
+	log.Debugf("Using okta_account_name from profile: %s", oktaAccountName)
 	return "okta-creds-" + oktaAccountName
 }
 
