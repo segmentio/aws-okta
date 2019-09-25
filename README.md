@@ -129,8 +129,8 @@ The configuration above means that you can use multiple Okta Apps at the same ti
 #### Multiple Okta accounts
 setup accounts:
 ```ini
-aws-okta add --keyringKey=okta-creds-account-a
-aws-okta add --keyringKey=okta-creds-account-b
+aws-okta add --account=account-a
+aws-okta add --account=account-b
 ```
 
 define keyring key for each profile:
@@ -139,12 +139,12 @@ define keyring key for each profile:
 # This is a distinct Okta App
 aws_saml_url = home/amazon_aws/woezQTbGWUaLSrYDvINU/214
 role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
-okta_keyring_key = okta-creds-account-a
+okta_account_name = account-a
 
 [profile account-b]
 aws_saml_url = home/amazon_aws/woezQTbGaDAA4rYDvINU/123
 role_arn = arn:aws:iam::<account-id>:role/<okta-role-name>
-okta_keyring_key = okta-creds-account-b
+okta_account_name = account-b
 ```
 
 #### Configuring Okta session and AWS assume role TTLs

@@ -590,14 +590,14 @@ type OktaProvider struct {
 	// OktaSessionCookieKey represents the name of the session cookie
 	// to be stored in the keyring.
 	OktaSessionCookieKey string
-	OktaKeyringKey string
+	OktaAccountName      string
 	MFAConfig            MFAConfig
 	AwsRegion            string
 }
 
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
-	log.Debug("using okta provider")
-	item, err := p.Keyring.Get(p.OktaKeyringKey)
+	log.Debug("using okta provider (%s)", p.OktaAccountName)
+	item, err := p.Keyring.Get(p.OktaAccountName)
 	if err != nil {
 		log.Debugf("couldnt get okta creds from keyring: %s", err)
 		return sts.Credentials{}, "", err

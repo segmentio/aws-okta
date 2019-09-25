@@ -200,13 +200,13 @@ func (p *Provider) getOktaSessionCookieKey() string {
 	return oktaSessionCookieKey
 }
 
-func (p *Provider) getOktaKeyringKey() string {
-	oktaKeyringKey, profile, err := p.profiles.GetValue(p.profile, "okta_keyring_key")
+func (p *Provider) getOktaAccountName() string {
+	oktaAccountName, profile, err := p.profiles.GetValue(p.profile, "okta_account_name")
 	if err != nil {
 		return "okta-creds"
 	}
-	log.Debugf("Using okta_keyring_key from profile: %s", profile)
-	return oktaKeyringKey
+	log.Debugf("Using okta_account_name from profile: %s", profile)
+	return "okta-creds-" + oktaAccountName
 }
 
 func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
@@ -218,7 +218,7 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 		return sts.Credentials{}, err
 	}
 	oktaSessionCookieKey := p.getOktaSessionCookieKey()
-	oktaKeyringKey := p.getOktaKeyringKey()
+	oktaAccountName := p.getOktaAccountName()
 
 	// if the assumable role is passed it have it override what is in the profile
 	if p.AssumeRoleArn != "" {
@@ -238,7 +238,7 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 		SessionDuration:      p.SessionDuration,
 		OktaAwsSAMLUrl:       oktaAwsSAMLUrl,
 		OktaSessionCookieKey: oktaSessionCookieKey,
-		OktaKeyringKey: oktaKeyringKey,
+		OktaAccountName:      oktaAccountName,
 	}
 
 	if region := p.profiles[source]["region"]; region != "" {
@@ -261,7 +261,7 @@ func (p *Provider) GetSAMLLoginURL() (*url.URL, error) {
 		return &url.URL{}, err
 	}
 	oktaSessionCookieKey := p.getOktaSessionCookieKey()
-	oktaKeyringKey := p.getOktaKeyringKey()
+	oktaAccountName := p.getOktaAccountName()
 
 	profileARN := p.profiles[source]["role_arn"]
 
@@ -272,7 +272,7 @@ func (p *Provider) GetSAMLLoginURL() (*url.URL, error) {
 		SessionDuration:      p.SessionDuration,
 		OktaAwsSAMLUrl:       oktaAwsSAMLUrl,
 		OktaSessionCookieKey: oktaSessionCookieKey,
-		OktaKeyringKey: oktaKeyringKey,
+		OktaAccountName:      oktaAccountName,
 	}
 
 	if region := p.profiles[source]["region"]; region != "" {
