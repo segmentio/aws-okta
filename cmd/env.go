@@ -8,7 +8,6 @@ import (
 
 	"github.com/99designs/keyring"
 	"github.com/alessio/shellescape"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
 	"github.com/spf13/cobra"
@@ -99,12 +98,7 @@ func envRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// TODO: deduplicate this code from exec.go
-	roleARN, err := lib.GetRoleARN(credentials.Value{
-		AccessKeyID:     creds.AccessKeyID,
-		SecretAccessKey: creds.SecretAccessKey,
-		SessionToken:    creds.SessionToken,
-	})
+	roleARN, err := p.GetRoleARNWithRegion(creds)
 	if err != nil {
 		return err
 	}

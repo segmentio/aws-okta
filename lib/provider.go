@@ -325,25 +325,41 @@ func (p *Provider) roleSessionName() string {
 	return fmt.Sprintf("%d", time.Now().UTC().UnixNano())
 }
 
+// GetRoleARN uses temporary credentials to call AWS's get-caller-identity and
+// returns the assumed role's ARN
+func (p *Provider) GetRoleARNWithRegion(creds credentials.Value) (string, error) {
+	config := aws.Config{Credentials: credentials.NewStaticCredentials(
+		creds.AccessKeyID,
+		creds.SecretAccessKey,
+		creds.SessionToken,
+	)}
+	if region := p.profiles[sourceProfile(p.profile, p.profiles)]["region"]; region != "" {
+		config.WithRegion(region)
+	}
+	client := sts.New(aws_session.New(&config))
+
+	indentity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		log.Errorf("Error getting caller identity: %s", err.Error())
+		return "", err
+	}
+	arn := *indentity.Arn
+	return arn, nil
+}
+
 // GetRoleARN uses p to establish temporary credentials then calls
-// lib.GetRoleARN with them to get the role's ARN
+// lib.GetRoleARN with them to get the role's ARN. It is unused internally and
+// is kept for backwards compatability.
 func (p *Provider) GetRoleARN() (string, error) {
 	creds, err := p.getSamlSessionCreds()
 	if err != nil {
 		return "", err
 	}
-	return GetRoleARN(credentials.Value{
-		AccessKeyID:     *creds.AccessKeyId,
-		SecretAccessKey: *creds.SecretAccessKey,
-		SessionToken:    *creds.SessionToken,
-	})
-}
-
-// GetRoleARN makes a call to AWS to get-caller-identity and returns the
-// assumed role's name and ARN.
-func GetRoleARN(c credentials.Value) (string, error) {
-	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentialsFromCreds(c)}))
-
+	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
+		*creds.AccessKeyId,
+		*creds.SecretAccessKey,
+		*creds.SessionToken,
+	)}))
 	indentity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		log.Errorf("Error getting caller identity: %s", err.Error())
