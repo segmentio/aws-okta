@@ -5,6 +5,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -12,6 +14,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 )
+
+// Role arn format => arn:${Partition}:iam::${Account}:role/${RoleNameWithPath}
+// https://docs.aws.amazon.com/IAM/latest/UserGuide/list_identityandaccessmanagement.html
+var awsRoleARNRegex = regexp.MustCompile(`arn:[a-z-]+:iam::(\d{12}):role/(.*)`)
 
 func GetRoleFromSAML(resp *saml.Response, profileARN string) (string, string, error) {
 
@@ -91,9 +97,23 @@ func GetRole(roleList saml.AssumableRoles, profileARN string) (saml.AssumableRol
 		return roleList[0], nil
 	}
 
+	// Sort the roles in alphabetical order
+	sort.Slice(roleList, func(i, j int) bool {
+		return roleList[i].Role < roleList[j].Role
+	})
+
+	var roleName, previousAccountID, currentAccountID string
+
 	for i, arole := range roleList {
-		fmt.Printf("%d - %s\n", i, arole.Role)
+		currentAccountID, roleName = accountIDAndRoleFromRoleARN(arole.Role)
+		if currentAccountID != previousAccountID {
+			fmt.Printf("\nAccount: %s\n", currentAccountID)
+		}
+		previousAccountID = currentAccountID
+
+		fmt.Printf("%4d - %s\n", i, roleName)
 	}
+	fmt.Println("")
 
 	i, err := Prompt("Select Role to Assume", false)
 	if err != nil {
@@ -159,4 +179,18 @@ func GetNode(n *html.Node, name string) (val string, node *html.Node) {
 		}
 	}
 	return
+}
+
+func accountIDAndRoleFromRoleARN(roleARN string) (string, string) {
+	matches := awsRoleARNRegex.FindStringSubmatch(roleARN)
+
+	// matches will contain ("roleARN", "accountID", "roleName")
+	if len(matches) == 3 {
+		return matches[1], matches[2]
+	}
+
+	// Getting here means we failed to extract accountID and roleName from
+	// roleARN. It should "not" happen, but if it does, return empty string
+	// as accountID and roleARN as roleName instead.
+	return "", roleARN
 }

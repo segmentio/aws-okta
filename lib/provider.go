@@ -227,7 +227,15 @@ func (p *Provider) getSamlSessionCreds() (sts.Credentials, error) {
 	} else {
 		profileARN, ok = p.profiles[source]["role_arn"]
 		if !ok {
-			return sts.Credentials{}, errors.New("Source profile must provide `role_arn`")
+			// profile does not have a role_arn. This is ok as the user will be promted
+			// to choose a role from all available roles
+			// Support profiles similar to below
+			//   [profile my-profile]
+			//   output = json
+			//   aws_saml_url = /home/some_saml_url
+			//   mfa_provider = FIDO
+			//   mfa_factor_type = u2f
+			log.Debugf("Profile '%s' does not have role_arn", source)
 		}
 	}
 
