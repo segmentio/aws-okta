@@ -174,6 +174,10 @@ If you have a single MFA factor configured, that factor will be automatically se
 * Specify with environment variables `AWS_OKTA_MFA_PROVIDER` and `AWS_OKTA_MFA_FACTOR_TYPE`
 * Specify in your aws config with `mfa_provider` and `mfa_factor_type`
 
+### Shell completion
+
+`aws-okta` provides shell completion support for BASH and ZSH via the `aws-okta completion` command.
+
 ## Backends
 
 We use 99design's keyring package that they use in `aws-vault`.  Because of this, you can choose between different pluggable secret storage backends just like in `aws-vault`.  You can either set your backend from the command line as a flag, or set the `AWS_OKTA_BACKEND` environment variable.
