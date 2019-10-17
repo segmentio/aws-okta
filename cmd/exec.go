@@ -229,6 +229,8 @@ func execRun(cmd *cobra.Command, args []string) error {
 		env.Set("AWS_SECURITY_TOKEN", creds.SessionToken)
 	}
 
+	env.Set("AWS_OKTA_SESSION_EXPIRATION", fmt.Sprintf("%d", p.GetExpiration().Unix()))
+
 	ecmd := exec.Command(command, commandArgs...)
 	ecmd.Stdin = os.Stdin
 	ecmd.Stdout = os.Stdout
