@@ -17,17 +17,7 @@ changelog() {
   else
     prev="$(git -c versionsort.suffix=- tag -l --sort=-v:refname | awk 'NR == 1 {print}')"
   fi
-  current=master
-  excludes=(
-    ":(exclude)README.md" \
-    ":(exclude)vendor" \
-    ":(exclude)Makefile*" \
-    ":(exclude).circle" \
-    ":(exclude)nfpm.yaml.tmpl" \
-    ":(exclude)circle.yml" \
-    ":(exclude).circleci" \
-    ":(exclude).gitignore" \
-  )
+  current=HEAD
 
   # head -1 actually closes the pipe early, causing a SIGPIPE
   set +o pipefail
@@ -41,18 +31,19 @@ changelog() {
   fi
 
 
-  declare -a feat pipeline fix meta misc
-  feat=()
-  pipeline=()
-  fix=()
-  meta=()
-  misc=()
-  oldifs=$IFS
+  declare -a feat pipeline fix meta misc lines
+  local lines
   local lines_s
+  local feat=()
+  local pipeline=()
+  local fix=()
+  local meta=()
+  local misc=()
+  oldifs=$IFS
   lines_s=$(git log --pretty=format:"* [\`%h\`](${commit_url_base}/%H) %s (%an)"   "${prev}..${current}" -- .  ${excludes})
   local IFS=$'\n'
-  local lines=($lines_s)
-  for line in "${lines[@]}"; do
+  lines=($lines_s)
+  for line in "${lines[@]:-}"; do
     if echo $line | grep -E ') feat[^:]*:' > /dev/null 2>&1; then
       feat+=("$line")
     elif echo $line | grep -E ') pipeline[^:]*:' > /dev/null 2>&1; then
