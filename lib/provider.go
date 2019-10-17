@@ -182,6 +182,10 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 	return value, nil
 }
 
+func (p *Provider) GetExpiration() time.Time {
+	return p.expires
+}
+
 func (p *Provider) getSamlURL() (string, error) {
 	oktaAwsSAMLUrl, profile, err := p.profiles.GetValue(p.profile, "aws_saml_url")
 	if err != nil {

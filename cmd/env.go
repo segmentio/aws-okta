@@ -120,5 +120,7 @@ func envRun(cmd *cobra.Command, args []string) error {
 		fmt.Printf("export AWS_SECURITY_TOKEN=%s\n", shellescape.Quote(creds.SessionToken))
 	}
 
+	fmt.Printf("export AWS_OKTA_SESSION_EXPIRATION=%d\n", p.GetExpiration().Unix())
+
 	return nil
 }
