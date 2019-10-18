@@ -4,18 +4,18 @@
 
 set -euo pipefail
 
+commit_url_base='https://github.com/segmentio/aws-okta/commit'
+
 # generates a changelog between the current commit and the previous tag
 changelog() {
-  local repo_url commit_url_base prev current excludes current_sha current_tag
-  repo_url="$(git config --get remote.origin.url | sed 's#ssh://git@#https://#')"
-  commit_url_base="${repo_url}/commit"
+  local repo_url prev current excludes current_sha current_tag
   
   # if HEAD is a tag already, prev will the be second (non-prerelease) line
   if git describe --exact-match --tags > /dev/null 2>&1; then
     prev="$(git -c versionsort.suffix=- tag -l --sort=-v:refname | awk 'NR > 1 {print}' | grep -v '-' | awk 'NR == 1 {print}')"
     current_tag="$(git -c versionsort.suffix=- tag -l --sort=-v:refname | awk 'NR == 1 {print}')"
   else
-    prev="$(git -c versionsort.suffix=- tag -l --sort=-v:refname | awk 'NR == 1 {print}')"
+    prev="$(git -c versionsort.suffix=- tag -l --sort=-v:refname | grep -v '-' | awk 'NR == 1 {print}')"
   fi
   current=HEAD
 
