@@ -12,7 +12,10 @@ import (
 
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
+	"github.com/segmentio/aws-okta/internal/sessioncache"
 	"github.com/segmentio/aws-okta/lib"
+	"github.com/segmentio/aws-okta/lib/client"
+	"github.com/segmentio/aws-okta/lib/provider"
 	"github.com/spf13/cobra"
 	ini "gopkg.in/ini.v1"
 )
@@ -75,8 +78,7 @@ func writeToCredentialsRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	opts := lib.ProviderOptions{
-		MFAConfig:          mfaConfig,
+	opts := provider.AWSSAMLProviderOptions{
 		Profiles:           profiles,
 		SessionDuration:    sessionTTL,
 		AssumeRoleDuration: assumeRoleTTL,
@@ -106,7 +108,18 @@ func writeToCredentialsRun(cmd *cobra.Command, args []string) error {
 
 	opts.SessionCacheSingleItem = flagSessionCacheSingleItem
 
-	p, err := lib.NewProvider(kr, profile, opts)
+	sessions := &sessioncache.SingleKrItemStore{kr}
+	// get okta creds from the keychain
+	oktaCreds, err := client.GetOktaCredentialFromKeyring(kr)
+	if err != nil {
+		return err
+	}
+	// create an okta client for our provider
+	oktaClient, err := client.NewOktaClient(oktaCreds, &kr, mfaConfig)
+	if err != nil {
+		return err
+	}
+	p, err := provider.NewAWSSAMLProvider(sessions, profile, opts, oktaClient)
 	if err != nil {
 		return err
 	}
