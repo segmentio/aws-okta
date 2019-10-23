@@ -45,6 +45,7 @@ publish-github-linux: publish-github-linux-bin publish-github-deb publish-github
 publish-packagecloud: publish-packagecloud-deb publish-packagecloud-rpm
 
 github-release:
+	set -o pipefail; \
 	scripts/changelog | github-release release \
 	--security-token $$GH_LOGIN \
 	--user segmentio \
