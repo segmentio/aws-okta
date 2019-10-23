@@ -8,12 +8,20 @@ VERSION := $(shell git describe --tags --always --dirty="-dev")
 LDFLAGS := -ldflags='-X "main.Version=$(VERSION)"'
 
 test:
-	GO111MODULE=on go test -mod=vendor -v ./...
+	GO111MODULE=on go test -mod=vendor -covermode=count -coverprofile=coverage.out -v ./...
+	@echo
+	@echo INFO: to launch the coverage report: go tool cover -html=coverage.out
+##
+## More information about cover reports:
+## https://blog.golang.org/cover
 
-all: dist/aws-okta-$(VERSION)-darwin-amd64 dist/aws-okta-$(VERSION)-linux-amd64
+all: linux darwin
+linux: dist/aws-okta-$(VERSION)-linux-amd64
+darwin: dist/aws-okta-$(VERSION)-darwin-amd64
 
 clean:
 	rm -rf ./dist
+	rm -f coverage.out
 
 dist/:
 	mkdir -p dist
@@ -24,4 +32,4 @@ dist/aws-okta-$(VERSION)-darwin-amd64: | dist/
 dist/aws-okta-$(VERSION)-linux-amd64: | dist/
 	GOOS=linux GOARCH=amd64 GO111MODULE=on go build -mod=vendor $(LDFLAGS) -o $@
 
-.PHONY: clean all
+.PHONY: clean all linux darwin test

@@ -14,7 +14,10 @@ import (
 
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
+	"github.com/segmentio/aws-okta/internal/sessioncache"
 	"github.com/segmentio/aws-okta/lib"
+	"github.com/segmentio/aws-okta/lib/client"
+	"github.com/segmentio/aws-okta/lib/provider"
 	"github.com/spf13/cobra"
 )
 
@@ -157,8 +160,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	opts := lib.ProviderOptions{
-		MFAConfig:          mfaConfig,
+	opts := provider.AWSSAMLProviderOptions{
 		Profiles:           profiles,
 		SessionDuration:    sessionTTL,
 		AssumeRoleDuration: assumeRoleTTL,
@@ -189,7 +191,18 @@ func execRun(cmd *cobra.Command, args []string) error {
 
 	opts.SessionCacheSingleItem = flagSessionCacheSingleItem
 
-	p, err := lib.NewProvider(kr, profile, opts)
+	sessions := &sessioncache.SingleKrItemStore{kr}
+	// get okta creds from the keychain
+	oktaCreds, err := client.GetOktaCredentialFromKeyring(kr)
+	if err != nil {
+		return err
+	}
+	// create an okta client for our provider
+	oktaClient, err := client.NewOktaClient(oktaCreds, &kr, mfaConfig)
+	if err != nil {
+		return err
+	}
+	p, err := provider.NewAWSSAMLProvider(sessions, profile, opts, oktaClient)
 	if err != nil {
 		return err
 	}
@@ -229,7 +242,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 		env.Set("AWS_SECURITY_TOKEN", creds.SessionToken)
 	}
 
-	env.Set("AWS_OKTA_SESSION_EXPIRATION", fmt.Sprintf("%d", p.GetExpiration().Unix()))
+	env.Set("AWS_OKTA_SESSION_EXPIRATION", fmt.Sprintf("%d", p.Expires.Unix()))
 
 	ecmd := exec.Command(command, commandArgs...)
 	ecmd.Stdin = os.Stdin

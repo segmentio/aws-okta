@@ -10,6 +10,7 @@ import (
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
+	"github.com/segmentio/aws-okta/lib/client"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/xerrors"
@@ -32,7 +33,7 @@ const (
 // global flags
 var (
 	backend                    string
-	mfaConfig                  lib.MFAConfig
+	mfaConfig                  client.MFAConfig
 	debug                      bool
 	version                    string
 	analyticsWriteKey          string
@@ -129,7 +130,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&flagSessionCacheSingleItem, "session-cache-single-item", "", false, fmt.Sprintf("(alpha) Enable single-item session cache; aka %s", envSessionCacheSingleItem))
 }
 
-func updateMfaConfig(cmd *cobra.Command, profiles lib.Profiles, profile string, config *lib.MFAConfig) {
+func updateMfaConfig(cmd *cobra.Command, profiles lib.Profiles, profile string, config *client.MFAConfig) {
 	if !cmd.Flags().Lookup("mfa-duo-device").Changed {
 		mfaDeviceFromEnv, ok := os.LookupEnv("AWS_OKTA_MFA_DUO_DEVICE")
 		if ok {
