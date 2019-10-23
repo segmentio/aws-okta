@@ -85,6 +85,7 @@ jobs:
             # fixes https://askubuntu.com/questions/872399/error-failed-to-build-gem-native-extension-when-trying-to-download-rubocop
             sudo gem install rake
             sudo make -f Makefile.tools package_cloud
+            make -f Makefile.release publish-packagecloud
 
   publish-github-linux:
     docker:
