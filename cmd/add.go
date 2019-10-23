@@ -9,6 +9,7 @@ import (
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
+	"github.com/segmentio/aws-okta/lib/client"
 	"github.com/spf13/cobra"
 )
 
@@ -70,7 +71,7 @@ func add(cmd *cobra.Command, args []string) error {
 			oktaRegion = "us"
 		}
 
-		tld, err := lib.GetOktaDomain(oktaRegion)
+		tld, err := client.GetOktaDomain(oktaRegion)
 		if err != nil {
 			return err
 		}
@@ -91,11 +92,11 @@ func add(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
-	
+
 	if oktaAccountName == "" {
-	    oktaAccountName = "okta-creds"
+		oktaAccountName = "okta-creds"
 	} else {
-	    oktaAccountName = "okta-creds-" + oktaAccountName
+		oktaAccountName = "okta-creds-" + oktaAccountName
 	}
 	log.Debugf("Keyring key: %s", oktaAccountName)
 
@@ -106,11 +107,10 @@ func add(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println()
 
-	creds := lib.OktaCreds{
-		Organization: organization,
-		Username:     username,
-		Password:     password,
-		Domain:       oktaDomain,
+	creds := client.OktaCredential{
+		Username: username,
+		Password: password,
+		Domain:   oktaDomain,
 	}
 
 	// Profiles aren't parsed during `add`, but still want
@@ -118,7 +118,11 @@ func add(cmd *cobra.Command, args []string) error {
 	var dummyProfiles lib.Profiles
 	updateMfaConfig(cmd, dummyProfiles, "", &mfaConfig)
 
-	if err := creds.Validate(mfaConfig); err != nil {
+	oktaClient, err := client.NewOktaClient(creds, nil, mfaConfig)
+	if err != nil {
+		return err
+	}
+	if err := oktaClient.AuthenticateUser(); err != nil {
 		log.Debugf("Failed to validate credentials: %s", err)
 		return ErrFailedToValidateCredentials
 	}

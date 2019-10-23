@@ -56,6 +56,10 @@ func (c *fileConfig) Parse() (Profiles, error) {
 	return profiles, nil
 }
 
+func SourceProfile(p string, from Profiles) string {
+	return sourceProfile(p, from)
+}
+
 // sourceProfile returns either the defined source_profile or p if none exists
 func sourceProfile(p string, from Profiles) string {
 	if conf, ok := from[p]; ok {

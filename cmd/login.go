@@ -11,7 +11,10 @@ import (
 
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
+	"github.com/segmentio/aws-okta/internal/sessioncache"
 	"github.com/segmentio/aws-okta/lib"
+	"github.com/segmentio/aws-okta/lib/client"
+	"github.com/segmentio/aws-okta/lib/provider"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 )
@@ -79,8 +82,7 @@ func loginRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	opts := lib.ProviderOptions{
-		MFAConfig:          mfaConfig,
+	opts := provider.AWSSAMLProviderOptions{
 		Profiles:           profiles,
 		SessionDuration:    sessionTTL,
 		AssumeRoleDuration: assumeRoleTTL,
@@ -109,7 +111,18 @@ func loginRun(cmd *cobra.Command, args []string) error {
 
 	opts.SessionCacheSingleItem = flagSessionCacheSingleItem
 
-	p, err := lib.NewProvider(kr, profile, opts)
+	sessions := &sessioncache.SingleKrItemStore{kr}
+	// get okta creds from the keychain
+	oktaCreds, err := client.GetOktaCredentialFromKeyring(kr)
+	if err != nil {
+		return err
+	}
+	// create an okta client for our provider
+	oktaClient, err := client.NewOktaClient(oktaCreds, &kr, mfaConfig)
+	if err != nil {
+		return nil
+	}
+	p, err := provider.NewAWSSAMLProvider(sessions, profile, opts, oktaClient)
 	if err != nil {
 		return err
 	}
@@ -120,7 +133,7 @@ func loginRun(cmd *cobra.Command, args []string) error {
 	return federatedLogin(p, profile, profiles)
 }
 
-func oktaLogin(p *lib.Provider) error {
+func oktaLogin(p *provider.AWSSAMLProvider) error {
 	loginURL, err := p.GetSAMLLoginURL()
 	if err != nil {
 		return err
@@ -135,7 +148,7 @@ func oktaLogin(p *lib.Provider) error {
 	return nil
 }
 
-func federatedLogin(p *lib.Provider, profile string, profiles lib.Profiles) error {
+func federatedLogin(p *provider.AWSSAMLProvider, profile string, profiles lib.Profiles) error {
 	creds, err := p.Retrieve()
 	if err != nil {
 		return err

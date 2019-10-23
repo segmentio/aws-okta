@@ -3,3 +3,4 @@
 dist/
 packagecloud.conf.json
 aws-okta
+coverage.out
