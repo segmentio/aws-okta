@@ -598,6 +598,9 @@ type OktaProvider struct {
 func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 	log.Debugf("Using okta provider (%s)", p.OktaAccountName)
 	item, err := p.Keyring.Get(p.OktaAccountName)
+	if err == keyring.ErrKeyNotFound {
+		return sts.Credentials{}, "", errors.New("Okta credentials are not in your keyring.  Please make sure you have added okta credentials with `aws-okta add`")
+	}
 	if err != nil {
 		log.Debugf("Couldnt get okta creds from keyring: %s", err)
 		return sts.Credentials{}, "", err
