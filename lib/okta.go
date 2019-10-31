@@ -218,7 +218,8 @@ func (o *OktaClient) AuthenticateProfileWithRegion(profileARN string, duration t
 	if region != "" {
 		log.Debugf("Using region: %s\n", region)
 		conf := &aws.Config{
-			Region: aws.String(region),
+			Region:   aws.String(region),
+			Endpoint: aws.String(fmt.Sprintf("https://sts.%s.amazonaws.com", region)),
 		}
 		samlSess = session.Must(session.NewSession(conf))
 	} else {
@@ -251,9 +252,8 @@ func (o *OktaClient) AuthenticateProfileWithRegion(profileARN string, duration t
 	return *samlResp.Credentials, sessionCookie, nil
 }
 
-
 func (o *OktaClient) AuthenticateProfile(profileARN string, duration time.Duration) (sts.Credentials, string, error) {
-    return o.AuthenticateProfileWithRegion(profileARN, duration, "")
+	return o.AuthenticateProfileWithRegion(profileARN, duration, "")
 }
 
 func selectMFADeviceFromConfig(o *OktaClient) (*OktaUserAuthnFactor, error) {
