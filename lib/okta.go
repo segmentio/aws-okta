@@ -17,6 +17,7 @@ import (
 
 	"github.com/99designs/keyring"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/segmentio/aws-okta/lib/mfa"
@@ -218,8 +219,8 @@ func (o *OktaClient) AuthenticateProfileWithRegion(profileARN string, duration t
 	if region != "" {
 		log.Debugf("Using region: %s\n", region)
 		conf := &aws.Config{
-			Region:   aws.String(region),
-			Endpoint: aws.String(fmt.Sprintf("https://sts.%s.amazonaws.com", region)),
+			Region:              aws.String(region),
+			STSRegionalEndpoint: endpoints.RegionalSTSEndpoint,
 		}
 		samlSess = session.Must(session.NewSession(conf))
 	} else {

@@ -3,11 +3,9 @@ module github.com/segmentio/aws-okta
 require (
 	github.com/99designs/keyring v1.0.0
 	github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053
-	github.com/aws/aws-sdk-go v0.0.0-20170323003848-3bc643c63c6f
+	github.com/aws/aws-sdk-go v1.25.25
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
-	github.com/go-ini/ini v1.39.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
 	github.com/keybase/go-keychain v0.0.0-20190604185112-cc436cc9fe98 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/marshallbrekka/go-u2fhost v0.0.0-20170128051651-72b0e7a3f583
