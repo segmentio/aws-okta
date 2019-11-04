@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -107,13 +108,13 @@ func GetRole(roleList saml.AssumableRoles, profileARN string) (saml.AssumableRol
 	for i, arole := range roleList {
 		currentAccountID, roleName = accountIDAndRoleFromRoleARN(arole.Role)
 		if currentAccountID != previousAccountID {
-			fmt.Printf("\nAccount: %s\n", currentAccountID)
+			fmt.Fprintf(os.Stderr, "\nAccount: %s\n", currentAccountID)
 		}
 		previousAccountID = currentAccountID
 
-		fmt.Printf("%4d - %s\n", i, roleName)
+		fmt.Fprintf(os.Stderr, "%4d - %s\n", i, roleName)
 	}
-	fmt.Println("")
+	fmt.Fprintln(os.Stderr, "")
 
 	i, err := Prompt("Select Role to Assume", false)
 	if err != nil {

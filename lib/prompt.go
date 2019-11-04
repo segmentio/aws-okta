@@ -11,7 +11,7 @@ import (
 )
 
 func Prompt(prompt string, sensitive bool) (string, error) {
-	return PromptWithOutput(prompt, sensitive, os.Stdout)
+	return PromptWithOutput(prompt, sensitive, os.Stderr)
 }
 
 func PromptWithOutput(prompt string, sensitive bool, output *os.File) (string, error) {
