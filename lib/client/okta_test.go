@@ -52,7 +52,7 @@ func TestOktaClientHappy(t *testing.T) {
 	}
 
 	sCache = newSessionCache()
-	oktaClient, err = NewOktaClient(creds, sCache, nil)
+	oktaClient, err = NewOktaClient(creds, sCache, nil, nil)
 	assert.NoError(t, err, "No errors when creating a client")
 
 	// intercept the http client with gock to mock out the Okta responses
@@ -166,7 +166,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		Username: "john",
 		Password: "johnnyjohn123",
 	}
-	oktaClient, err = NewOktaClient(creds, nil, nil)
+	oktaClient, err = NewOktaClient(creds, nil, nil, nil)
 	assert.NoError(t, err, "No errors when creating a client")
 
 	// intercept the http client with gock to mock out the Okta responses
