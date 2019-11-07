@@ -13,6 +13,7 @@ import (
 	"github.com/segmentio/aws-okta/lib"
 	"github.com/segmentio/aws-okta/lib/client"
 	"github.com/segmentio/aws-okta/lib/provider"
+	"github.com/segmentio/aws-okta/lib/session"
 	"github.com/spf13/cobra"
 )
 
@@ -96,8 +97,13 @@ func envRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	// create an okta client for our provider
-	oktaClient, err := client.NewOktaClient(oktaCreds, &kr, mfaConfig)
+
+	oktaCreds.MFA = mfaConfig
+
+	mfaChooser := MFAInputs{Label: "Choose the MFA to use"}
+
+	sessionCache := session.New(kr)
+	oktaClient, err := client.NewOktaClient(oktaCreds, sessionCache, &mfaChooser)
 	if err != nil {
 		return err
 	}

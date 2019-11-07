@@ -10,13 +10,12 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"strconv"
+	//"strconv"
 	"strings"
 	"time"
 
 	"golang.org/x/net/publicsuffix"
 
-	"github.com/99designs/keyring"
 	"github.com/segmentio/aws-okta/lib"
 	"github.com/segmentio/aws-okta/lib/mfa"
 	log "github.com/sirupsen/logrus"
@@ -41,9 +40,19 @@ type OktaClient struct {
 	SessionToken string
 	Expiration   time.Time
 	BaseURL      *url.URL
-	MFAConfig    MFAConfig
-	Keyring      *keyring.Keyring
+	sessions     SessionCache
 	client       http.Client
+	selector     MFAInputs
+}
+
+type MFAInputs interface {
+	ChooseFactor(factors []MFAConfig) (int, error)
+	CodeSupplier(factor MFAConfig) (string, error)
+}
+
+type SessionCache interface {
+	Get(key string) ([]byte, error)
+	Put(key string, data []byte, label string) error
 }
 
 // type: OktaCredential struct stores Okta credentials and domain information that will
@@ -52,12 +61,14 @@ type OktaCredential struct {
 	Username string
 	Password string
 	Domain   string
+	MFA      MFAConfig
 }
 
 type MFAConfig struct {
 	Provider   string // Which MFA provider to use when presented with an MFA challenge
 	FactorType string // Which of the factor types of the MFA provider to use
 	DuoDevice  string // Which DUO device to use for DUO MFA
+	Id         string // the unique id for the MFA device provided by Okta
 }
 
 // Checks the validity of OktaCredential and should be called before
@@ -87,7 +98,7 @@ func (c *OktaCredential) IsValid() bool {
 //			session is only for access to the Okta APIs, any additional sessions
 //			(for example, aws STS credentials) will be cached by the provider that
 //      creates them.
-func NewOktaClient(creds OktaCredential, kr *keyring.Keyring, mfaConfig MFAConfig) (*OktaClient, error) {
+func NewOktaClient(creds OktaCredential, sessions SessionCache, selector MFAInputs) (*OktaClient, error) {
 
 	if creds.IsValid() {
 		log.Debug("Credentials are valid :", creds.Username, " @ ", creds.Domain)
@@ -120,19 +131,19 @@ func NewOktaClient(creds OktaCredential, kr *keyring.Keyring, mfaConfig MFAConfi
 	}
 
 	oktaClient := OktaClient{
-		creds:     creds,
-		BaseURL:   base,
-		MFAConfig: mfaConfig,
-		userAuth:  &oktaUserAuthn{},
-		Keyring:   kr,
-		client:    client,
+		creds:    creds,
+		BaseURL:  base,
+		userAuth: &oktaUserAuthn{},
+		sessions: sessions,
+		client:   client,
+		selector: selector,
 	}
 
 	// this can fail if we don't have have a backend defined.
 	// failing to retrived a cached cookie shouldn't fail the entire
 	// operation. Let's check if we have the session caching functionality passed
 	// in before trying to retrieve the session cookie.
-	if oktaClient.Keyring != nil {
+	if oktaClient.sessions != nil {
 		err = oktaClient.retrieveSessionCookie()
 		if err != nil {
 			// if there is no saved session we will get an error, we still want to create the OktaClient.
@@ -150,18 +161,18 @@ func NewOktaClient(creds OktaCredential, kr *keyring.Keyring, mfaConfig MFAConfi
 // appropriately.
 func (o *OktaClient) retrieveSessionCookie() (err error) {
 
-	if o.Keyring == nil {
+	if o.sessions == nil {
 		return fmt.Errorf("Session NOT retrieved. Reason: Session Backend not defined")
 	}
-	cookieItem, err := (*o.Keyring).Get(o.getSessionCookieKeyringKey())
+	cookieItemData, err := (o.sessions).Get(o.getSessionCookieKeyringKey())
 	if err == nil {
 		o.client.Jar.SetCookies(o.BaseURL, []*http.Cookie{
 			{
 				Name:  "sid",
-				Value: string(cookieItem.Data),
+				Value: string(cookieItemData),
 			},
 		})
-		log.Debug("Using Okta session: ", string(cookieItem.Data))
+		log.Debug("Using Okta session: ", string(cookieItemData))
 	}
 
 	return
@@ -177,19 +188,15 @@ func (o *OktaClient) getSessionCookieKeyringKey() string {
 // request is destroyed/created between requests.
 func (o *OktaClient) saveSessionCookie() (err error) {
 
-	if o.Keyring == nil {
+	if o.sessions == nil {
 		return fmt.Errorf("Session NOT saved. Reason: Session Backend not defined")
 	}
 	cookies := o.client.Jar.Cookies(o.BaseURL)
 	for _, cookie := range cookies {
 		if cookie.Name == "sid" && cookie.Value != "" {
-			newCookieItem := keyring.Item{
-				Key:                         o.getSessionCookieKeyringKey(),
-				Data:                        []byte(cookie.Value),
-				Label:                       "okta session cookie for " + o.creds.Username,
-				KeychainNotTrustApplication: false,
-			}
-			err = (*o.Keyring).Set(newCookieItem)
+			err = (o.sessions).Put(o.getSessionCookieKeyringKey(),
+				[]byte(cookie.Value),
+				"okta session cookie for "+o.creds.Username)
 			if err != nil {
 				return
 			}
@@ -278,8 +285,6 @@ func (o *OktaClient) GetSessionToken() string {
 
 // Will prompt the user to select one of the configured MFA devices if an MFA
 // configuration isn't provided.
-//
-// TODO: convert this to a passed io reader to facilitate simple testing.
 func (o *OktaClient) selectMFADevice() (*oktaUserAuthnFactor, error) {
 	factors := o.userAuth.Embedded.Factors
 	if len(factors) == 0 {
@@ -287,33 +292,25 @@ func (o *OktaClient) selectMFADevice() (*oktaUserAuthnFactor, error) {
 	} else if len(factors) == 1 {
 		return &factors[0], nil
 	}
-
-	factor, err := selectMFADeviceFromConfig(o)
-	if err != nil {
-		return nil, err
+	factorsI := make([]MFAConfig, len(factors))
+	for factorIndex, factor := range factors {
+		if o.creds.MFA.Provider != "" && o.creds.MFA.FactorType != "" {
+			if strings.EqualFold(factor.Provider, o.creds.MFA.Provider) && strings.EqualFold(factor.FactorType, o.creds.MFA.FactorType) {
+				// if the user passed in a specific MFA config to use that matches a
+				// a factor we got from Okta then early exit and don't prompt them
+				log.Debugf("Using matching factor \"%v %v\" from config\n", factor.Provider, factor.FactorType)
+				return &factor, nil
+			}
+		}
+		factorsI[factorIndex] = MFAConfig{
+			Provider:   factor.Provider,
+			FactorType: factor.FactorType,
+			Id:         factor.Id}
 	}
 
-	if factor != nil {
-		return factor, nil
-	}
-
-	log.Info("Select a MFA from the following list")
-	for i, f := range factors {
-		log.Infof("%d: %s (%s)", i, f.Provider, f.FactorType)
-	}
-	i, err := lib.Prompt("Select MFA method", false)
-	if i == "" {
-		return nil, errors.New("Invalid selection - Please use an option that is listed")
-	}
+	factorIdx, err := o.selector.ChooseFactor(factorsI)
 	if err != nil {
 		return nil, err
-	}
-	factorIdx, err := strconv.Atoi(i)
-	if err != nil {
-		return nil, err
-	}
-	if factorIdx > (len(factors) - 1) {
-		return nil, errors.New("Invalid selection - Please use an option that is listed")
 	}
 	return &factors[factorIdx], nil
 }
@@ -324,11 +321,14 @@ func (o *OktaClient) selectMFADevice() (*oktaUserAuthnFactor, error) {
 func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, error) {
 	var mfaCode string
 	var err error
+	mfaConfig := MFAConfig{
+		FactorType: oktaFactorType,
+		Provider:   oktaFactorId}
 
 	//Software and Hardware based OTP Tokens
 	if strings.Contains(oktaFactorType, "token") {
 		log.Debug("Token MFA")
-		mfaCode, err = lib.Prompt("Enter MFA Code", false)
+		mfaCode, err = o.selector.CodeSupplier(mfaConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -347,7 +347,7 @@ func (o *OktaClient) preChallenge(oktaFactorId, oktaFactorType string) ([]byte, 
 		}
 		defer res.Body.Close()
 
-		mfaCode, err = lib.Prompt("Enter MFA Code from SMS", false)
+		mfaCode, err = o.selector.CodeSupplier(mfaConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -378,7 +378,7 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, ok
 					Host:       f.Embedded.Verification.Host,
 					Signature:  f.Embedded.Verification.Signature,
 					Callback:   f.Embedded.Verification.Links.Complete.Href,
-					Device:     o.MFAConfig.DuoDevice,
+					Device:     o.creds.MFA.DuoDevice,
 					StateToken: o.userAuth.StateToken,
 				}
 
@@ -573,7 +573,7 @@ func (o *OktaClient) Request(method string, path string, queryParams url.Values,
 
 	res, err = o.client.Do(req)
 
-	if o.Keyring != nil {
+	if o.sessions != nil {
 		err = o.saveSessionCookie()
 	}
 	return

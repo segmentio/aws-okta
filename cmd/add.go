@@ -117,8 +117,8 @@ func add(cmd *cobra.Command, args []string) error {
 	// to centralize the MFA config logic
 	var dummyProfiles lib.Profiles
 	updateMfaConfig(cmd, dummyProfiles, "", &mfaConfig)
-
-	oktaClient, err := client.NewOktaClient(creds, nil, mfaConfig)
+	creds.MFA = mfaConfig
+	oktaClient, err := client.NewOktaClient(creds, nil, nil)
 	if err != nil {
 		return err
 	}

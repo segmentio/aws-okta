@@ -2,22 +2,39 @@ package client
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"testing"
 
-	"github.com/99designs/keyring"
 	"github.com/stretchr/testify/assert"
 	gock "gopkg.in/h2non/gock.v1"
 )
+
+func newSessionCache() *testSessionCache {
+	return &testSessionCache{internalCache: map[string][]byte{}}
+}
+
+type testSessionCache struct {
+	internalCache map[string][]byte
+}
+
+func (s *testSessionCache) Get(key string) ([]byte, error) {
+	item, ok := s.internalCache[key]
+	if !ok {
+		return []byte{}, fmt.Errorf("Item not found")
+	}
+	return item, nil
+}
+func (s *testSessionCache) Put(key string, data []byte, label string) error {
+	s.internalCache[key] = data
+	return nil
+}
 
 func TestOktaClientHappy(t *testing.T) {
 	var (
 		oktaClient *OktaClient
 		creds      OktaCredential
+		sCache     *testSessionCache
 		err        error
-		Kr         keyring.Keyring
-		KrBackend  []keyring.BackendType
 	)
 
 	defer gock.Off()
@@ -33,20 +50,9 @@ func TestOktaClientHappy(t *testing.T) {
 		Username: "john",
 		Password: "johnnyjohn123",
 	}
-	// we use a file backend for testing in /tmp/
-	KrBackend = append(KrBackend, keyring.FileBackend)
-	tempDir, err := ioutil.TempDir("", "aws-okta")
-	assert.NoError(t, err, "create a temp dir to back the keyring")
-	Kr, err = keyring.Open(keyring.Config{
-		AllowedBackends:          KrBackend,
-		KeychainTrustApplication: true,
-		ServiceName:              "aws-okta-login",
-		LibSecretCollectionName:  "awsvault",
-		FileDir:                  tempDir,
-		FilePasswordFunc:         func(string) (string, error) { return "funkypass", nil }})
-	assert.NoError(t, err, "No errors when opening a keyring")
 
-	oktaClient, err = NewOktaClient(creds, &Kr, MFAConfig{})
+	sCache = newSessionCache()
+	oktaClient, err = NewOktaClient(creds, sCache, nil)
 	assert.NoError(t, err, "No errors when creating a client")
 
 	// intercept the http client with gock to mock out the Okta responses
@@ -68,14 +74,8 @@ func TestOktaClientHappy(t *testing.T) {
 
 	t.Run("session tests", func(t *testing.T) {
 		tokenData := "johnnyToken"
-		krItem := keyring.Item{
-			Key:                         oktaClient.getSessionCookieKeyringKey(),
-			Data:                        []byte(tokenData),
-			Label:                       "okta testing cookie",
-			KeychainNotTrustApplication: false,
-		}
-		err = Kr.Set(krItem)
-		assert.NoError(t, err, "Set keyring item")
+		err = sCache.Put(oktaClient.getSessionCookieKeyringKey(), []byte(tokenData), "okta testing cookie")
+		assert.NoError(t, err, "Set cache item")
 
 		err = oktaClient.retrieveSessionCookie()
 		if assert.NoError(t, err, "Can retrieve sessions without errors") {
@@ -166,7 +166,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		Username: "john",
 		Password: "johnnyjohn123",
 	}
-	oktaClient, err = NewOktaClient(creds, nil, MFAConfig{})
+	oktaClient, err = NewOktaClient(creds, nil, nil)
 	assert.NoError(t, err, "No errors when creating a client")
 
 	// intercept the http client with gock to mock out the Okta responses
@@ -329,7 +329,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
    }
 }`)
 
-		oktaClient.MFAConfig = MFAConfig{
+		oktaClient.creds.MFA = MFAConfig{
 			Provider:   "YUBIKEY",
 			FactorType: "u2f",
 		}
