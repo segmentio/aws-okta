@@ -48,21 +48,21 @@ func GetOktaDomain(region string) (string, error) {
 
 // Validates the provided MFA config matches what the user has configured in
 // Okta. If the provided config doesn't match an error will be returned.
-func selectMFADeviceFromConfig(o *OktaClient) (*oktaUserAuthnFactor, error) {
-	log.Debugf("MFAConfig: %v\n", o.MFAConfig)
-	if o.MFAConfig.Provider == "" || o.MFAConfig.FactorType == "" {
+func selectMFADeviceFromConfig(mfaConfig MFAConfig, factors []oktaUserAuthnFactor) (*oktaUserAuthnFactor, error) {
+	log.Debugf("MFAConfig: %v\n", mfaConfig)
+	if mfaConfig.Provider == "" || mfaConfig.FactorType == "" {
 		return nil, nil
 	}
 
-	for _, f := range o.userAuth.Embedded.Factors {
+	for _, f := range factors {
 		log.Debugf("%v\n", f)
-		if strings.EqualFold(f.Provider, o.MFAConfig.Provider) && strings.EqualFold(f.FactorType, o.MFAConfig.FactorType) {
+		if strings.EqualFold(f.Provider, mfaConfig.Provider) && strings.EqualFold(f.FactorType, mfaConfig.FactorType) {
 			log.Debugf("Using matching factor \"%v %v\" from config\n", f.Provider, f.FactorType)
 			return &f, nil
 		}
 	}
 
-	return nil, fmt.Errorf("Failed to select MFA device with Provider = \"%s\", FactorType = \"%s\"", o.MFAConfig.Provider, o.MFAConfig.FactorType)
+	return nil, fmt.Errorf("Failed to select MFA device with Provider = \"%s\", FactorType = \"%s\"", mfaConfig.Provider, mfaConfig.FactorType)
 }
 
 // gets the factor ID that uniquely identifies an MFA device.
