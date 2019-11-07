@@ -62,6 +62,7 @@ func GetNode(n *html.Node, name string) (val string, node *html.Node) {
 	}
 	return
 }
+
 func GetRoleFromSAML(resp *Response, profileARN string) (string, string, error) {
 
 	roles, err := GetAssumableRolesFromSAML(resp)

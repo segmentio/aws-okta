@@ -324,12 +324,6 @@ func TestAWSSAMLProviderCreateErrors(t *testing.T) {
 		assert.Equal(t, fmt.Errorf("Minimum session duration is 15m0s"), err)
 
 	})
-	t.Run("create with missing profile arn", func(t *testing.T) {
-
-		_, err := NewAWSSAMLProvider(sessions, profile, AWSSAMLProviderOptions{}, testOktaClient{})
-		assert.Equal(t, fmt.Errorf("Source profile must provide `role_arn`"), err)
-
-	})
 	t.Run("create with assume role arn, okta-creds, no saml url", func(t *testing.T) {
 
 		_, err = NewAWSSAMLProvider(sessions, profile, AWSSAMLProviderOptions{AssumeRoleArn: "some fake arn"}, testOktaClient{})

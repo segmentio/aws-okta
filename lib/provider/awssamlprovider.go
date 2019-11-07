@@ -103,7 +103,6 @@ func (o *AWSSAMLProviderOptions) ApplyDefaults() {
 // creates a new AWS saml provider
 func NewAWSSAMLProvider(sessions SessionCacheInterface, profile string, opts AWSSAMLProviderOptions, oktaClient OktaClient) (*AWSSAMLProvider, error) {
 	var profileARN string
-	var ok bool
 	var err error
 
 	opts.ApplyDefaults()
@@ -120,10 +119,10 @@ func NewAWSSAMLProvider(sessions SessionCacheInterface, profile string, opts AWS
 		profileARN = opts.AssumeRoleArn
 		log.Debug("Overriding Assumable role with: ", profileARN)
 	} else {
-		profileARN, ok = opts.Profiles[source]["role_arn"]
-		if !ok {
-			return nil, errors.New("Source profile must provide `role_arn`")
-		}
+		// if `role_arn` isn't provided as part of the profile we can still prompt
+		// for it later after we get the saml assertion and know all the roles the
+		// user can assume.
+		profileARN, _ = opts.Profiles[source]["role_arn"]
 	}
 
 	provider := AWSSAMLProvider{
