@@ -6,13 +6,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
-	"github.com/segmentio/aws-okta/internal/sessioncache"
 	"github.com/segmentio/aws-okta/lib"
-	"github.com/segmentio/aws-okta/lib/client"
 	"github.com/segmentio/aws-okta/lib/provider"
-	"github.com/segmentio/aws-okta/lib/session"
 	"github.com/spf13/cobra"
 )
 
@@ -85,16 +81,6 @@ func credProcessRun(cmd *cobra.Command, args []string) error {
 		AssumeRoleDuration: assumeRoleTTL,
 	}
 
-	var allowedBackends []keyring.BackendType
-	if backend != "" {
-		allowedBackends = append(allowedBackends, keyring.BackendType(backend))
-	}
-
-	kr, err := lib.OpenKeyring(allowedBackends)
-	if err != nil {
-		return err
-	}
-
 	if analyticsEnabled && analyticsClient != nil {
 		analyticsClient.Enqueue(analytics.Track{
 			UserId: username,
@@ -107,23 +93,7 @@ func credProcessRun(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	opts.SessionCacheSingleItem = flagSessionCacheSingleItem
-	sessions := &sessioncache.SingleKrItemStore{kr}
-	oktaCreds, err := client.GetOktaCredentialFromKeyring(kr)
-	if err != nil {
-		return err
-	}
-
-	oktaCreds.MFA = mfaConfig
-
-	mfaChooser := MFAInputs{Label: "Choose the MFA to use"}
-
-	sessionCache := session.New(kr)
-	oktaClient, err := client.NewOktaClient(oktaCreds, sessionCache, &mfaChooser)
-	if err != nil {
-		return err
-	}
-	p, err := provider.NewAWSSAMLProvider(sessions, profile, opts, oktaClient)
+	p, err := createAWSSAMLProvider(backend, mfaConfig, profile, opts)
 	if err != nil {
 		return err
 	}
