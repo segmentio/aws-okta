@@ -5,10 +5,10 @@ import (
 	"io"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/mulesoft-labs/aws-keycloak/provider/saml"
+	log "github.com/sirupsen/logrus"
 )
 
 // Package level vars

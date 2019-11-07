@@ -42,7 +42,10 @@ func runEach(cmd *cobra.Command, args []string) error {
 		p := re.FindStringSubmatch(role)
 		fmt.Printf("%s\n", p[1])
 		awsrole = p[1]
-		runWithAwsEnv(true, args[0], args[1:]...)
+		err = runWithAwsEnv(true, args[0], args[1:]...)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

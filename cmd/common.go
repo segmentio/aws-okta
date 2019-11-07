@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/service/sts"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/mulesoft-labs/aws-keycloak/provider"
 )

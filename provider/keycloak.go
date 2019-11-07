@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
+	"golang.org/x/oauth2"
+
 	"github.com/99designs/keyring"
-	log "github.com/sirupsen/logrus"
-	"github.com/lordbyron/oauth2-auth-cli"
+	o2cli "github.com/lordbyron/oauth2-auth-cli"
 	"github.com/mulesoft-labs/aws-keycloak/provider/saml"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -110,9 +111,9 @@ func (k *KeycloakProvider) StoreKeycloakCreds() {
 	} else {
 		keyName := k.keycloakkeyname()
 		newKeycloakItem := keyring.Item{
-			Key:   keyName,
-			Data:  encoded,
-			Label: keyName + " credentials",
+			Key:                         keyName,
+			Data:                        encoded,
+			Label:                       keyName + " credentials",
 			KeychainNotTrustApplication: false,
 		}
 		if err := k.Keyring.Set(newKeycloakItem); err != nil {

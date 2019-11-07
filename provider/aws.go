@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/99designs/keyring"
-	log "github.com/sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/mulesoft-labs/aws-keycloak/provider/saml"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -77,9 +77,9 @@ func (a *AwsProvider) StoreAwsCreds(creds sts.Credentials, awsrole string) {
 		log.Debugf("Couldn't marshal aws session... %s", err)
 	} else {
 		newAwsSessionItem := keyring.Item{
-			Key:   awsSessionKeyName,
-			Data:  encoded,
-			Label: awsSessionKeyName,
+			Key:                         awsSessionKeyName,
+			Data:                        encoded,
+			Label:                       awsSessionKeyName,
 			KeychainNotTrustApplication: false,
 		}
 		if err := a.Keyring.Set(newAwsSessionItem); err != nil {

@@ -92,7 +92,7 @@ func getNode(n *html.Node) (val string, node *html.Node) {
 		}
 	}
 
-	if node == nil || val == "" {
+	if val == "" {
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			val, node = getNode(c)
 			if val != "" {
