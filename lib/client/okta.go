@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	//"strconv"
 	"strings"
 	"time"
 
@@ -27,22 +26,24 @@ const (
 	OktaServerPreview = "oktapreview.com"
 	OktaServerDefault = OktaServerUs
 
-	// deprecated; use OktaServerUs
-	OktaServer = OktaServerUs
-
 	Timeout = time.Duration(60 * time.Second)
 )
 
+type OktaClientOptions struct {
+	// user supplied http client. If passed in this will replace the default
+	HTTPClient *http.Client
+	// http client timeout. default 60s
+	HTTPClientTimeout *time.Duration
+}
+
 type OktaClient struct {
-	creds        OktaCredential
-	userAuth     *oktaUserAuthn
-	DuoClient    *lib.DuoClient
-	SessionToken string
-	Expiration   time.Time
-	BaseURL      *url.URL
-	sessions     SessionCache
-	client       http.Client
-	selector     MFAInputs
+	creds     OktaCredential
+	userAuth  *oktaUserAuthn
+	DuoClient *lib.DuoClient
+	BaseURL   *url.URL
+	sessions  SessionCache
+	client    http.Client
+	selector  MFAInputs
 }
 
 type MFAInputs interface {
@@ -98,7 +99,17 @@ func (c *OktaCredential) IsValid() bool {
 //			session is only for access to the Okta APIs, any additional sessions
 //			(for example, aws STS credentials) will be cached by the provider that
 //      creates them.
-func NewOktaClient(creds OktaCredential, sessions SessionCache, selector MFAInputs) (*OktaClient, error) {
+func NewOktaClient(
+	creds OktaCredential,
+	sessions SessionCache,
+	selector MFAInputs,
+	opts *OktaClientOptions) (*OktaClient, error) {
+	var client http.Client
+
+	// if nil opts is passed in, initialize an empty opts struct
+	if opts == nil {
+		opts = &OktaClientOptions{}
+	}
 
 	if creds.IsValid() {
 		log.Debug("Credentials are valid :", creds.Username, " @ ", creds.Domain)
@@ -114,22 +125,32 @@ func NewOktaClient(creds OktaCredential, sessions SessionCache, selector MFAInpu
 		return nil, err
 	}
 
-	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	if err != nil {
-		return nil, err
-	}
+	// if an http client is passed in then use that instead of creating one.
+	if opts.HTTPClient != nil {
+		client = *opts.HTTPClient
+	} else {
 
-	transCfg := &http.Transport{
-		Proxy:               http.ProxyFromEnvironment,
-		TLSHandshakeTimeout: Timeout,
-	}
+		jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+		if err != nil {
+			return nil, err
+		}
 
-	client := http.Client{
-		Transport: transCfg,
-		Timeout:   Timeout,
-		Jar:       jar,
-	}
+		transCfg := &http.Transport{
+			Proxy:               http.ProxyFromEnvironment,
+			TLSHandshakeTimeout: Timeout,
+		}
 
+		// if a timeout is passed in then use that timeout.
+		if opts.HTTPClientTimeout != nil {
+			transCfg.TLSHandshakeTimeout = *opts.HTTPClientTimeout
+		}
+
+		client = http.Client{
+			Transport: transCfg,
+			Timeout:   Timeout,
+			Jar:       jar,
+		}
+	}
 	oktaClient := OktaClient{
 		creds:    creds,
 		BaseURL:  base,
