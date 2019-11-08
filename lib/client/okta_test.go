@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -100,16 +101,22 @@ func TestOktaClientHappy(t *testing.T) {
 		gock.New("https://canada").
 			Get("/api/v1/sessions/me").
 			Reply(200)
-		isSessionValid, err := oktaClient.ValidateSession()
-		if assert.NoError(t, err, "We can validate a session") {
-			assert.Equal(t, true, isSessionValid, "Assert the session is valid if 200 returned")
+		err := oktaClient.ValidateSession()
+		assert.NoError(t, err, "The session is valid")
+
+		gock.New("https://canada").
+			Get("/api/v1/sessions/me").
+			Reply(404)
+		err = oktaClient.ValidateSession()
+		if assert.Error(t, err, "The session is NOT valid") {
+			assert.Equal(t, true, errors.Is(err, InvalidSessionError), "Assert the session is NOT valid if 404 returned")
 		}
 		gock.New("https://canada").
 			Get("/api/v1/sessions/me").
-			Reply(400)
-		isSessionValid, err = oktaClient.ValidateSession()
-		if assert.NoError(t, err, "We can validate a session") {
-			assert.Equal(t, false, isSessionValid, "Assert the session is NOT valid if !200 returned")
+			Reply(500)
+		err = oktaClient.ValidateSession()
+		if assert.Error(t, err, "The session is NOT valid") {
+			assert.Equal(t, true, errors.Is(err, UnexpectedResponseError), "Assert we get an unexpected response error.")
 		}
 
 	})
@@ -141,6 +148,22 @@ func TestOktaClientHappy(t *testing.T) {
 		if assert.NoError(t, err, "We're able to auth without MFA") {
 
 			assert.Equal(t, "this-is-my-kebab-token", oktaClient.userAuth.SessionToken, "we're able to get a sessions token from the response")
+		}
+	})
+	t.Run("test okta user auth failure", func(t *testing.T) {
+		gock.New("https://canada").
+			Post("/api/v1/authn").
+			JSON(map[string]string{"username": creds.Username, "password": creds.Password}).
+			Reply(401).BodyString(`{
+  "errorCode": "E0000004",
+  "errorSummary": "Authentication failed",
+  "errorLink": "E0000004",
+  "errorId": "oaeuHRrvMnuRga5UzpKIOhKpQ",
+  "errorCauses": []
+}`)
+		err = oktaClient.AuthenticateUser()
+		if assert.Error(t, err, "Auth Failure returns an error") {
+			assert.Equal(t, true, errors.Is(err, InvalidCredentialsError), "We get an invalid credentials error for 401")
 		}
 	})
 }
@@ -394,7 +417,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		// this would only test the unlikely case where the user doesn't have MFA setup.
 		// https://developer.okta.com/docs/reference/api/authn/#primary-authentication-with-public-application
 		err = oktaClient.AuthenticateUser()
-		assert.Equal(t, fmt.Errorf("Password is expired, login to Okta console to change"), err)
+		assert.Equal(t, true, errors.Is(err, InvalidCredentialsError), "verify we get an invalid creds error when password expired")
 	})
 
 	t.Run("session interface returns a reasonable error", func(t *testing.T) {

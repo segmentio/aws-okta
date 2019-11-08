@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/99designs/keyring"
 	"github.com/manifoldco/promptui"
@@ -79,6 +80,9 @@ func createOktaClient(kr *keyring.Keyring, mfaConfig client.MFAConfig) (*client.
 	sessionCache := session.New(*kr)
 	oktaClient, err := client.NewOktaClient(oktaCreds, sessionCache, &mfaChooser, nil)
 	if err != nil {
+		if errors.Is(err, client.InvalidCredentialsError) {
+			err = errors.New("credentials aren't complete. To remedy this, re-add your credentials with `aws-okta add`")
+		}
 		return nil, err
 	}
 	return oktaClient, nil
