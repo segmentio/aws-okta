@@ -46,6 +46,10 @@ type OktaClient interface {
 	GetURL(string) (*url.URL, error)
 }
 
+type SAMLRoleSelection interface {
+	ChooseRole(roles []AssumableRole) (int, error)
+}
+
 type AWSSAMLProvider struct {
 	credentials.Expiry
 	AWSSAMLProviderOptions
@@ -59,6 +63,7 @@ type AWSSAMLProvider struct {
 	Expires                time.Time
 	sessions               SessionCacheInterface
 	defaultRoleSessionName string
+	selector               SAMLRoleSelection
 }
 
 type AWSSAMLProviderOptions struct {
@@ -101,7 +106,7 @@ func (o *AWSSAMLProviderOptions) ApplyDefaults() {
 }
 
 // creates a new AWS saml provider
-func NewAWSSAMLProvider(sessions SessionCacheInterface, profile string, opts AWSSAMLProviderOptions, oktaClient OktaClient) (*AWSSAMLProvider, error) {
+func NewAWSSAMLProvider(sessions SessionCacheInterface, profile string, opts AWSSAMLProviderOptions, oktaClient OktaClient, selector SAMLRoleSelection) (*AWSSAMLProvider, error) {
 	var profileARN string
 	var err error
 
@@ -131,6 +136,7 @@ func NewAWSSAMLProvider(sessions SessionCacheInterface, profile string, opts AWS
 		profileARN:             profileARN,
 		sessions:               sessions,
 		profile:                profile,
+		selector:               selector,
 	}
 
 	if region := opts.Profiles[source]["region"]; region != "" {
@@ -367,10 +373,18 @@ func (p *AWSSAMLProvider) authenticateProfileWithRegion(profileARN string, durat
 			return sts.Credentials{}, err
 		}
 	}
-
-	principal, role, err := GetRoleFromSAML(assertion.Resp, profileARN)
+	roles, err := GetAssumableRolesFromSAML(assertion.Resp)
 	if err != nil {
 		return sts.Credentials{}, err
+	}
+
+	roleIndex, err := p.selector.ChooseRole(roles)
+	if err != nil {
+		return sts.Credentials{}, err
+	}
+
+	if roleIndex < 0 || roleIndex >= len(roles) {
+		return sts.Credentials{}, fmt.Errorf("Invalid index (%d) return by supplied `ChooseRole`. There are %d roles", roleIndex, len(roles))
 	}
 
 	var samlSess *session.Session
@@ -386,15 +400,15 @@ func (p *AWSSAMLProvider) authenticateProfileWithRegion(profileARN string, durat
 	svc := sts.New(samlSess)
 
 	samlParams := &sts.AssumeRoleWithSAMLInput{
-		PrincipalArn:    aws.String(principal),
-		RoleArn:         aws.String(role),
+		PrincipalArn:    aws.String(roles[roleIndex].Principal),
+		RoleArn:         aws.String(roles[roleIndex].Role),
 		SAMLAssertion:   aws.String(string(assertion.RawData)),
 		DurationSeconds: aws.Int64(int64(duration.Seconds())),
 	}
 
 	samlResp, err := svc.AssumeRoleWithSAML(samlParams)
 	if err != nil {
-		log.WithField("role", role).Errorf(
+		log.WithField("role", roles[roleIndex].Role).Errorf(
 			"error assuming role with SAML: %s", err.Error())
 		return sts.Credentials{}, err
 	}

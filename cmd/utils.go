@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/99designs/keyring"
 	"github.com/manifoldco/promptui"
+	"strings"
 
 	"github.com/segmentio/aws-okta/internal/sessioncache"
 	"github.com/segmentio/aws-okta/lib"
@@ -23,7 +24,7 @@ func (s *MFAInputs) ChooseFactor(factors []client.MFAConfig) (int, error) {
 		Label: s.Label,
 		Templates: &promptui.SelectTemplates{
 			Label:    "{{ . }}?",
-			Active:   "\U0001F336 {{ .FactorType | cyan }} ({{ .Provider | red }})",
+			Active:   "\U0001F5DD {{ .FactorType | cyan }} ({{ .Provider | red }})",
 			Inactive: "  {{ .FactorType | cyan }} ({{ .Provider | red }})",
 			Selected: "\U0001F336 {{ .FactorType | red | cyan }}",
 			Details: `
@@ -47,6 +48,36 @@ func (s *MFAInputs) CodeSupplier(factor client.MFAConfig) (string, error) {
 
 	result, err := prompt.Run()
 	return result, err
+}
+
+type SAMLRoleChooser struct {
+	Label string
+}
+
+func (c *SAMLRoleChooser) ChooseRole(roles []provider.AssumableRole) (int, error) {
+	prompt := promptui.Select{
+		Label: c.Label,
+		Size:  20,
+		Searcher: func(input string, index int) bool {
+			role := roles[index]
+			name := strings.Replace(strings.ToLower(role.Role), " ", "", -1)
+			input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+			return strings.Contains(name, input)
+		},
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . }}?",
+			Active:   "\U0001F308 {{ .Role | cyan }}",
+			Inactive: "  {{ .Role | cyan }}",
+			Selected: "\U0001F308 {{ .Role | red | cyan }}",
+		},
+		Items: roles,
+	}
+
+	i, _, err := prompt.Run()
+
+	return i, err
+
 }
 
 func getKeyring(backend string) (*keyring.Keyring, error) {
@@ -106,7 +137,9 @@ func createAWSSAMLProvider(backend string,
 		return nil, err
 	}
 	sessions := &sessioncache.SingleKrItemStore{*kr}
-	p, err := provider.NewAWSSAMLProvider(sessions, profile, opts, oktaClient)
+
+	roleChooser := SAMLRoleChooser{Label: "Choose a role to assume"}
+	p, err := provider.NewAWSSAMLProvider(sessions, profile, opts, oktaClient, &roleChooser)
 	if err != nil {
 		return nil, err
 	}
