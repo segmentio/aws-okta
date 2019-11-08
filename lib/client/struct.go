@@ -61,3 +61,14 @@ type oktaUserAuthnFactorEmbeddedVerificationLinks struct {
 type oktaUserAuthnFactorEmbeddedVerificationLinksComplete struct {
 	Href string `json:"href"`
 }
+
+type oktaErrorResponse struct {
+	ErrorCode    string `json:"errorCode"`
+	ErrorSummary string `json:"errorSummary"`
+	ErrorId      string `json:"errorId"`
+	ErrorCauses  []oktaErrorCause
+}
+
+type oktaErrorCause struct {
+	ErrorSummary string `json:"errorSummary"`
+}
