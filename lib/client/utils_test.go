@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -43,38 +44,38 @@ func TestOktaClientUtils(t *testing.T) {
 	})
 
 	t.Run("MFA Factor id lookup success cases", func(t *testing.T) {
-		mfaIdTests := map[string]oktaUserAuthnFactor{
-			"web": oktaUserAuthnFactor{
+		mfaIdTests := map[string]MFAConfig{
+			"web": MFAConfig{
 				Id:         "webId",
 				FactorType: "web",
 			},
-			"token": oktaUserAuthnFactor{
+			"token": MFAConfig{
 				Id:         "tokenId",
 				FactorType: "token",
 				Provider:   "SYMANTEC",
 			},
-			"token:software:totp": oktaUserAuthnFactor{
+			"token:software:totp": MFAConfig{
 				Id:         "token:software:totp:Id",
 				FactorType: "token:software:totp",
 			},
-			"token:hardware": oktaUserAuthnFactor{
+			"token:hardware": MFAConfig{
 				Id:         "token:hardware:ID",
 				FactorType: "token:hardware",
 			},
-			"sms": oktaUserAuthnFactor{
+			"sms": MFAConfig{
 				Id:         "sms:ID",
 				FactorType: "sms",
 			},
-			"u2f": oktaUserAuthnFactor{
+			"u2f": MFAConfig{
 				Id:         "u2f:ID",
 				FactorType: "u2f",
 			},
-			"OKTA push": oktaUserAuthnFactor{
+			"OKTA push": MFAConfig{
 				Id:         "push:ID",
 				FactorType: "push",
 				Provider:   "OKTA",
 			},
-			"DUO push": oktaUserAuthnFactor{
+			"DUO push": MFAConfig{
 				Id:         "push:ID",
 				FactorType: "push",
 				Provider:   "DUO",
@@ -82,31 +83,30 @@ func TestOktaClientUtils(t *testing.T) {
 		}
 
 		for factorType, authnFactor := range mfaIdTests {
-			id, err := getFactorId(&authnFactor)
-			if assert.NoError(t, err, fmt.Sprintf("Failure for factorType: %s", factorType)) {
-				assert.Equal(t, authnFactor.Id, id, "confirm we get Id back")
-			}
+			err := isFactorSupported(authnFactor)
+			assert.NoError(t, err, fmt.Sprintf("Failure for factorType: %s", factorType))
 		}
 	})
 	t.Run("MFA Factor id lookup error cases", func(t *testing.T) {
-		mfaIdTests := map[string]oktaUserAuthnFactor{
-			"token": oktaUserAuthnFactor{
+		mfaIdTests := map[string]MFAConfig{
+			"token": MFAConfig{
 				Id:         "tokenId",
 				FactorType: "token",
 				Provider:   "NOT SYMANTEC",
 			},
-			"push": oktaUserAuthnFactor{
+			"push": MFAConfig{
 				Id:         "push:ID",
 				FactorType: "push",
 				Provider:   "not DUO or OKTA",
 			},
+			"not supported": MFAConfig{
+				FactorType: "not-supported",
+			},
 		}
 
 		for factorType, authnFactor := range mfaIdTests {
-			_, err := getFactorId(&authnFactor)
-			assert.Equal(t, err, fmt.Errorf("provider %s with factor %s not supported", authnFactor.Provider, authnFactor.FactorType), "confirm we get the correct error for "+factorType)
+			err := isFactorSupported(authnFactor)
+			assert.Equal(t, true, errors.Is(err, NotImplementedError), "confirm we get the correct error for "+factorType)
 		}
-		_, err := getFactorId(&oktaUserAuthnFactor{FactorType: "not-supported"})
-		assert.Equal(t, err, fmt.Errorf("factor %s not supported", "not-supported"), "confirm we get the correct error")
 	})
 }

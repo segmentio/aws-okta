@@ -4,6 +4,12 @@ import (
 	"fmt"
 )
 
+const (
+	OktaServerUs      = "okta.com"
+	OktaServerEmea    = "okta-emea.com"
+	OktaServerPreview = "oktapreview.com"
+)
+
 // looks up the okta domain based on the region. For example, the okta domain
 // for "us" is `okta.com` making your api domain as `<your-org>.okta.com`
 func GetOktaDomain(region string) (string, error) {
@@ -18,33 +24,28 @@ func GetOktaDomain(region string) (string, error) {
 	return "", fmt.Errorf("invalid region %s", region)
 }
 
-// gets the factor ID that uniquely identifies an MFA device.
-func getFactorId(f *oktaUserAuthnFactor) (id string, err error) {
-	switch f.FactorType {
+// validate the MFA factor is supported
+func isFactorSupported(factor MFAConfig) error {
+	var validationErrorMessage string
+	switch factor.FactorType {
 	case "web":
-		id = f.Id
-	case "token":
-		if f.Provider == "SYMANTEC" {
-			id = f.Id
-		} else {
-			err = fmt.Errorf("provider %s with factor token not supported", f.Provider)
-		}
 	case "token:software:totp":
-		id = f.Id
 	case "token:hardware":
-		id = f.Id
 	case "sms":
-		id = f.Id
 	case "u2f":
-		id = f.Id
+	case "token":
+		if factor.Provider != "SYMANTEC" {
+			validationErrorMessage = fmt.Sprintf("provider %s with factor token not supported.", factor.Provider)
+		}
 	case "push":
-		if f.Provider == "OKTA" || f.Provider == "DUO" {
-			id = f.Id
-		} else {
-			err = fmt.Errorf("provider %s with factor push not supported", f.Provider)
+		if factor.Provider != "OKTA" && factor.Provider != "DUO" {
+			validationErrorMessage = fmt.Sprintf("provider %s with factor token not supported.", factor.Provider)
 		}
 	default:
-		err = fmt.Errorf("factor %s not supported", f.FactorType)
+		validationErrorMessage = fmt.Sprintf("provider %s with factor token not supported.", factor.Provider)
 	}
-	return
+	if validationErrorMessage != "" {
+		return fmt.Errorf("%v %w", validationErrorMessage, NotImplementedError)
+	}
+	return nil
 }
