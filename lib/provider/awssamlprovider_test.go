@@ -15,6 +15,15 @@ import (
 	"testing"
 )
 
+type testSAMLRoleSelection struct {
+	RoleIndex    int
+	ChooserError error
+}
+
+func (c *testSAMLRoleSelection) ChooseRole(roles []AssumableRole) (int, error) {
+	return c.RoleIndex, c.ChooserError
+}
+
 type testOktaClient struct {
 	client  http.Client
 	baseURL string
@@ -69,6 +78,7 @@ func TestAWSSAMLProvider(t *testing.T) {
 		profile         string
 		KrBackend       []keyring.BackendType
 		awsSamlProvider *AWSSAMLProvider
+		roleChooser     testSAMLRoleSelection
 	)
 	//
 	// start setup
@@ -104,7 +114,9 @@ func TestAWSSAMLProvider(t *testing.T) {
 		baseURL: "https://canada",
 	}
 	sessions := &sessioncache.SingleKrItemStore{kr}
-	awsSamlProvider, err = NewAWSSAMLProvider(sessions, profile, providerOptions, oktaClient)
+
+	roleChooser = testSAMLRoleSelection{}
+	awsSamlProvider, err = NewAWSSAMLProvider(sessions, profile, providerOptions, oktaClient, &roleChooser)
 
 	// intercept the http client with gock to mock out the Okta responses
 	//gock.InterceptClient(&(awsSamlProvider.oktaClient.Client))
@@ -320,13 +332,13 @@ func TestAWSSAMLProviderCreateErrors(t *testing.T) {
 	//
 	t.Run("create with invalid opts", func(t *testing.T) {
 
-		_, err := NewAWSSAMLProvider(sessions, profile, AWSSAMLProviderOptions{SessionDuration: time.Second * 3}, testOktaClient{})
+		_, err := NewAWSSAMLProvider(sessions, profile, AWSSAMLProviderOptions{SessionDuration: time.Second * 3}, testOktaClient{}, nil)
 		assert.Equal(t, fmt.Errorf("Minimum session duration is 15m0s"), err)
 
 	})
 	t.Run("create with assume role arn, okta-creds, no saml url", func(t *testing.T) {
 
-		_, err = NewAWSSAMLProvider(sessions, profile, AWSSAMLProviderOptions{AssumeRoleArn: "some fake arn"}, testOktaClient{})
+		_, err = NewAWSSAMLProvider(sessions, profile, AWSSAMLProviderOptions{AssumeRoleArn: "some fake arn"}, testOktaClient{}, nil)
 		assert.Equal(t, fmt.Errorf("aws_saml_url missing from ~/.aws/config"), err)
 
 	})

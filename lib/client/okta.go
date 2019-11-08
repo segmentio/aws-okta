@@ -332,7 +332,7 @@ func (o *OktaClient) selectMFADevice() (*oktaUserAuthnFactor, error) {
 	}
 
 	// confirm the response we got from ChooseFactor is valid
-	if factorIdx >= 0 && factorIdx < len(factors) {
+	if factorIdx < 0 || factorIdx >= len(factors) {
 		return nil, fmt.Errorf("Invalid index (%d) return by supplied `ChooseFactor`. %w", factorIdx, UnexpectedResponseError)
 	}
 
