@@ -1,7 +1,11 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -48,4 +52,16 @@ func isFactorSupported(factor MFAConfig) error {
 		return fmt.Errorf("%v %w", validationErrorMessage, NotImplementedError)
 	}
 	return nil
+}
+
+func parseOktaError(res *http.Response) (*oktaErrorResponse, error) {
+	var errResp = oktaErrorResponse{}
+	err := json.NewDecoder(res.Body).Decode(&errResp)
+	if err != nil {
+		log.Debug("parseOktaError parsing error: ", err)
+		// we failed to parse the error. return that parse error
+		return nil, err
+	}
+	log.Debug("Error from Okta: ", errResp)
+	return &errResp, nil
 }
