@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/99designs/keyring"
 	"github.com/manifoldco/promptui"
@@ -13,6 +12,8 @@ import (
 	"github.com/segmentio/aws-okta/lib/client"
 	"github.com/segmentio/aws-okta/lib/provider"
 	"github.com/segmentio/aws-okta/lib/session"
+
+	"golang.org/x/xerrors"
 )
 
 type MFAInputs struct {
@@ -111,8 +112,8 @@ func createOktaClient(kr *keyring.Keyring, mfaConfig client.MFAConfig) (*client.
 	sessionCache := session.New(*kr)
 	oktaClient, err := client.NewOktaClient(oktaCreds, sessionCache, &mfaChooser, nil)
 	if err != nil {
-		if errors.Is(err, client.ErrInvalidCredentials) {
-			err = errors.New("credentials aren't complete. To remedy this, re-add your credentials with `aws-okta add`")
+		if xerrors.Is(err, client.ErrInvalidCredentials) {
+			err = xerrors.New("credentials aren't complete. To remedy this, re-add your credentials with `aws-okta add`")
 		}
 		return nil, err
 	}
