@@ -29,8 +29,6 @@ type Response struct {
 
 	Assertion Assertion `xml:"Assertion"`
 	Status    Status    `xml:"Status"`
-
-	originalString string
 }
 
 type Assertion struct {

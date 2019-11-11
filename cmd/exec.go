@@ -145,7 +145,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 	}
 
 	if _, ok := profiles[profile]; !ok {
-		return fmt.Errorf("Profile '%s' not found in your aws config. Use list command to see configured profiles.", profile)
+		return fmt.Errorf("profile '%s' not found in your aws config, use list command to see configured profiles", profile)
 	}
 
 	updateMfaConfig(cmd, profiles, profile, &mfaConfig)
@@ -226,7 +226,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 
 	// Forward SIGINT, SIGTERM, SIGKILL to the child command
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM, os.Interrupt, os.Kill)
+	signal.Notify(sigChan, syscall.SIGTERM, os.Interrupt) // SA1016
 
 	go func() {
 		sig := <-sigChan

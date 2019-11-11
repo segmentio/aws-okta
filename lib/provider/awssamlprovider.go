@@ -13,7 +13,6 @@ import (
 	"github.com/segmentio/aws-okta/internal/sessioncache"
 	"github.com/segmentio/aws-okta/lib"
 
-	"github.com/99designs/keyring"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -54,7 +53,6 @@ type AWSSAMLProvider struct {
 	credentials.Expiry
 	AWSSAMLProviderOptions
 	oktaClient             OktaClient
-	keyring                keyring.Keyring
 	profileARN             string
 	oktaAWSSAMLURL         string
 	oktaAccountName        string
@@ -127,7 +125,7 @@ func NewAWSSAMLProvider(sessions SessionCacheInterface, profile string, opts AWS
 		// if `role_arn` isn't provided as part of the profile we can still prompt
 		// for it later after we get the saml assertion and know all the roles the
 		// user can assume.
-		profileARN, _ = opts.Profiles[source]["role_arn"]
+		profileARN = opts.Profiles[source]["role_arn"]
 	}
 
 	provider := AWSSAMLProvider{
@@ -191,7 +189,7 @@ func (p *AWSSAMLProvider) Retrieve() (credentials.Value, error) {
 
 	log.Debugf("Using session %s, expires in %s",
 		(*(creds.AccessKeyId))[len(*(creds.AccessKeyId))-4:],
-		creds.Expiration.Sub(time.Now()).String())
+		time.Until(*creds.Expiration).String())
 
 	// If SourceProfile returns the same source then we do not need to assume a
 	// second role. Not assuming a second role allows us to assume IDP enabled
@@ -206,7 +204,7 @@ func (p *AWSSAMLProvider) Retrieve() (credentials.Value, error) {
 
 			log.Debugf("using role %s expires in %s",
 				(*(creds.AccessKeyId))[len(*(creds.AccessKeyId))-4:],
-				creds.Expiration.Sub(time.Now()).String())
+				time.Until(*creds.Expiration).String())
 		}
 	}
 
@@ -234,7 +232,11 @@ func (p *AWSSAMLProvider) GetRoleARNWithRegion(creds credentials.Value) (string,
 	if region := p.Profiles[lib.SourceProfile(p.profile, p.Profiles)]["region"]; region != "" {
 		config.WithRegion(region)
 	}
-	client := sts.New(aws_session.New(&config))
+	awsSession, err := aws_session.NewSession(&config)
+	if err != nil {
+		return "", err
+	}
+	client := sts.New(awsSession)
 
 	indentity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -301,11 +303,18 @@ func (p *AWSSAMLProvider) getSAMLSessionCreds() (sts.Credentials, error) {
 
 // assumeRoleFromSession takes a session created with an okta SAML login and uses that to assume a role
 func (p *AWSSAMLProvider) assumeRoleFromSession(creds sts.Credentials, roleArn string) (sts.Credentials, error) {
-	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
-		*creds.AccessKeyId,
-		*creds.SecretAccessKey,
-		*creds.SessionToken,
-	)}))
+	awsSession, err := aws_session.NewSession(
+		&aws.Config{
+			Credentials: credentials.NewStaticCredentials(
+				*creds.AccessKeyId,
+				*creds.SecretAccessKey,
+				*creds.SessionToken,
+			)})
+	if err != nil {
+		return sts.Credentials{}, err
+	}
+
+	client := sts.New(awsSession)
 
 	input := &sts.AssumeRoleInput{
 		RoleArn:         aws.String(roleArn),
@@ -341,7 +350,15 @@ func (p *AWSSAMLProvider) roleSessionName() string {
 // GetRoleARN makes a call to AWS to get-caller-identity and returns the
 // assumed role's name and ARN.
 func GetRoleARN(c credentials.Value) (string, error) {
-	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentialsFromCreds(c)}))
+	awsSession, err := aws_session.NewSession(
+		&aws.Config{
+			Credentials: credentials.NewStaticCredentialsFromCreds(c),
+		})
+	if err != nil {
+		return "", err
+	}
+
+	client := sts.New(awsSession)
 
 	indentity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -384,7 +401,7 @@ func (p *AWSSAMLProvider) authenticateProfileWithRegion(profileARN string, durat
 	}
 
 	if roleIndex < 0 || roleIndex >= len(roles) {
-		return sts.Credentials{}, fmt.Errorf("Invalid index (%d) return by supplied `ChooseRole`. There are %d roles", roleIndex, len(roles))
+		return sts.Credentials{}, fmt.Errorf("invalid index (%d) return by supplied `ChooseRole`. There are %d roles", roleIndex, len(roles))
 	}
 
 	var samlSess *session.Session
@@ -441,7 +458,7 @@ func (p *AWSSAMLProvider) getAWSSAML(path string, queryParams url.Values, data [
 			}
 			if err := ParseSAML(rawData, recv.(*SAMLAssertion)); err != nil {
 				log.Debug("SAML parsing failed: ", err)
-				return fmt.Errorf("Okta user does not have the AWS app added to their account.  Please contact your Okta admin to make sure things are configured properly.")
+				return fmt.Errorf("okta user does not have the AWS app added to their account, contact your Okta admin to make sure things are configured properly")
 			}
 		}
 	}

@@ -129,14 +129,14 @@ func TestOktaClientHappy(t *testing.T) {
 			Reply(404)
 		err = oktaClient.ValidateSession()
 		if assert.Error(t, err, "The session is NOT valid") {
-			assert.Equal(t, true, errors.Is(err, InvalidSessionError), "Assert the session is NOT valid if 404 returned")
+			assert.Equal(t, true, errors.Is(err, ErrInvalidSession), "Assert the session is NOT valid if 404 returned")
 		}
 		gock.New("https://canada").
 			Get("/api/v1/sessions/me").
 			Reply(500)
 		err = oktaClient.ValidateSession()
 		if assert.Error(t, err, "The session is NOT valid") {
-			assert.Equal(t, true, errors.Is(err, UnexpectedResponseError), "Assert we get an unexpected response error.")
+			assert.Equal(t, true, errors.Is(err, ErrUnexpectedResponse), "Assert we get an unexpected response error.")
 		}
 
 	})
@@ -183,7 +183,7 @@ func TestOktaClientHappy(t *testing.T) {
 }`)
 		err = oktaClient.AuthenticateUser()
 		if assert.Error(t, err, "Auth Failure returns an error") {
-			assert.Equal(t, true, errors.Is(err, InvalidCredentialsError), "We get an invalid credentials error for 401")
+			assert.Equal(t, true, errors.Is(err, ErrInvalidCredentials), "We get an invalid credentials error for 401")
 		}
 	})
 }
@@ -313,7 +313,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		//t.Skip("Skip MFA test")
 		if assert.Error(t, err, "we return an Error if MFA config doesn't match okta factors") {
 
-			assert.Equal(t, true, errors.Is(err, InvalidCredentialsError), "got creds type err")
+			assert.Equal(t, true, errors.Is(err, ErrInvalidCredentials), "got creds type err")
 		}
 	})
 	t.Run("test okta user auth flow with SMS MFA", func(t *testing.T) {
@@ -647,7 +647,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 			log.Debug("---------------------------------------")
 			log.Debug(err)
 			log.Debug("---------------------------------------")
-			assert.Equal(t, true, errors.Is(err, InvalidCredentialsError), "we get an error if the passcode is wrong")
+			assert.Equal(t, true, errors.Is(err, ErrInvalidCredentials), "we get an error if the passcode is wrong")
 		}
 	})
 	t.Run("okta user auth, expired password flow no MFA", func(t *testing.T) {
@@ -704,15 +704,15 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		// this would only test the unlikely case where the user doesn't have MFA setup.
 		// https://developer.okta.com/docs/reference/api/authn/#primary-authentication-with-public-application
 		err = oktaClient.AuthenticateUser()
-		assert.Equal(t, true, errors.Is(err, InvalidCredentialsError), "verify we get an invalid creds error when password expired")
+		assert.Equal(t, true, errors.Is(err, ErrInvalidCredentials), "verify we get an invalid creds error when password expired")
 	})
 
 	t.Run("session interface returns a reasonable error", func(t *testing.T) {
 
 		err = oktaClient.saveSessionCookie()
-		assert.Equal(t, err, fmt.Errorf("Session NOT saved. Reason: Session Backend not defined"))
+		assert.Equal(t, err, fmt.Errorf("session NOT saved. Reason: Session Backend not defined"))
 
 		err = oktaClient.retrieveSessionCookie()
-		assert.Equal(t, err, fmt.Errorf("Session NOT retrieved. Reason: Session Backend not defined"))
+		assert.Equal(t, err, fmt.Errorf("session NOT retrieved. Reason: Session Backend not defined"))
 	})
 }

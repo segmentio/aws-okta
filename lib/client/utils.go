@@ -49,7 +49,7 @@ func isFactorSupported(factor MFAConfig) error {
 		validationErrorMessage = fmt.Sprintf("provider %s with factor token not supported.", factor.Provider)
 	}
 	if validationErrorMessage != "" {
-		return fmt.Errorf("%v %w", validationErrorMessage, NotImplementedError)
+		return fmt.Errorf("%v %w", validationErrorMessage, ErrNotImplemented)
 	}
 	return nil
 }
