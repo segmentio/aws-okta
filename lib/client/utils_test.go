@@ -1,7 +1,6 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -40,73 +39,6 @@ func TestOktaClientUtils(t *testing.T) {
 		for region, expectedError := range domainTests {
 			_, err := GetOktaDomain(region)
 			assert.Equal(t, expectedError, err, "We get the correct error for invalid domains")
-		}
-	})
-
-	t.Run("MFA Factor id lookup success cases", func(t *testing.T) {
-		mfaIdTests := map[string]MFAConfig{
-			"web": MFAConfig{
-				Id:         "webId",
-				FactorType: "web",
-			},
-			"token": MFAConfig{
-				Id:         "tokenId",
-				FactorType: "token",
-				Provider:   "SYMANTEC",
-			},
-			"token:software:totp": MFAConfig{
-				Id:         "token:software:totp:Id",
-				FactorType: "token:software:totp",
-			},
-			"token:hardware": MFAConfig{
-				Id:         "token:hardware:ID",
-				FactorType: "token:hardware",
-			},
-			"sms": MFAConfig{
-				Id:         "sms:ID",
-				FactorType: "sms",
-			},
-			"u2f": MFAConfig{
-				Id:         "u2f:ID",
-				FactorType: "u2f",
-			},
-			"OKTA push": MFAConfig{
-				Id:         "push:ID",
-				FactorType: "push",
-				Provider:   "OKTA",
-			},
-			"DUO push": MFAConfig{
-				Id:         "push:ID",
-				FactorType: "push",
-				Provider:   "DUO",
-			},
-		}
-
-		for factorType, authnFactor := range mfaIdTests {
-			err := isFactorSupported(authnFactor)
-			assert.NoError(t, err, fmt.Sprintf("Failure for factorType: %s", factorType))
-		}
-	})
-	t.Run("MFA Factor id lookup error cases", func(t *testing.T) {
-		mfaIdTests := map[string]MFAConfig{
-			"token": MFAConfig{
-				Id:         "tokenId",
-				FactorType: "token",
-				Provider:   "NOT SYMANTEC",
-			},
-			"push": MFAConfig{
-				Id:         "push:ID",
-				FactorType: "push",
-				Provider:   "not DUO or OKTA",
-			},
-			"not supported": MFAConfig{
-				FactorType: "not-supported",
-			},
-		}
-
-		for factorType, authnFactor := range mfaIdTests {
-			err := isFactorSupported(authnFactor)
-			assert.Equal(t, true, errors.Is(err, ErrNotImplemented), "confirm we get the correct error for "+factorType)
 		}
 	})
 }
