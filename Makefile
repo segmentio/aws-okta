@@ -19,6 +19,7 @@ staticcheck:
 	go vet
 	staticcheck cmd/*.go
 	staticcheck lib/client/*.go
+	staticcheck lib/client/mfa/*.go
 	staticcheck lib/provider/*.go
 
 sec-lib:
