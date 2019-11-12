@@ -1,4 +1,4 @@
-package client
+package types
 
 import "errors"
 
@@ -7,4 +7,5 @@ var (
 	ErrInvalidSession     = errors.New("okta session is not valid")
 	ErrUnexpectedResponse = errors.New("we got an unexpected response")
 	ErrNotImplemented     = errors.New("not implemented")
+	ErrNotSupported       = errors.New("not supported")
 )

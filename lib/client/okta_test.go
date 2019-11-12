@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	gock "gopkg.in/h2non/gock.v1"
 
+	"github.com/segmentio/aws-okta/lib/client/mfa"
+	"github.com/segmentio/aws-okta/lib/client/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,11 +30,11 @@ type testMFAInputs struct {
 	CodeSupplierError error
 }
 
-func (i testMFAInputs) ChooseFactor(factors []MFAConfig) (int, error) {
+func (i testMFAInputs) ChooseFactor(factors []mfa.Config) (int, error) {
 	return i.FactorIndex, i.ChooseFactorError
 }
 
-func (i testMFAInputs) CodeSupplier(factor MFAConfig) (string, error) {
+func (i testMFAInputs) CodeSupplier(factor mfa.Config) (string, error) {
 	return i.Code, i.CodeSupplierError
 }
 
@@ -129,14 +131,14 @@ func TestOktaClientHappy(t *testing.T) {
 			Reply(404)
 		err = oktaClient.ValidateSession()
 		if assert.Error(t, err, "The session is NOT valid") {
-			assert.Equal(t, true, errors.Is(err, ErrInvalidSession), "Assert the session is NOT valid if 404 returned")
+			assert.Equal(t, true, errors.Is(err, types.ErrInvalidSession), "Assert the session is NOT valid if 404 returned")
 		}
 		gock.New("https://canada").
 			Get("/api/v1/sessions/me").
 			Reply(500)
 		err = oktaClient.ValidateSession()
 		if assert.Error(t, err, "The session is NOT valid") {
-			assert.Equal(t, true, errors.Is(err, ErrUnexpectedResponse), "Assert we get an unexpected response error.")
+			assert.Equal(t, true, errors.Is(err, types.ErrUnexpectedResponse), "Assert we get an unexpected response error.")
 		}
 
 	})
@@ -183,7 +185,7 @@ func TestOktaClientHappy(t *testing.T) {
 }`)
 		err = oktaClient.AuthenticateUser()
 		if assert.Error(t, err, "Auth Failure returns an error") {
-			assert.Equal(t, true, errors.Is(err, ErrInvalidCredentials), "We get an invalid credentials error for 401")
+			assert.Equal(t, true, errors.Is(err, types.ErrInvalidCredentials), "We get an invalid credentials error for 401")
 		}
 	})
 }
@@ -197,11 +199,11 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 	)
 
 	// enable debug logs
-	// log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.DebugLevel)
 	defer gock.Off()
 
 	// uncomment this to get gock to dump all requests
-	// gock.Observe(gock.DumpRequest)
+	gock.Observe(gock.DumpRequest)
 
 	//
 	// start setup
@@ -211,7 +213,8 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		Username: "john",
 		Password: "johnnyjohn123",
 	}
-	mfaInputs = testMFAInputs{}
+	mfaInputs = testMFAInputs{Code: "12345"}
+	//mfaInputs.Code = "12345"
 	oktaClient, err = NewOktaClient(creds, nil, mfaInputs, nil)
 	assert.NoError(t, err, "No errors when creating a client")
 
@@ -305,7 +308,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
   }
 }`)
 
-		oktaClient.creds.MFA = MFAConfig{
+		oktaClient.creds.MFA = mfa.Config{
 			Provider:   "OKTA",
 			FactorType: "sms",
 		}
@@ -313,7 +316,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		//t.Skip("Skip MFA test")
 		if assert.Error(t, err, "we return an Error if MFA config doesn't match okta factors") {
 
-			assert.Equal(t, true, errors.Is(err, ErrInvalidCredentials), "got creds type err")
+			assert.Equal(t, true, errors.Is(err, types.ErrInvalidCredentials), "got creds type err")
 		}
 	})
 	t.Run("test okta user auth flow with SMS MFA", func(t *testing.T) {
@@ -391,7 +394,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
       }
     },
     "factor": {
-      "id": "sms193zUBEROPBNZKPPE",
+      "id": "fuf8y2l4n5mfH0UWe0h7",
       "factorType": "sms",
       "provider": "OKTA",
       "profile": {
@@ -464,12 +467,11 @@ func TestOktaClientNoSessionCache(t *testing.T) {
   }
 }`)
 
-		oktaClient.creds.MFA = MFAConfig{
+		oktaClient.creds.MFA = mfa.Config{
 			Provider:   "OKTA",
 			FactorType: "sms",
 		}
 		err = oktaClient.AuthenticateUser()
-		//t.Skip("Skip MFA test")
 		if assert.NoError(t, err, "We're able to auth with MFA") {
 
 			assert.Equal(t, "this-is-my-kebab-token", oktaClient.userAuth.SessionToken, "we're able to get a sessions token from the response")
@@ -530,8 +532,6 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 }`)
 
 		// set the response code and expect it to get to Okta.
-		mfaInputs.Code = "67890"
-		oktaClient.selector = mfaInputs
 		gock.New("https://canada").
 			Post("api/v1/authn/factors/fuf8y2l4n5mfH0UWe0h7/verify").
 			JSON(map[string]string{"stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb", "passCode": mfaInputs.Code}).
@@ -555,14 +555,12 @@ func TestOktaClientNoSessionCache(t *testing.T) {
   }
 }`)
 
-		oktaClient.creds.MFA = MFAConfig{
+		oktaClient.creds.MFA = mfa.Config{
 			Provider:   "OKTA",
 			FactorType: "token:software:totp",
 		}
 		err = oktaClient.AuthenticateUser()
-		//t.Skip("Skip MFA test")
 		if assert.NoError(t, err, "We're able to auth with MFA") {
-
 			assert.Equal(t, "this-is-my-kebab-token", oktaClient.userAuth.SessionToken, "we're able to get a sessions token from the response")
 		}
 	})
@@ -621,11 +619,11 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 }`)
 
 		// set the response code and expect it to get to Okta.
-		mfaInputs.Code = "invalid-pass-code"
-		oktaClient.selector = mfaInputs
+		//		mfaInputs.Code = "invalid-pass-code"
+		//		oktaClient.selector = mfaInputs
 		gock.New("https://canada").
 			Post("api/v1/authn/factors/fuf8y2l4n5mfH0UWe0h7/verify").
-			JSON(map[string]string{"stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb", "passCode": mfaInputs.Code}).
+			JSON(map[string]string{"stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb", "passCode": "12345"}).
 			Reply(403).BodyString(`{
   "errorCode": "E0000068",
   "errorSummary": "Invalid Passcode/Answer",
@@ -638,7 +636,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
   ]
 }`)
 
-		oktaClient.creds.MFA = MFAConfig{
+		oktaClient.creds.MFA = mfa.Config{
 			Provider:   "OKTA",
 			FactorType: "token:software:totp",
 		}
@@ -647,7 +645,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 			log.Debug("---------------------------------------")
 			log.Debug(err)
 			log.Debug("---------------------------------------")
-			assert.Equal(t, true, errors.Is(err, ErrInvalidCredentials), "we get an error if the passcode is wrong")
+			assert.Equal(t, true, errors.Is(err, types.ErrInvalidCredentials), "we get an error if the passcode is wrong")
 		}
 	})
 	t.Run("okta user auth, expired password flow no MFA", func(t *testing.T) {
@@ -704,7 +702,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		// this would only test the unlikely case where the user doesn't have MFA setup.
 		// https://developer.okta.com/docs/reference/api/authn/#primary-authentication-with-public-application
 		err = oktaClient.AuthenticateUser()
-		assert.Equal(t, true, errors.Is(err, ErrInvalidCredentials), "verify we get an invalid creds error when password expired")
+		assert.Equal(t, true, errors.Is(err, types.ErrInvalidCredentials), "verify we get an invalid creds error when password expired")
 	})
 
 	t.Run("session interface returns a reasonable error", func(t *testing.T) {

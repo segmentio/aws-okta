@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/segmentio/aws-okta/lib/client/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,7 +30,8 @@ func GetOktaDomain(region string) (string, error) {
 }
 
 // validate the MFA factor is supported
-func isFactorSupported(factor MFAConfig) error {
+/*
+func isFactorSupported(factor mfa.Config) error {
 	var validationErrorMessage string
 	switch factor.FactorType {
 	case "web":
@@ -53,9 +55,9 @@ func isFactorSupported(factor MFAConfig) error {
 	}
 	return nil
 }
-
-func parseOktaError(res *http.Response) (*oktaErrorResponse, error) {
-	var errResp = oktaErrorResponse{}
+*/
+func parseOktaError(res *http.Response) (*types.OktaErrorResponse, error) {
+	var errResp = types.OktaErrorResponse{}
 	err := json.NewDecoder(res.Body).Decode(&errResp)
 	if err != nil {
 		log.Debug("parseOktaError parsing error: ", err)

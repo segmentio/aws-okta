@@ -10,6 +10,8 @@ import (
 	"github.com/segmentio/aws-okta/internal/sessioncache"
 	"github.com/segmentio/aws-okta/lib"
 	"github.com/segmentio/aws-okta/lib/client"
+	"github.com/segmentio/aws-okta/lib/client/mfa"
+	"github.com/segmentio/aws-okta/lib/client/types"
 	"github.com/segmentio/aws-okta/lib/provider"
 	"github.com/segmentio/aws-okta/lib/session"
 
@@ -20,7 +22,7 @@ type MFAInputs struct {
 	Label string
 }
 
-func (s *MFAInputs) ChooseFactor(factors []client.MFAConfig) (int, error) {
+func (s *MFAInputs) ChooseFactor(factors []mfa.Config) (int, error) {
 	prompt := promptui.Select{
 		Label: s.Label,
 		Templates: &promptui.SelectTemplates{
@@ -42,7 +44,7 @@ func (s *MFAInputs) ChooseFactor(factors []client.MFAConfig) (int, error) {
 	return i, err
 }
 
-func (s *MFAInputs) CodeSupplier(factor client.MFAConfig) (string, error) {
+func (s *MFAInputs) CodeSupplier(factor mfa.Config) (string, error) {
 	prompt := promptui.Prompt{
 		Label: "Enter your MFA code: ",
 	}
@@ -94,7 +96,7 @@ func getKeyring(backend string) (*keyring.Keyring, error) {
 	return &kr, nil
 }
 
-func createOktaClient(kr *keyring.Keyring, mfaConfig client.MFAConfig) (*client.OktaClient, error) {
+func createOktaClient(kr *keyring.Keyring, mfaConfig mfa.Config) (*client.OktaClient, error) {
 	var oktaCreds client.OktaCredential
 
 	item, err := (*kr).Get("okta-creds")
@@ -112,7 +114,7 @@ func createOktaClient(kr *keyring.Keyring, mfaConfig client.MFAConfig) (*client.
 	sessionCache := session.New(*kr)
 	oktaClient, err := client.NewOktaClient(oktaCreds, sessionCache, &mfaChooser, nil)
 	if err != nil {
-		if xerrors.Is(err, client.ErrInvalidCredentials) {
+		if xerrors.Is(err, types.ErrInvalidCredentials) {
 			err = xerrors.New("credentials aren't complete. To remedy this, re-add your credentials with `aws-okta add`")
 		}
 		return nil, err
@@ -121,7 +123,7 @@ func createOktaClient(kr *keyring.Keyring, mfaConfig client.MFAConfig) (*client.
 }
 
 func createAWSSAMLProvider(backend string,
-	mfaConfig client.MFAConfig,
+	mfaConfig mfa.Config,
 	profile string,
 	opts provider.AWSSAMLProviderOptions) (*provider.AWSSAMLProvider, error) {
 	var kr *keyring.Keyring
