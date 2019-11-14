@@ -14,14 +14,6 @@ type SMSDevice struct {
 	id            string
 }
 
-func (d *SMSDevice) SetId(id string) {
-	d.id = id
-}
-
-func (d *SMSDevice) GetId() string {
-	return d.id
-}
-
 // Supported will check if the mfa config can be used by this device
 func (d *SMSDevice) Supported(factor types.OktaUserAuthnFactor) error {
 	if factor.FactorType == "sms" {
@@ -33,21 +25,24 @@ func (d *SMSDevice) Supported(factor types.OktaUserAuthnFactor) error {
 // Verify is called to get generate the payload that will be sent to Okta.
 //   We will call this twice, once to tell Okta to send the code then
 //   Once to prompt the user using `CodeSupplier` for the code.
-func (d *SMSDevice) Verify(authResp types.OktaUserAuthn) ([]byte, error) {
+func (d *SMSDevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error) {
 	var code string
 	var err error
 
-	if d.codeRequested {
+	if authResp.Status == "MFA_REQUIRED" {
 		code, err = d.userInput.CodeSupplier(Config{FactorType: "sms"})
 		if err != nil {
-			return []byte(""), err
+			return "", []byte(""), err
 		}
+	} else if authResp.Status == "MFA_CHALLENGE" {
+		code = ""
 	} else {
-		d.codeRequested = true
+		return "", []byte{}, fmt.Errorf("Unknown status: %s", authResp.Status)
 	}
-
-	return json.Marshal(basicPayload{
+	payload, err := json.Marshal(basicPayload{
 		StateToken: authResp.StateToken,
 		PassCode:   code,
 	})
+
+	return "verify", payload, err
 }

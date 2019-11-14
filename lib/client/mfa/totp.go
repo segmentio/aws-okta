@@ -10,15 +10,6 @@ import (
 // TOTPDevice is the implementation of MFADevice
 type TOTPDevice struct {
 	userInput Input
-	id        string
-}
-
-func (d *TOTPDevice) SetId(id string) {
-	d.id = id
-}
-
-func (d *TOTPDevice) GetId() string {
-	return d.id
 }
 
 // Supported will return no error if this MFAConfig can be used with this device implementaion
@@ -30,13 +21,14 @@ func (d *TOTPDevice) Supported(factor types.OktaUserAuthnFactor) error {
 }
 
 // Verify will prompt the user for a code then return the payload for verification
-func (d *TOTPDevice) Verify(authResp types.OktaUserAuthn) ([]byte, error) {
+func (d *TOTPDevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error) {
 	code, err := d.userInput.CodeSupplier(Config{FactorType: "token"})
 	if err != nil {
-		return []byte(""), err
+		return "", []byte(""), err
 	}
-	return json.Marshal(basicPayload{
+	payload, err := json.Marshal(basicPayload{
 		StateToken: authResp.StateToken,
 		PassCode:   code,
 	})
+	return "verify", payload, err
 }
