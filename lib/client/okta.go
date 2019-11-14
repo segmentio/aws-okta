@@ -396,10 +396,10 @@ func (o *OktaClient) selectMFADevice() (mfa.Config, error) {
 			FactorType: factor.FactorType,
 			Id:         factor.Id}
 
-		for _, dev := range o.mfaDevices {
-			log.Debug("checking factor: ", factor, " against device: ", dev)
-			if dev.Supported(mfaConfig) == nil {
-				mfaConfig.Device = &dev
+		for _, device := range o.mfaDevices {
+			log.Debug("checking factor: ", factor, " against device: ", device)
+			if device.Supported(mfaConfig) == nil {
+				mfaConfig.Device = &device
 				devices = append(devices, mfaConfig)
 				break
 			}
@@ -408,9 +408,9 @@ func (o *OktaClient) selectMFADevice() (mfa.Config, error) {
 
 	// if there is a configured factor that matches one of the factors on the list use that.
 	if haveMFAConfig {
-		for _, dev := range devices {
-			if dev.Provider == o.creds.MFA.Provider && dev.FactorType == o.creds.MFA.FactorType {
-				return dev, nil
+		for _, device := range devices {
+			if device.Provider == o.creds.MFA.Provider && device.FactorType == o.creds.MFA.FactorType {
+				return device, nil
 			}
 		}
 		return mfa.Config{}, fmt.Errorf(
