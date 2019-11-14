@@ -24,12 +24,10 @@ var (
 
 // FIDODevice is implementation of MFADevice for SMS
 type FIDODevice struct {
-	userInput     Input
-	codeRequested bool
 }
 
 // Supported will check if the mfa config can be used by this device
-func (d *FIDODevice) Supported(factor types.OktaUserAuthnFactor) error {
+func (d *FIDODevice) Supported(factor Config) error {
 	if factor.FactorType == "u2f" && factor.Provider == "FIDO" {
 		return nil
 	}
@@ -42,8 +40,7 @@ func (d *FIDODevice) Supported(factor types.OktaUserAuthnFactor) error {
 func (d *FIDODevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error) {
 	var code string
 
-	if d.codeRequested {
-
+	if authResp.Status == "MFA_REQUIRED" {
 		f := authResp.Embedded.Factor
 		fidoClient, err := NewFidoClient(f.Embedded.Challenge.Nonce,
 			f.Profile.AppId,
@@ -63,8 +60,10 @@ func (d *FIDODevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error
 			return "", []byte{}, err
 		}
 		return "verify", payload, nil
+	} else if authResp.Status == "MFA_CHALLENGE" {
+		code = ""
 	} else {
-		d.codeRequested = true
+		return "", []byte{}, fmt.Errorf("Unknown status: %s", authResp.Status)
 	}
 	payload, err := json.Marshal(basicPayload{
 		StateToken: authResp.StateToken,
