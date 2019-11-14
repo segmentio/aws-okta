@@ -25,6 +25,8 @@ staticcheck:
 sec-lib:
 	gosec lib/provider/
 	gosec lib/client/
+	gosec lib/client/mfa/
+	gosec lib/client/types/
 
 sec-cli:
 	gosec cmd/

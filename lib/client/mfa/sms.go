@@ -35,7 +35,7 @@ func (d *SMSDevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error)
 	} else if authResp.Status == "MFA_CHALLENGE" {
 		code = ""
 	} else {
-		return "", []byte{}, fmt.Errorf("Unknown status: %s", authResp.Status)
+		return "", []byte{}, fmt.Errorf("unknown status: %s", authResp.Status)
 	}
 	payload, err := json.Marshal(basicPayload{
 		StateToken: authResp.StateToken,

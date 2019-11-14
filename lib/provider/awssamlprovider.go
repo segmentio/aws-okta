@@ -160,10 +160,11 @@ func (p *AWSSAMLProvider) Retrieve() (credentials.Value, error) {
 	if !ok {
 		return credentials.Value{}, fmt.Errorf("missing profile named %s", p.profile)
 	}
-	key := sessioncache.OrigKey{
+	key := sessioncache.KeyWithProfileARN{
 		ProfileName: source,
 		ProfileConf: profileConf,
 		Duration:    p.SessionDuration,
+		ProfileARN:  p.AssumeRoleArn,
 	}
 
 	var creds sts.Credentials

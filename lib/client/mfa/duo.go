@@ -51,7 +51,7 @@ func (d *DUODevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error)
 		// no action is required other than returning a payload that contains the stateToken
 		//	} else if authResp.Status == "MFA_CHALLENGE" {
 	} else {
-		return "", []byte{}, fmt.Errorf("Unknown status: %s", authResp.Status)
+		return "", []byte{}, fmt.Errorf("unknown status: %s", authResp.Status)
 	}
 
 	payload, err := json.Marshal(basicPayload{

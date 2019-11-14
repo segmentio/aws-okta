@@ -31,7 +31,7 @@ func (d *FIDODevice) Supported(factor Config) error {
 	if factor.FactorType == "u2f" && factor.Provider == "FIDO" {
 		return nil
 	}
-	return fmt.Errorf("FIDODevice doesn't support %s %w", factor.FactorType, types.ErrNotSupported)
+	return fmt.Errorf("doesn't support %s %w", factor.FactorType, types.ErrNotSupported)
 }
 
 // Verify is called to get generate the payload that will be sent to Okta.
@@ -63,7 +63,7 @@ func (d *FIDODevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error
 	} else if authResp.Status == "MFA_CHALLENGE" {
 		code = ""
 	} else {
-		return "", []byte{}, fmt.Errorf("Unknown status: %s", authResp.Status)
+		return "", []byte{}, fmt.Errorf("unknown status: %s", authResp.Status)
 	}
 	payload, err := json.Marshal(basicPayload{
 		StateToken: authResp.StateToken,
@@ -121,7 +121,7 @@ func NewFidoClient(challengeNonce, appId, version, keyHandle, stateToken string)
 func (d *FidoClient) ChallengeU2f() (*SignedAssertion, error) {
 
 	if d.Device == nil {
-		return nil, errors.New("No Device Found")
+		return nil, errors.New("no device found")
 	}
 	request := &u2fhost.AuthenticateRequest{
 		Challenge: d.ChallengeNonce,
@@ -136,8 +136,10 @@ func (d *FidoClient) ChallengeU2f() (*SignedAssertion, error) {
 	interval := time.NewTicker(time.Millisecond * 250)
 	var responsePayload *SignedAssertion
 
-	d.Device.Open()
-
+	err := d.Device.Open()
+	if err != nil {
+		return nil, err
+	}
 	defer func() {
 		d.Device.Close()
 	}()
@@ -145,7 +147,7 @@ func (d *FidoClient) ChallengeU2f() (*SignedAssertion, error) {
 	for {
 		select {
 		case <-timeout:
-			return nil, errors.New("Failed to get authentication response after 25 seconds")
+			return nil, errors.New("failed to get authentication response after 25 seconds")
 		case <-interval.C:
 			response, err := d.Device.Authenticate(request)
 			if err == nil {
