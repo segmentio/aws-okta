@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"strings"
 	"time"
 
 	"golang.org/x/net/publicsuffix"
@@ -290,224 +289,66 @@ func (o *OktaClient) GetSessionToken() string {
 
 // Will prompt the user to select one of the configured MFA devices if an MFA
 // configuration isn't provided.
-func (o *OktaClient) selectMFADevice() (mfa.Device, error) {
+func (o *OktaClient) selectMFADevice() (mfa.Config, error) {
 	var haveMFAConfig bool
-	var availableDevices []mfa.Device
-	var availableFactors []types.OktaUserAuthnFactor
 
+	var devices []mfa.Config
+	haveMFAConfig = o.creds.MFA.Provider != "" && o.creds.MFA.FactorType != ""
 	factors := o.userAuth.Embedded.Factors
 
-	haveMFAConfig = o.creds.MFA.Provider != "" && o.creds.MFA.FactorType != ""
-
+	// filter out all factors that arent support by the client. With debug log for each one.
+	// at this point create populate the mfa.Config that contains the device.
 	for _, factor := range factors {
-		supported := false
-		var device mfa.Device
 		for _, dev := range o.mfaDevices {
 			log.Debug("checking factor: ", factor, " against device: ", dev)
 			if dev.Supported(factor) == nil {
-				supported = true
-				device = dev
+				devices = append(devices, mfa.Config{Provider: factor.Provider,
+					FactorType: factor.FactorType,
+					Id:         factor.Id,
+					Device:     &dev})
 				break
 			}
 		}
-		if supported {
-			device.SetId(factor.Id)
-			availableDevices = append(availableDevices, device)
-			availableFactors = append(availableFactors, factor)
-		}
 	}
+
+	// if there is a configured factor that matches one of the factors on the list use that.
+	if haveMFAConfig {
+		for _, dev := range devices {
+			if dev.Provider == o.creds.MFA.Provider && dev.FactorType == o.creds.MFA.FactorType {
+				return dev, nil
+			}
+		}
+		return mfa.Config{}, fmt.Errorf(
+			"Unable to use configured MFA Provider: %s, FactorType: %s %w",
+			o.creds.MFA.Provider,
+			o.creds.MFA.FactorType,
+			types.ErrInvalidCredentials)
+	}
+
 	// Okta has prompted us for MFA but the user doesn't have any MFA configure.
 	// treat this as a credential error because the user doesn't have a full set
 	// of credentials to auth.
-	if len(availableFactors) == 0 {
-		return nil, fmt.Errorf("no MFA devices registered but MFA Requested by Okta. %w", types.ErrInvalidCredentials)
-
-		// if no MFA config is supplied and there is only one factor use that one.
-	} else if len(availableFactors) == 1 && !haveMFAConfig {
-		return availableDevices[0], nil
-	}
-	factorsI := make([]mfa.Config, len(availableFactors))
-	for factorIndex, factor := range availableFactors {
-		if haveMFAConfig {
-			if strings.EqualFold(factor.Provider, o.creds.MFA.Provider) && strings.EqualFold(factor.FactorType, o.creds.MFA.FactorType) {
-				// if the user passed in a specific MFA config to use that matches a
-				// a factor we got from Okta then early exit and don't prompt them
-				log.Debugf("Using matching factor \"%v %v\" from config\n", factor.Provider, factor.FactorType)
-				return availableDevices[factorIndex], nil
-			}
-		}
-		factorsI[factorIndex] = mfa.Config{
-			Provider:   factor.Provider,
-			FactorType: factor.FactorType,
-			Id:         factor.Id}
-	}
-
-	// if we have MFA configured but it doesn't match what is returned by Okta.
-	// return an error.
-	if haveMFAConfig {
-		return nil, fmt.Errorf("MFA Config doesn't match what is provided by Okta. %w", types.ErrInvalidCredentials)
+	if len(devices) == 0 {
+		return mfa.Config{}, fmt.Errorf("no MFA supported devices registered but MFA Requested by Okta. %w", types.ErrInvalidCredentials)
+		// no MFA config is supplied and there is only one factor so use that one.
+	} else if len(devices) == 1 {
+		return devices[0], nil
 	}
 
 	// call out to the supplied ChooseFactor method to determine the factor.
-	factorIdx, err := o.selector.ChooseFactor(factorsI)
+	deviceIndex, err := o.selector.ChooseFactor(devices)
 	if err != nil {
 		// this isn't one of our errors. return as is.
-		return nil, err
+		return mfa.Config{}, err
 	}
 
 	// confirm the response we got from ChooseFactor is valid
-	if factorIdx < 0 || factorIdx >= len(factors) {
-		return nil, fmt.Errorf("invalid index (%d) return by supplied `ChooseFactor`. %w", factorIdx, types.ErrUnexpectedResponse)
+	if deviceIndex < 0 || deviceIndex >= len(devices) {
+		return mfa.Config{}, fmt.Errorf("invalid index (%d) return by supplied `ChooseFactor`. %w", deviceIndex, types.ErrUnexpectedResponse)
 	}
-	return availableDevices[factorIdx], nil
+	return devices[deviceIndex], nil
 }
 
-// Makes any initial requests that are needed to verify MFA
-//
-// as an example this would include sending a request for an SMS code.
-/*
-func (o *OktaClient) preChallenge(mfaConfig mfa.Config) ([]byte, error) {
-	var mfaCode string
-	var err error
-
-	//Software and Hardware based OTP Tokens
-	if strings.Contains(mfaConfig.FactorType, "token") {
-		log.Debug("Token MFA")
-		mfaCode, err = o.selector.CodeSupplier(mfaConfig)
-		if err != nil {
-			return nil, err
-		}
-	} else if strings.Contains(mfaConfig.FactorType, "sms") {
-		log.Debug("SMS MFA")
-		payload, err := json.Marshal(map[string]string{
-			"stateToken": o.userAuth.StateToken,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		log.Debug("Requesting SMS Code")
-		res, err := o.Request("POST", "api/v1/authn/factors/"+mfaConfig.Id+"/verify", url.Values{}, payload, "json", true)
-		if err != nil {
-			return nil, err
-		}
-		defer res.Body.Close()
-
-		if res.StatusCode != http.StatusOK {
-			errResp, err := parseOktaError(res)
-			if err != nil {
-				return nil, fmt.Errorf("received %d code from Okta for SMS MFA verify. %w", res.StatusCode, types.ErrUnexpectedResponse)
-			}
-			return nil, fmt.Errorf(
-				"received %d code from Okta for SMS MFA verify.\nerrorCode: %s, errorSummary: %s\n%w",
-				res.StatusCode,
-				errResp.ErrorCode,
-				errResp.ErrorSummary,
-				types.ErrUnexpectedResponse)
-		}
-		mfaCode, err = o.selector.CodeSupplier(mfaConfig)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	payload, err := json.Marshal(types.OktaStateToken{
-		StateToken: o.userAuth.StateToken,
-		PassCode:   mfaCode,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return payload, nil
-}
-*/
-// executes the second step (if required) of the MFA verifaction process to get
-// a valid session cookie.
-/*
-func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, oktaFactorId string) error {
-	//Initiate Push Notification
-	if o.userAuth.Status == "MFA_CHALLENGE" {
-		f := o.userAuth.Embedded.Factor
-		errChan := make(chan error, 1)
-
-		if oktaFactorProvider == "DUO" {
-			// Contact the Duo to initiate Push notification
-			if f.Embedded.Verification.Host != "" {
-				o.DuoClient = &lib.DuoClient{
-					Host:       f.Embedded.Verification.Host,
-					Signature:  f.Embedded.Verification.Signature,
-					Callback:   f.Embedded.Verification.Links.Complete.Href,
-					Device:     o.creds.MFA.DuoDevice,
-					StateToken: o.userAuth.StateToken,
-				}
-
-				log.Debugf("Host:%s\nSignature:%s\nStateToken:%s\n",
-					f.Embedded.Verification.Host, f.Embedded.Verification.Signature,
-					o.userAuth.StateToken)
-
-				go func() {
-					log.Debug("challenge u2f")
-					log.Info("Sending Push Notification...")
-					err := o.DuoClient.ChallengeU2f(f.Embedded.Verification.Host)
-					if err != nil {
-						errChan <- err
-					}
-				}()
-			}
-		} else if oktaFactorProvider == "FIDO" {
-			f := o.userAuth.Embedded.Factor
-
-			log.Debug("FIDO U2F Details:")
-			log.Debug("  ChallengeNonce: ", f.Embedded.Challenge.Nonce)
-			log.Debug("  AppId: ", f.Profile.AppId)
-			log.Debug("  CredentialId: ", f.Profile.CredentialId)
-			log.Debug("  StateToken: ", o.userAuth.StateToken)
-
-			fidoClient, err := mfa.NewFidoClient(f.Embedded.Challenge.Nonce,
-				f.Profile.AppId,
-				f.Profile.Version,
-				f.Profile.CredentialId,
-				o.userAuth.StateToken)
-			if err != nil {
-				return err
-			}
-
-			signedAssertion, err := fidoClient.ChallengeU2f()
-			if err != nil {
-				return err
-			}
-			// re-assign the payload to provide U2F responses.
-			payload, err = json.Marshal(signedAssertion)
-			if err != nil {
-				return err
-			}
-		}
-		// Poll Okta until authentication has been completed
-		for o.userAuth.Status != "SUCCESS" {
-			select {
-			case duoErr := <-errChan:
-				log.Printf("Err: %s", duoErr)
-				if duoErr != nil {
-					return fmt.Errorf("failed Duo challenge. Err: %s", duoErr)
-				}
-			default:
-				res, err := o.Request("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify", url.Values{}, payload, "json", true)
-				if err != nil {
-					return fmt.Errorf("failed authn verification for okta. Err: %s", err)
-				}
-				defer res.Body.Close()
-
-				err = json.NewDecoder(res.Body).Decode(&o.userAuth)
-				if err != nil {
-					return err
-				}
-			}
-			time.Sleep(2 * time.Second)
-		}
-	}
-	return nil
-}
-*/
 // helper function to get a url, including path, for an Okta api or app.
 func (o *OktaClient) GetURL(path string) (fullURL *url.URL, err error) {
 
@@ -519,99 +360,68 @@ func (o *OktaClient) GetURL(path string) (fullURL *url.URL, err error) {
 	return
 }
 
-/*
-func (o *OktaClient) validateFactor() (*mfa.Config, error) {
-	var validationErrorMessage string
-	factor, err := o.selectMFADevice()
-	if err != nil {
-		// error is set by selectMFADevice.
-		return nil, err
-	}
-	if factor.Provider == "" {
-		validationErrorMessage = "Provider for MFA Device unavailable.\n"
-	}
-	if factor.FactorType == "" {
-		validationErrorMessage += "Factor type for MFA device unavailable.\n"
-	}
-	if factor.Id == "" {
-		validationErrorMessage += "ID for MFA device unavailable.\n"
-	}
-	if validationErrorMessage != "" {
-		return nil, fmt.Errorf("%v%w", validationErrorMessage, ErrInvalidCredentials)
-	}
-
-	mfaFactor := MFAConfig{
-		Provider:   factor.Provider,
-		Id:         factor.Id,
-		FactorType: factor.FactorType}
-
-	err = isFactorSupported(mfaFactor)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Debugf("Okta Factor Provider: %s", factor.Provider)
-	log.Debugf("Okta Factor ID: %s", factor.Id)
-	log.Debugf("Okta Factor Type: %s", factor.FactorType)
-
-	return &mfaFactor, nil
-}
-*/
 func (o *OktaClient) challengeMFA() (err error) {
 	var payload []byte
-	//var mfaFactor mfa.Config
-	//mfaDevice, err := o.validateFactor()
+	var action string
+	var tmpUserAuthn types.OktaUserAuthn
+
 	mfaDevice, err := o.selectMFADevice()
 	if err != nil {
 		return
 	}
+
+	tmpUserAuthn = *o.userAuth
 	log.Debug("auth status: ", o.userAuth.Status)
-	for o.userAuth.Status == "MFA_CHALLENGE" || o.userAuth.Status == "MFA_REQUIRED" {
-		log.Debug("calling verify for device: ", mfaDevice)
-		payload, err = mfaDevice.Verify(*o.userAuth)
+	// for the first interation of the loop the status will always be MFA_CHALLENGE
+	for tmpUserAuthn.Status == "MFA_CHALLENGE" || tmpUserAuthn.Status == "MFA_REQUIRED" {
+		log.Debug("calling verify for config: ", mfaDevice)
+		action, payload, err = (*mfaDevice.Device).Verify(tmpUserAuthn)
 		if err != nil {
 			return
 		}
-		deviceId := mfaDevice.GetId()
-
-		if deviceId == "" {
-			log.Debug("MFA device is empty")
-			return fmt.Errorf("registered MFA Device does not have an ID")
-		}
-		res, err := o.Request("POST", "api/v1/authn/factors/"+deviceId+"/verify", url.Values{}, payload, "json", true)
-		if err != nil {
-			return fmt.Errorf("failed authn verification for okta. Err: %s", err)
-		}
-		defer res.Body.Close()
-
-		// we need to check statuscode here and handle errors.
-		if res.StatusCode != http.StatusOK {
-			// got an error response, try parsing it.
-			errResp, err := parseOktaError(res)
-			if err != nil {
-				return fmt.Errorf("%v %w", err, types.ErrUnexpectedResponse)
-			}
-			if res.StatusCode == http.StatusForbidden {
-				return fmt.Errorf("failed authn. Reason: %s. %w", errResp.ErrorSummary, types.ErrInvalidCredentials)
-			} else {
-				return fmt.Errorf(
-					"failed authn verification. errorCode: %s, errorSummary: %s %w",
-					errResp.ErrorCode,
-					errResp.ErrorSummary,
-					types.ErrUnexpectedResponse)
-			}
-		}
-		err = json.NewDecoder(res.Body).Decode(&o.userAuth)
+		tmpUserAuthn, err = o.makeMFARequest(action, mfaDevice.Id, payload)
 		if err != nil {
 			return err
 		}
 	}
-	//Handle Push Notification
-	//	err = o.postChallenge(payload, mfaFactor.Provider, mfaFactor.Id)
-	//	if err != nil {
-	//		return err
-	//	}
+	// state the OktaUserAuthn including the sessionToken
+	*o.userAuth = tmpUserAuthn
 	return nil
+}
+
+func (o *OktaClient) makeMFARequest(action string, factorId string, payload []byte) (types.OktaUserAuthn, error) {
+	var userAuthn types.OktaUserAuthn
+	// TODO: verify action is an acceptable value
+	endpoint := "api/v1/authn/factors/" + factorId + "/" + action
+
+	res, err := o.Request("POST", endpoint, url.Values{}, payload, "json", true)
+	if err != nil {
+		return userAuthn, fmt.Errorf("failed authn verification for okta. Err: %s", err)
+	}
+	defer res.Body.Close()
+
+	// we need to check statuscode here and handle errors.
+	if res.StatusCode != http.StatusOK {
+		// got an error response, try parsing it.
+		errResp, err := parseOktaError(res)
+		if err != nil {
+			return userAuthn, fmt.Errorf("%v %w", err, types.ErrUnexpectedResponse)
+		}
+		if res.StatusCode == http.StatusForbidden {
+			return userAuthn, fmt.Errorf("failed authn. Reason: %s. %w", errResp.ErrorSummary, types.ErrInvalidCredentials)
+		} else {
+			return userAuthn, fmt.Errorf(
+				"failed authn verification. errorCode: %s, errorSummary: %s %w",
+				errResp.ErrorCode,
+				errResp.ErrorSummary,
+				types.ErrUnexpectedResponse)
+		}
+	}
+	err = json.NewDecoder(res.Body).Decode(&userAuthn)
+	if err != nil {
+		return userAuthn, err
+	}
+	return userAuthn, nil
 }
 
 // Makes a request to Okta.
