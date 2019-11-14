@@ -13,7 +13,7 @@ type TOTPDevice struct {
 }
 
 // Supported will return no error if this MFAConfig can be used with this device implementaion
-func (d *TOTPDevice) Supported(factor types.OktaUserAuthnFactor) error {
+func (d *TOTPDevice) Supported(factor Config) error {
 	if factor.FactorType == "token:software:totp" || factor.FactorType == "token:hardware" {
 		return nil
 	}

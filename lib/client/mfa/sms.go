@@ -9,13 +9,11 @@ import (
 
 // SMSDevice is implementation of MFADevice for SMS
 type SMSDevice struct {
-	userInput     Input
-	codeRequested bool
-	id            string
+	userInput Input
 }
 
 // Supported will check if the mfa config can be used by this device
-func (d *SMSDevice) Supported(factor types.OktaUserAuthnFactor) error {
+func (d *SMSDevice) Supported(factor Config) error {
 	if factor.FactorType == "sms" {
 		return nil
 	}

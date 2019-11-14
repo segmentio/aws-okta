@@ -81,6 +81,7 @@ func NewOktaClient(
 		opts = &OktaClientOptions{}
 	}
 
+	// do some basic validation on the credentials we received.
 	err = creds.Validate()
 	if err != nil {
 		return nil, err
@@ -119,7 +120,10 @@ func NewOktaClient(
 			Jar:       jar,
 		}
 	}
+
+	// gets implementations for MFA devices that are supported by defualt.
 	devices := mfa.DefaultDevices(selector)
+
 	oktaClient := OktaClient{
 		creds:      creds,
 		BaseURL:    base,
@@ -151,7 +155,6 @@ func NewOktaClient(
 // This error indicates that the session wasn't retrieved and should be handled
 // appropriately.
 func (o *OktaClient) retrieveSessionCookie() (err error) {
-
 	if o.sessions == nil {
 		return fmt.Errorf("session NOT retrieved. Reason: Session Backend not defined")
 	}
@@ -187,7 +190,7 @@ func (o *OktaClient) saveSessionCookie() (err error) {
 		if cookie.Name == "sid" && cookie.Value != "" {
 			err = (o.sessions).Put(o.getSessionCookieKeyringKey(),
 				[]byte(cookie.Value),
-				"okta session cookie for "+o.creds.Username)
+				"okta session cookie for "+o.creds.Username+" at "+o.creds.Domain)
 			if err != nil {
 				return
 			}
@@ -272,12 +275,12 @@ func (o *OktaClient) AuthenticateUser() (err error) {
 			return
 		}
 	} else if o.userAuth.Status == "PASSWORD_EXPIRED" {
-		return fmt.Errorf("password is expired, login to Okta console to change. %w", types.ErrInvalidCredentials)
+		return fmt.Errorf("password is expired %w", types.ErrInvalidCredentials)
 	}
 
 	if o.userAuth.SessionToken == "" {
 		log.Debug("Auth failed. Reason: Session token isn't present.")
-		return fmt.Errorf("authentication failed for %s, session token not present. %w", o.creds.Username, types.ErrInvalidSession)
+		return fmt.Errorf("authentication failed for %s, reason unknown try checking debug logs %w", o.creds.Username, types.ErrInvalidSession)
 	}
 	return
 }
@@ -285,6 +288,96 @@ func (o *OktaClient) AuthenticateUser() (err error) {
 // Public interface to get the Okta session token.
 func (o *OktaClient) GetSessionToken() string {
 	return o.userAuth.SessionToken
+}
+
+//
+// MFA related methods start here.
+//
+
+// RegisterMFADeviceType will add an implementation of mfa.Device that can be used
+// during authentication.
+func (o *OktaClient) RegisterMFADeviceType(device mfa.Device) {
+	o.mfaDevices = append(o.mfaDevices, device)
+}
+
+// ClearMFADevices will remove all MFA device implementations. This will break MFA verification unless
+// new devices are added after this call.
+func (o *OktaClient) ClearMFADevices() {
+	o.mfaDevices = []mfa.Device{}
+}
+
+// challengeMFA is the main entry point for verifying MFA
+func (o *OktaClient) challengeMFA() (err error) {
+	var payload []byte
+	var action string
+	var path string
+	var tmpUserAuthn types.OktaUserAuthn
+
+	mfaDevice, err := o.selectMFADevice()
+	if err != nil {
+		return
+	}
+
+	tmpUserAuthn = *o.userAuth
+	log.Debug("auth status: ", o.userAuth.Status)
+
+	// MFA verification happens in the MFA_REQUIRED and MFA_CHALLENGE states only. For the first interation of the
+	// loop the status will always be MFA_CHALLENGE
+	for tmpUserAuthn.Status == "MFA_CHALLENGE" || tmpUserAuthn.Status == "MFA_REQUIRED" {
+		log.Debug("calling verify for config: ", mfaDevice)
+
+		action, payload, err = (*mfaDevice.Device).Verify(tmpUserAuthn)
+		if err != nil {
+			return
+		}
+
+		// helper provided by mfa package to create the path to make a request from okta.
+		// if an action is invalid an error will be returned.
+		path, err = mfa.BuildMFAPath(mfaDevice.Id, action)
+		if err != nil {
+			return err
+		}
+		tmpUserAuthn, err = o.makeMFARequest(path, payload)
+		if err != nil {
+			return err
+		}
+	}
+	// save the OktaUserAuthn including the sessionToken
+	*o.userAuth = tmpUserAuthn
+	return nil
+}
+
+func (o *OktaClient) makeMFARequest(path string, payload []byte) (types.OktaUserAuthn, error) {
+	var userAuthn types.OktaUserAuthn
+
+	res, err := o.Request("POST", path, url.Values{}, payload, "json", true)
+	if err != nil {
+		return userAuthn, fmt.Errorf("failed authn verification for okta. Err: %s", err)
+	}
+	defer res.Body.Close()
+
+	// we need to check statuscode here and handle errors.
+	if res.StatusCode != http.StatusOK {
+		// got an error response, try parsing it.
+		errResp, err := parseOktaError(res)
+		if err != nil {
+			return userAuthn, fmt.Errorf("%v %w", err, types.ErrUnexpectedResponse)
+		}
+		if res.StatusCode == http.StatusForbidden {
+			return userAuthn, fmt.Errorf("failed authn. Reason: %s. %w", errResp.ErrorSummary, types.ErrInvalidCredentials)
+		} else {
+			return userAuthn, fmt.Errorf(
+				"failed authn verification. errorCode: %s, errorSummary: %s %w",
+				errResp.ErrorCode,
+				errResp.ErrorSummary,
+				types.ErrUnexpectedResponse)
+		}
+	}
+	err = json.NewDecoder(res.Body).Decode(&userAuthn)
+	if err != nil {
+		return userAuthn, err
+	}
+	return userAuthn, nil
 }
 
 // Will prompt the user to select one of the configured MFA devices if an MFA
@@ -299,13 +392,15 @@ func (o *OktaClient) selectMFADevice() (mfa.Config, error) {
 	// filter out all factors that arent support by the client. With debug log for each one.
 	// at this point create populate the mfa.Config that contains the device.
 	for _, factor := range factors {
+		mfaConfig := mfa.Config{Provider: factor.Provider,
+			FactorType: factor.FactorType,
+			Id:         factor.Id}
+
 		for _, dev := range o.mfaDevices {
 			log.Debug("checking factor: ", factor, " against device: ", dev)
-			if dev.Supported(factor) == nil {
-				devices = append(devices, mfa.Config{Provider: factor.Provider,
-					FactorType: factor.FactorType,
-					Id:         factor.Id,
-					Device:     &dev})
+			if dev.Supported(mfaConfig) == nil {
+				mfaConfig.Device = &dev
+				devices = append(devices, mfaConfig)
 				break
 			}
 		}
@@ -349,79 +444,18 @@ func (o *OktaClient) selectMFADevice() (mfa.Config, error) {
 	return devices[deviceIndex], nil
 }
 
+//
+// MFA related methods end here.
+//
+
 // helper function to get a url, including path, for an Okta api or app.
 func (o *OktaClient) GetURL(path string) (fullURL *url.URL, err error) {
-
 	fullURL, err = url.Parse(fmt.Sprintf(
 		"%s/%s",
 		o.BaseURL,
 		path,
 	))
 	return
-}
-
-func (o *OktaClient) challengeMFA() (err error) {
-	var payload []byte
-	var action string
-	var tmpUserAuthn types.OktaUserAuthn
-
-	mfaDevice, err := o.selectMFADevice()
-	if err != nil {
-		return
-	}
-
-	tmpUserAuthn = *o.userAuth
-	log.Debug("auth status: ", o.userAuth.Status)
-	// for the first interation of the loop the status will always be MFA_CHALLENGE
-	for tmpUserAuthn.Status == "MFA_CHALLENGE" || tmpUserAuthn.Status == "MFA_REQUIRED" {
-		log.Debug("calling verify for config: ", mfaDevice)
-		action, payload, err = (*mfaDevice.Device).Verify(tmpUserAuthn)
-		if err != nil {
-			return
-		}
-		tmpUserAuthn, err = o.makeMFARequest(action, mfaDevice.Id, payload)
-		if err != nil {
-			return err
-		}
-	}
-	// state the OktaUserAuthn including the sessionToken
-	*o.userAuth = tmpUserAuthn
-	return nil
-}
-
-func (o *OktaClient) makeMFARequest(action string, factorId string, payload []byte) (types.OktaUserAuthn, error) {
-	var userAuthn types.OktaUserAuthn
-	// TODO: verify action is an acceptable value
-	endpoint := "api/v1/authn/factors/" + factorId + "/" + action
-
-	res, err := o.Request("POST", endpoint, url.Values{}, payload, "json", true)
-	if err != nil {
-		return userAuthn, fmt.Errorf("failed authn verification for okta. Err: %s", err)
-	}
-	defer res.Body.Close()
-
-	// we need to check statuscode here and handle errors.
-	if res.StatusCode != http.StatusOK {
-		// got an error response, try parsing it.
-		errResp, err := parseOktaError(res)
-		if err != nil {
-			return userAuthn, fmt.Errorf("%v %w", err, types.ErrUnexpectedResponse)
-		}
-		if res.StatusCode == http.StatusForbidden {
-			return userAuthn, fmt.Errorf("failed authn. Reason: %s. %w", errResp.ErrorSummary, types.ErrInvalidCredentials)
-		} else {
-			return userAuthn, fmt.Errorf(
-				"failed authn verification. errorCode: %s, errorSummary: %s %w",
-				errResp.ErrorCode,
-				errResp.ErrorSummary,
-				types.ErrUnexpectedResponse)
-		}
-	}
-	err = json.NewDecoder(res.Body).Decode(&userAuthn)
-	if err != nil {
-		return userAuthn, err
-	}
-	return userAuthn, nil
 }
 
 // Makes a request to Okta.
