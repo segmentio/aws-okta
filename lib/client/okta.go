@@ -326,7 +326,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 	for tmpUserAuthn.Status == "MFA_CHALLENGE" || tmpUserAuthn.Status == "MFA_REQUIRED" {
 		log.Debug("calling verify for config: ", mfaDevice)
 
-		action, payload, err = (*mfaDevice.Device).Verify(tmpUserAuthn)
+		action, payload, err = mfaDevice.Device.Verify(tmpUserAuthn)
 		if err != nil {
 			return
 		}
@@ -399,7 +399,7 @@ func (o *OktaClient) selectMFADevice() (mfa.Config, error) {
 		for _, device := range o.mfaDevices {
 			log.Debug("checking factor: ", factor, " against device: ", device)
 			if device.Supported(mfaConfig) == nil {
-				mfaConfig.Device = &device
+				mfaConfig.Device = device
 				devices = append(devices, mfaConfig)
 				break
 			}
