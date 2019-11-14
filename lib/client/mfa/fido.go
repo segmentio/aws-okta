@@ -26,21 +26,11 @@ var (
 type FIDODevice struct {
 	userInput     Input
 	codeRequested bool
-	id            string
-}
-
-func (d *FIDODevice) SetId(id string) {
-	d.id = id
-}
-
-func (d *FIDODevice) GetId() string {
-	return d.id
 }
 
 // Supported will check if the mfa config can be used by this device
 func (d *FIDODevice) Supported(factor types.OktaUserAuthnFactor) error {
 	if factor.FactorType == "u2f" && factor.Provider == "FIDO" {
-		d.id = factor.Id
 		return nil
 	}
 	return fmt.Errorf("FIDODevice doesn't support %s %w", factor.FactorType, types.ErrNotSupported)
@@ -49,7 +39,7 @@ func (d *FIDODevice) Supported(factor types.OktaUserAuthnFactor) error {
 // Verify is called to get generate the payload that will be sent to Okta.
 //   We will call this twice, once to tell Okta to send the code then
 //   Once to prompt the user using `CodeSupplier` for the code.
-func (d *FIDODevice) Verify(authResp types.OktaUserAuthn) ([]byte, error) {
+func (d *FIDODevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error) {
 	var code string
 
 	if d.codeRequested {
@@ -61,26 +51,27 @@ func (d *FIDODevice) Verify(authResp types.OktaUserAuthn) ([]byte, error) {
 			f.Profile.CredentialId,
 			authResp.StateToken)
 		if err != nil {
-			return []byte{}, err
+			return "", []byte{}, err
 		}
 		signedAssertion, err := fidoClient.ChallengeU2f()
 		if err != nil {
-			return []byte{}, err
+			return "", []byte{}, err
 		}
 		// re-assign the payload to provide U2F responses.
 		payload, err := json.Marshal(signedAssertion)
 		if err != nil {
-			return []byte{}, err
+			return "", []byte{}, err
 		}
-		return payload, nil
+		return "verify", payload, nil
 	} else {
 		d.codeRequested = true
 	}
-
-	return json.Marshal(basicPayload{
+	payload, err := json.Marshal(basicPayload{
 		StateToken: authResp.StateToken,
 		PassCode:   code,
 	})
+
+	return "verify", payload, err
 }
 
 type FidoClient struct {

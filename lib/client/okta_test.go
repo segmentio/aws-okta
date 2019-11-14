@@ -62,7 +62,7 @@ func TestOktaClientHappy(t *testing.T) {
 	defer gock.Off()
 
 	// uncomment this to get gock to dump all requests
-	//	gock.Observe(gock.DumpRequest)
+	// gock.Observe(gock.DumpRequest)
 
 	//
 	// start setup
@@ -115,7 +115,6 @@ func TestOktaClientHappy(t *testing.T) {
 		err = oktaClient.saveSessionCookie()
 
 		if assert.NoError(t, err, "Can save sessions without errors") {
-
 			assert.Equal(t, tokenData, oktaClient.client.Jar.Cookies(oktaClient.BaseURL)[0].Value, "Base URL should match")
 		}
 	})
@@ -147,25 +146,7 @@ func TestOktaClientHappy(t *testing.T) {
 		gock.New("https://canada").
 			Post("/api/v1/authn").
 			JSON(map[string]string{"username": creds.Username, "password": creds.Password}).
-			Reply(200).BodyString(`{
-  "expiresAt": "2015-11-03T10:15:57.000Z",
-  "status": "SUCCESS",
-  "relayState": "/myapp/some/deep/link/i/want/to/return/to",
-  "sessionToken": "this-is-my-kebab-token",
-  "_embedded": {
-    "user": {
-      "id": "00ub0oNGTSWTBKOLGLNR",
-      "passwordChanged": "2015-09-08T20:14:45.000Z",
-      "profile": {
-        "login": "dade.murphy@example.com",
-        "firstName": "Dade",
-        "lastName": "Murphy",
-        "locale": "en_US",
-        "timeZone": "America/Los_Angeles"
-      }
-    }
-  }
-}`)
+			Reply(200).BodyString(oktaSuccess("this-is-my-kebab-token"))
 		err = oktaClient.AuthenticateUser()
 		if assert.NoError(t, err, "We're able to auth without MFA") {
 
@@ -228,25 +209,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		gock.New("https://canada").
 			Post("/api/v1/authn").
 			JSON(map[string]string{"username": creds.Username, "password": creds.Password}).
-			Reply(200).BodyString(`{
-  "expiresAt": "2015-11-03T10:15:57.000Z",
-  "status": "SUCCESS",
-  "relayState": "/myapp/some/deep/link/i/want/to/return/to",
-  "sessionToken": "this-is-my-kebab-token",
-  "_embedded": {
-    "user": {
-      "id": "00ub0oNGTSWTBKOLGLNR",
-      "passwordChanged": "2015-09-08T20:14:45.000Z",
-      "profile": {
-        "login": "dade.murphy@example.com",
-        "firstName": "Dade",
-        "lastName": "Murphy",
-        "locale": "en_US",
-        "timeZone": "America/Los_Angeles"
-      }
-    }
-  }
-}`)
+			Reply(200).BodyString(oktaSuccess("this-is-my-kebab-token"))
 		err = oktaClient.AuthenticateUser()
 		if assert.NoError(t, err, "We're able to auth without MFA") {
 
@@ -258,56 +221,15 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		gock.New("https://canada").
 			Post("/api/v1/authn").
 			JSON(map[string]string{"username": creds.Username, "password": creds.Password}).
-			Reply(200).BodyString(`{
-  "stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb",
-  "expiresAt": "2015-11-03T10:15:57.000Z",
-  "status": "MFA_REQUIRED",
-  "relayState": "/myapp/some/deep/link/i/want/to/return/to",
-  "_embedded": {
-    "user": {
-      "id": "00ub0oNGTSWTBKOLGLNR",
-      "passwordChanged": "2015-09-08T20:14:45.000Z",
-      "profile": {
-        "login": "dade.murphy@example.com",
-        "firstName": "Dade",
-        "lastName": "Murphy",
-        "locale": "en_US",
-        "timeZone": "America/Los_Angeles"
-      }
-    },
-    "factors": [
-      {
+			Reply(200).BodyString(oktaMFARequired("007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb",
+			`[{
         "id": "fuf8y2l4n5mfH0UWe0h7",
         "factorType": "u2f",
         "provider": "FIDO",
         "profile": {
           "credentialId": "dade.murphy@example.com"
-        },
-        "_links": {
-          "verify": {
-            "href": "https://${yourOktaDomain}/api/v1/authn/factors/rsalhpMQVYKHZKXZJQEW/verify",
-            "hints": {
-              "allow": [
-                "POST"
-              ]
-            }
-          }
         }
-      }
-    ]
-  },
-  "_links": {
-    "cancel": {
-      "href": "https://${yourOktaDomain}/api/v1/authn/cancel",
-      "hints": {
-        "allow": [
-          "POST"
-        ]
-      }
-    }
-  }
-}`)
-
+      }]`))
 		oktaClient.creds.MFA = mfa.Config{
 			Provider:   "OKTA",
 			FactorType: "sms",
@@ -323,149 +245,34 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		gock.New("https://canada").
 			Post("/api/v1/authn").
 			JSON(map[string]string{"username": creds.Username, "password": creds.Password}).
-			Reply(200).BodyString(`{
-  "stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb",
-  "expiresAt": "2015-11-03T10:15:57.000Z",
-  "status": "MFA_REQUIRED",
-  "relayState": "/myapp/some/deep/link/i/want/to/return/to",
-  "_embedded": {
-    "user": {
-      "id": "00ub0oNGTSWTBKOLGLNR",
-      "passwordChanged": "2015-09-08T20:14:45.000Z",
-      "profile": {
-        "login": "dade.murphy@example.com",
-        "firstName": "Dade",
-        "lastName": "Murphy",
-        "locale": "en_US",
-        "timeZone": "America/Los_Angeles"
-      }
-    },
-    "factors": [
-      {
+			Reply(200).BodyString(oktaMFARequired("007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb",
+			`[{
         "id": "fuf8y2l4n5mfH0UWe0h7",
         "factorType": "sms",
         "provider": "OKTA",
         "profile": {
           "credentialId": "dade.murphy@example.com"
-        },
-        "_links": {
-          "verify": {
-            "href": "https://${yourOktaDomain}/api/v1/authn/factors/rsalhpMQVYKHZKXZJQEW/verify",
-            "hints": {
-              "allow": [
-                "POST"
-              ]
-            }
-          }
         }
-      }
-    ]
-  },
-  "_links": {
-    "cancel": {
-      "href": "https://${yourOktaDomain}/api/v1/authn/cancel",
-      "hints": {
-        "allow": [
-          "POST"
-        ]
-      }
-    }
-  }
-}`)
-
+      } ]`))
 		gock.New("https://canada").
 			Post("api/v1/authn/factors/fuf8y2l4n5mfH0UWe0h7/verify").
 			JSON(map[string]string{"stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb"}).
-			Reply(200).BodyString(`{
-  "stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb",
-  "expiresAt": "2015-11-03T10:15:57.000Z",
-  "status": "MFA_CHALLENGE",
-  "relayState": "/myapp/some/deep/link/i/want/to/return/to",
-  "_embedded": {
-    "user": {
-      "id": "00ub0oNGTSWTBKOLGLNR",
-      "passwordChanged": "2015-09-08T20:14:45.000Z",
-      "profile": {
-        "login": "dade.murphy@example.com",
-        "firstName": "Dade",
-        "lastName": "Murphy",
-        "locale": "en_US",
-        "timeZone": "America/Los_Angeles"
-      }
-    },
-    "factor": {
-      "id": "fuf8y2l4n5mfH0UWe0h7",
-      "factorType": "sms",
+			Reply(200).BodyString(oktaMFAChallenge("007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb",
+			`[{
+			"id": "fuf8y2l4n5mfH0UWe0h7",
+			"factorType": "sms",
       "provider": "OKTA",
       "profile": {
         "phoneNumber": "+1 XXX-XXX-1337"
       }
-    }
-  },
-  "_links": {
-    "next": {
-      "name": "verify",
-      "href": "https://${yourOktaDomain}/api/v1/authn/factors/sms193zUBEROPBNZKPPE/verify",
-      "hints": {
-        "allow": [
-          "POST"
-        ]
-      }
-    },
-    "cancel": {
-      "href": "https://${yourOktaDomain}/api/v1/authn/cancel",
-      "hints": {
-        "allow": [
-          "POST"
-        ]
-      }
-    },
-    "prev": {
-      "href": "https://${yourOktaDomain}/api/v1/authn/previous",
-      "hints": {
-        "allow": [
-          "POST"
-        ]
-      }
-    },
-    "resend": [
-      {
-        "name": "sms",
-        "href": "https://${yourOktaDomain}/api/v1/authn/factors/sms193zUBEROPBNZKPPE/verify/resend",
-        "hints": {
-          "allow": [
-            "POST"
-          ]
-        }
-      }
-    ]
-  }
-}`)
+    }]`))
 		// set the response code and expect it to get to Okta.
 		mfaInputs.Code = "12345"
 		oktaClient.selector = mfaInputs
 		gock.New("https://canada").
 			Post("api/v1/authn/factors/fuf8y2l4n5mfH0UWe0h7/verify").
 			JSON(map[string]string{"stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb", "passCode": mfaInputs.Code}).
-			Reply(200).BodyString(`{
-  "expiresAt": "2015-11-03T10:15:57.000Z",
-  "status": "SUCCESS",
-  "relayState": "/myapp/some/deep/link/i/want/to/return/to",
-  "sessionToken": "this-is-my-kebab-token",
-  "_embedded": {
-    "user": {
-      "id": "00ub0oNGTSWTBKOLGLNR",
-      "passwordChanged": "2015-09-08T20:14:45.000Z",
-      "profile": {
-        "login": "dade.murphy@example.com",
-        "firstName": "Dade",
-        "lastName": "Murphy",
-        "locale": "en_US",
-        "timeZone": "America/Los_Angeles"
-      }
-    }
-  }
-}`)
+			Reply(200).BodyString(oktaSuccess("this-is-my-kebab-token"))
 
 		oktaClient.creds.MFA = mfa.Config{
 			Provider:   "OKTA",
@@ -481,79 +288,18 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		gock.New("https://canada").
 			Post("/api/v1/authn").
 			JSON(map[string]string{"username": creds.Username, "password": creds.Password}).
-			Reply(200).BodyString(`{
-  "stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb",
-  "expiresAt": "2015-11-03T10:15:57.000Z",
-  "status": "MFA_REQUIRED",
-  "relayState": "/myapp/some/deep/link/i/want/to/return/to",
-  "_embedded": {
-    "user": {
-      "id": "00ub0oNGTSWTBKOLGLNR",
-      "passwordChanged": "2015-09-08T20:14:45.000Z",
-      "profile": {
-        "login": "dade.murphy@example.com",
-        "firstName": "Dade",
-        "lastName": "Murphy",
-        "locale": "en_US",
-        "timeZone": "America/Los_Angeles"
-      }
-    },
-    "factors": [
-      {
+			Reply(200).BodyString(oktaMFARequired("007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb",
+			`[ {
         "id": "fuf8y2l4n5mfH0UWe0h7",
         "factorType": "token:software:totp",
         "provider": "OKTA",
-        "profile": {
-          "credentialId": "dade.murphy@example.com"
-        },
-        "_links": {
-          "verify": {
-            "href": "https://${yourOktaDomain}/api/v1/authn/factors/rsalhpMQVYKHZKXZJQEW/verify",
-            "hints": {
-              "allow": [
-                "POST"
-              ]
-            }
-          }
-        }
-      }
-    ]
-  },
-  "_links": {
-    "cancel": {
-      "href": "https://${yourOktaDomain}/api/v1/authn/cancel",
-      "hints": {
-        "allow": [
-          "POST"
-        ]
-      }
-    }
-  }
-}`)
-
+        "profile": { "credentialId": "dade.murphy@example.com" }
+				} ]`))
 		// set the response code and expect it to get to Okta.
 		gock.New("https://canada").
 			Post("api/v1/authn/factors/fuf8y2l4n5mfH0UWe0h7/verify").
 			JSON(map[string]string{"stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb", "passCode": mfaInputs.Code}).
-			Reply(200).BodyString(`{
-  "expiresAt": "2015-11-03T10:15:57.000Z",
-  "status": "SUCCESS",
-  "relayState": "/myapp/some/deep/link/i/want/to/return/to",
-  "sessionToken": "this-is-my-kebab-token",
-  "_embedded": {
-    "user": {
-      "id": "00ub0oNGTSWTBKOLGLNR",
-      "passwordChanged": "2015-09-08T20:14:45.000Z",
-      "profile": {
-        "login": "dade.murphy@example.com",
-        "firstName": "Dade",
-        "lastName": "Murphy",
-        "locale": "en_US",
-        "timeZone": "America/Los_Angeles"
-      }
-    }
-  }
-}`)
+			Reply(200).BodyString(oktaSuccess("this-is-my-kebab-token"))
 
 		oktaClient.creds.MFA = mfa.Config{
 			Provider:   "OKTA",
@@ -568,73 +314,20 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		gock.New("https://canada").
 			Post("/api/v1/authn").
 			JSON(map[string]string{"username": creds.Username, "password": creds.Password}).
-			Reply(200).BodyString(`{
-  "stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb",
-  "expiresAt": "2015-11-03T10:15:57.000Z",
-  "status": "MFA_REQUIRED",
-  "relayState": "/myapp/some/deep/link/i/want/to/return/to",
-  "_embedded": {
-    "user": {
-      "id": "00ub0oNGTSWTBKOLGLNR",
-      "passwordChanged": "2015-09-08T20:14:45.000Z",
-      "profile": {
-        "login": "dade.murphy@example.com",
-        "firstName": "Dade",
-        "lastName": "Murphy",
-        "locale": "en_US",
-        "timeZone": "America/Los_Angeles"
-      }
-    },
-    "factors": [
-      {
+			Reply(200).BodyString(oktaMFARequired("007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb",
+			`[ {
         "id": "fuf8y2l4n5mfH0UWe0h7",
         "factorType": "token:software:totp",
         "provider": "OKTA",
-        "profile": {
-          "credentialId": "dade.murphy@example.com"
-        },
-        "_links": {
-          "verify": {
-            "href": "https://${yourOktaDomain}/api/v1/authn/factors/rsalhpMQVYKHZKXZJQEW/verify",
-            "hints": {
-              "allow": [
-                "POST"
-              ]
-            }
-          }
-        }
-      }
-    ]
-  },
-  "_links": {
-    "cancel": {
-      "href": "https://${yourOktaDomain}/api/v1/authn/cancel",
-      "hints": {
-        "allow": [
-          "POST"
-        ]
-      }
-    }
-  }
-}`)
-
+        "profile": { "credentialId": "dade.murphy@example.com" }
+			}]`))
 		// set the response code and expect it to get to Okta.
 		//		mfaInputs.Code = "invalid-pass-code"
 		//		oktaClient.selector = mfaInputs
 		gock.New("https://canada").
 			Post("api/v1/authn/factors/fuf8y2l4n5mfH0UWe0h7/verify").
 			JSON(map[string]string{"stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb", "passCode": "12345"}).
-			Reply(403).BodyString(`{
-  "errorCode": "E0000068",
-  "errorSummary": "Invalid Passcode/Answer",
-  "errorLink": "E0000068",
-  "errorId": "oaei_IfXcpnTHit_YEKGInpFw",
-  "errorCauses": [
-    {
-      "errorSummary": "Your passcode doesn't match our records. Please try again."
-    }
-  ]
-}`)
+			Reply(403).BodyString(oktaError("E0000068"))
 
 		oktaClient.creds.MFA = mfa.Config{
 			Provider:   "OKTA",
@@ -652,53 +345,7 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 		gock.New("https://canada").
 			Post("/api/v1/authn").
 			JSON(map[string]string{"username": creds.Username, "password": creds.Password}).
-			Reply(200).BodyString(`{
-  "stateToken": "007ucIX7PATyn94hsHfOLVaXAmOBkKHWnOOLG43bsb",
-  "expiresAt": "2015-11-03T10:15:57.000Z",
-  "status": "PASSWORD_EXPIRED",
-  "relayState": "/myapp/some/deep/link/i/want/to/return/to",
-  "_embedded": {
-    "user": {
-      "id": "00ub0oNGTSWTBKOLGLNR",
-      "passwordChanged": "2015-09-08T20:14:45.000Z",
-      "profile": {
-        "login": "dade.murphy@example.com",
-        "firstName": "Dade",
-        "lastName": "Murphy",
-        "locale": "en_US",
-        "timeZone": "America/Los_Angeles"
-      }
-    },
-    "policy": {
-      "complexity": {
-        "minLength": 8,
-        "minLowerCase": 1,
-        "minUpperCase": 1,
-        "minNumber": 1,
-        "minSymbol": 0
-      }
-    }
-  },
-  "_links": {
-    "next": {
-      "name": "changePassword",
-      "href": "https://${yourOktaDomain}/api/v1/authn/credentials/change_password",
-      "hints": {
-        "allow": [
-          "POST"
-        ]
-      }
-    },
-    "cancel": {
-      "href": "https://${yourOktaDomain}/api/v1/authn/cancel",
-      "hints": {
-        "allow": [
-          "POST"
-        ]
-      }
-    }
-  }
-}`)
+			Reply(200).BodyString(oktaPasswordExpired("irrelevant-token"))
 		// this would only test the unlikely case where the user doesn't have MFA setup.
 		// https://developer.okta.com/docs/reference/api/authn/#primary-authentication-with-public-application
 		err = oktaClient.AuthenticateUser()
