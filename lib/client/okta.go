@@ -324,7 +324,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 	// MFA verification happens in the MFA_REQUIRED and MFA_CHALLENGE states only. For the first interation of the
 	// loop the status will always be MFA_CHALLENGE
 	for tmpUserAuthn.Status == "MFA_CHALLENGE" || tmpUserAuthn.Status == "MFA_REQUIRED" {
-		log.Debug("calling verify for config: ", mfaDevice)
+		log.Debug("calling verify for config: ", mfaDevice, " Status: ", tmpUserAuthn.Status)
 
 		action, payload, err = mfaDevice.Device.Verify(tmpUserAuthn)
 		if err != nil {

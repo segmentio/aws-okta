@@ -180,11 +180,11 @@ func TestOktaClientNoSessionCache(t *testing.T) {
 	)
 
 	// enable debug logs
-	log.SetLevel(log.DebugLevel)
+	// log.SetLevel(log.DebugLevel)
 	defer gock.Off()
 
 	// uncomment this to get gock to dump all requests
-	gock.Observe(gock.DumpRequest)
+	// gock.Observe(gock.DumpRequest)
 
 	//
 	// start setup
