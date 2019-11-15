@@ -27,12 +27,12 @@ func (d *SMSDevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error)
 	var code string
 	var err error
 
-	if authResp.Status == "MFA_REQUIRED" {
+	if authResp.Status == "MFA_CHALLENGE" {
 		code, err = d.userInput.CodeSupplier(Config{FactorType: "sms"})
 		if err != nil {
 			return "", []byte(""), err
 		}
-	} else if authResp.Status == "MFA_CHALLENGE" {
+	} else if authResp.Status == "MFA_REQUIRED" {
 		code = ""
 	} else {
 		return "", []byte{}, fmt.Errorf("unknown status: %s", authResp.Status)

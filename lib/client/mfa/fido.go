@@ -40,7 +40,7 @@ func (d *FIDODevice) Supported(factor Config) error {
 func (d *FIDODevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error) {
 	var code string
 
-	if authResp.Status == "MFA_REQUIRED" {
+	if authResp.Status == "MFA_CHALLENGE" {
 		f := authResp.Embedded.Factor
 		fidoClient, err := NewFidoClient(f.Embedded.Challenge.Nonce,
 			f.Profile.AppId,
@@ -60,7 +60,7 @@ func (d *FIDODevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error
 			return "", []byte{}, err
 		}
 		return "verify", payload, nil
-	} else if authResp.Status == "MFA_CHALLENGE" {
+	} else if authResp.Status == "MFA_REQUIRED" {
 		code = ""
 	} else {
 		return "", []byte{}, fmt.Errorf("unknown status: %s", authResp.Status)
