@@ -11,6 +11,7 @@ import (
 
 // DUODevice is implementation of MFADevice for SMS
 type DUODevice struct {
+	challengeCompleted bool
 }
 
 // Supported will check if the mfa config can be used by this device
@@ -27,7 +28,7 @@ func (d *DUODevice) Supported(factor Config) error {
 func (d *DUODevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error) {
 	var err error
 
-	if authResp.Status == "MFA_REQUIRED" {
+	if authResp.Status == "MFA_CHALLENGE" && d.challengeCompleted == false {
 		f := authResp.Embedded.Factor
 		duoClient := &lib.DuoClient{
 			Host:      f.Embedded.Verification.Host,
@@ -48,8 +49,11 @@ func (d *DUODevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error)
 		if err != nil {
 			return "", []byte{}, err
 		}
+		d.challengeCompleted = true
 		// no action is required other than returning a payload that contains the stateToken
-		//	} else if authResp.Status == "MFA_CHALLENGE" {
+	} else if authResp.Status == "MFA_REQUIRED" || d.challengeCompleted == true {
+		//
+		log.Debug("MFA_REQUIRED")
 	} else {
 		return "", []byte{}, fmt.Errorf("unknown status: %s", authResp.Status)
 	}
