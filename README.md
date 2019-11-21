@@ -50,7 +50,7 @@ Usage:
   aws-okta exec <profile> -- <command>
 
 Flags:
-  -a, --assume-role-ttl duration   Expiration time for assumed role (default 15m0s)
+  -a, --assume-role-ttl duration   Expiration time for assumed role (default 1h0m0s)
   -h, --help                       help for exec
   -t, --session-ttl duration       Expiration time for okta role session (default 1h0m0s)
 
