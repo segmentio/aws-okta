@@ -122,7 +122,7 @@ func NewOktaClient(
 	}
 
 	// gets implementations for MFA devices that are supported by defualt.
-	devices := mfa.DefaultDevices(selector)
+	devices := mfa.DefaultDevices(selector, creds.MFA)
 
 	oktaClient := OktaClient{
 		creds:      creds,
@@ -328,7 +328,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 
 		action, payload, err = mfaDevice.Device.Verify(tmpUserAuthn)
 		if err != nil {
-			return
+			return err
 		}
 
 		// helper provided by mfa package to create the path to make a request from okta.

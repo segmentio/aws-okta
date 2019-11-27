@@ -12,11 +12,14 @@ import (
 // DUODevice is implementation of MFADevice for SMS
 type DUODevice struct {
 	challengeCompleted bool
+	duoMFADevice       string
 }
 
 // Supported will check if the mfa config can be used by this device
 func (d *DUODevice) Supported(factor Config) error {
-	if factor.FactorType == "u2f" && factor.Provider == "DUO" {
+	// this is the Okta factor type and is always "web" when provider is "DUO"
+	// more details: https://developer.okta.com/docs/reference/api/factors/#factor-type
+	if factor.FactorType == "web" && factor.Provider == "DUO" {
 		return nil
 	}
 	return fmt.Errorf("DUOProvider doesn't support %s %w", factor.FactorType, types.ErrNotSupported)
@@ -28,14 +31,14 @@ func (d *DUODevice) Supported(factor Config) error {
 func (d *DUODevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error) {
 	var err error
 
-	if authResp.Status == "MFA_CHALLENGE" && d.challengeCompleted == false {
+	if authResp.Status == "MFA_CHALLENGE" && !d.challengeCompleted {
 		f := authResp.Embedded.Factor
 		duoClient := &lib.DuoClient{
 			Host:      f.Embedded.Verification.Host,
 			Signature: f.Embedded.Verification.Signature,
 			Callback:  f.Embedded.Verification.Links.Complete.Href,
 			//This could be wrong.
-			Device:     f.FactorType,
+			Device:     d.duoMFADevice,
 			StateToken: authResp.StateToken,
 		}
 
@@ -51,7 +54,7 @@ func (d *DUODevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error)
 		}
 		d.challengeCompleted = true
 		// no action is required other than returning a payload that contains the stateToken
-	} else if authResp.Status == "MFA_REQUIRED" || d.challengeCompleted == true {
+	} else if authResp.Status == "MFA_REQUIRED" || d.challengeCompleted {
 		//
 		log.Debug("MFA_REQUIRED")
 	} else {
