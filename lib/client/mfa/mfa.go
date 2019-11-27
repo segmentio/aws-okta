@@ -41,13 +41,13 @@ type basicPayload struct {
 }
 
 // DefaultDevices returns all the default MFA devices that are supported.
-func DefaultDevices(input Input) []Device {
+func DefaultDevices(input Input, mfaConfig Config) []Device {
 	var devices []Device
 
 	devices = append(devices, &SMSDevice{userInput: input})
 	devices = append(devices, &TOTPDevice{userInput: input})
 	devices = append(devices, &FIDODevice{})
-	devices = append(devices, &DUODevice{})
+	devices = append(devices, &DUODevice{duoMFADevice: mfaConfig.DuoDevice})
 	return devices
 }
 
