@@ -7,7 +7,6 @@ import (
 	"github.com/manifoldco/promptui"
 	"strings"
 
-	"github.com/segmentio/aws-okta/internal/sessioncache"
 	"github.com/segmentio/aws-okta/lib"
 	"github.com/segmentio/aws-okta/lib/client"
 	"github.com/segmentio/aws-okta/lib/client/mfa"
@@ -137,7 +136,7 @@ func createAWSSAMLProvider(backend string,
 	if err != nil {
 		return nil, err
 	}
-	sessions := &sessioncache.SingleKrItemStore{Keyring: kr}
+	sessions := &session.SingleKrItemStore{Keyring: kr}
 
 	roleChooser := SAMLRoleChooser{Label: "Choose a role to assume"}
 	p, err := provider.NewAWSSAMLProvider(sessions, profile, opts, oktaClient, &roleChooser)
