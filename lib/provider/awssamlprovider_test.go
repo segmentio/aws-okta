@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/99designs/keyring"
-	"github.com/segmentio/aws-okta/internal/sessioncache"
+	"github.com/segmentio/aws-okta/lib/session"
 	"github.com/stretchr/testify/assert"
 	gock "gopkg.in/h2non/gock.v1"
 	"testing"
@@ -113,7 +113,7 @@ func TestAWSSAMLProvider(t *testing.T) {
 		client:  http.Client{},
 		baseURL: "https://canada",
 	}
-	sessions := &sessioncache.SingleKrItemStore{kr}
+	sessions := &session.SingleKrItemStore{kr}
 
 	roleChooser = testSAMLRoleSelection{}
 	awsSamlProvider, err = NewAWSSAMLProvider(sessions, profile, providerOptions, oktaClient, &roleChooser)
@@ -326,7 +326,7 @@ func TestAWSSAMLProviderCreateErrors(t *testing.T) {
 		FileDir:                  tempDir,
 		FilePasswordFunc:         func(string) (string, error) { return "funkypass", nil }})
 	assert.NoError(t, err, "No errors when opening a keyring")
-	sessions := &sessioncache.SingleKrItemStore{kr}
+	sessions := &session.SingleKrItemStore{kr}
 	//
 	// end setup
 	//
