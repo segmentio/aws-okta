@@ -10,12 +10,11 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/segmentio/aws-okta/internal/sessioncache"
 	"github.com/segmentio/aws-okta/lib"
+	"github.com/segmentio/aws-okta/lib/session"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	aws_session "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	log "github.com/sirupsen/logrus"
@@ -34,8 +33,8 @@ const (
 )
 
 type SessionCacheInterface interface {
-	Get(sessioncache.Key) (*sessioncache.Session, error)
-	Put(sessioncache.Key, *sessioncache.Session) error
+	Get(session.Key) (*session.Session, error)
+	Put(session.Key, *session.Session) error
 }
 
 type OktaClient interface {
@@ -160,7 +159,7 @@ func (p *AWSSAMLProvider) Retrieve() (credentials.Value, error) {
 	if !ok {
 		return credentials.Value{}, fmt.Errorf("missing profile named %s", p.profile)
 	}
-	key := sessioncache.KeyWithProfileARN{
+	key := session.KeyWithProfileARN{
 		ProfileName: source,
 		ProfileConf: profileConf,
 		Duration:    p.SessionDuration,
@@ -173,7 +172,7 @@ func (p *AWSSAMLProvider) Retrieve() (credentials.Value, error) {
 		if err != nil {
 			return credentials.Value{}, xerrors.Errorf("getting creds via SAML: %w", err)
 		}
-		newSession := sessioncache.Session{
+		newSession := session.Session{
 			Name:        p.roleSessionName(),
 			Credentials: creds,
 		}
@@ -405,15 +404,15 @@ func (p *AWSSAMLProvider) authenticateProfileWithRegion(profileARN string, durat
 		return sts.Credentials{}, fmt.Errorf("invalid index (%d) return by supplied `ChooseRole`. There are %d roles", roleIndex, len(roles))
 	}
 
-	var samlSess *session.Session
+	var samlSess *aws_session.Session
 	if region != "" {
 		log.Debugf("Using region: %s\n", region)
 		conf := &aws.Config{
 			Region: aws.String(region),
 		}
-		samlSess = session.Must(session.NewSession(conf))
+		samlSess = aws_session.Must(aws_session.NewSession(conf))
 	} else {
-		samlSess = session.Must(session.NewSession())
+		samlSess = aws_session.Must(aws_session.NewSession())
 	}
 	svc := sts.New(samlSess)
 
