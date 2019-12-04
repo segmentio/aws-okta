@@ -79,7 +79,11 @@ func prerunE(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	log.SetLevel(getLogLevel(logLevel, debug))
+	level, err := getLogLevel(logLevel, debug)
+	if err != nil {
+		return xerrors.Errorf("couldn't parse log-level: %s: %w", logLevel, err)
+	}
+	log.SetLevel(level)
 
 	if !cmd.Flags().Lookup("session-cache-single-item").Changed {
 		val, ok := os.LookupEnv(envSessionCacheSingleItem)
@@ -163,14 +167,10 @@ func updateMfaConfig(cmd *cobra.Command, profiles lib.Profiles, profile string, 
 	}
 }
 
-func getLogLevel(logLevel string, debug bool) log.Level {
+func getLogLevel(logLevel string, debug bool) (log.Level, error) {
 	if debug {
-		return log.DebugLevel
+		return log.DebugLevel, nil
 	}
 
-	level, err := log.ParseLevel(logLevel)
-	if err != nil {
-		return log.DebugLevel
-	}
-	return level
+	return log.ParseLevel(logLevel)
 }
