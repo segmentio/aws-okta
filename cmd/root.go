@@ -1,11 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
-
-	"errors"
 
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
@@ -40,6 +39,7 @@ var (
 	analyticsClient            analytics.Client
 	username                   string
 	flagSessionCacheSingleItem bool
+	logLevel                   string
 )
 
 const envSessionCacheSingleItem = "AWS_OKTA_SESSION_CACHE_SINGLE_ITEM"
@@ -79,9 +79,7 @@ func prerunE(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if debug {
-		log.SetLevel(log.DebugLevel)
-	}
+	log.SetLevel(getLogLevel(logLevel, debug))
 
 	if !cmd.Flags().Lookup("session-cache-single-item").Changed {
 		val, ok := os.LookupEnv(envSessionCacheSingleItem)
@@ -125,7 +123,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&mfaConfig.FactorType, "mfa-factor-type", "", "", "MFA Factor Type to use (eg push, token:software:totp)")
 	RootCmd.PersistentFlags().StringVarP(&mfaConfig.DuoDevice, "mfa-duo-device", "", "phone1", "Device to use phone1, phone2, u2f or token")
 	RootCmd.PersistentFlags().StringVarP(&backend, "backend", "b", "", fmt.Sprintf("Secret backend to use %s", backendsAvailable))
-	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
+	RootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "", "Configure the desired log level")
+	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging. Overrides log-level.")
 	RootCmd.PersistentFlags().BoolVarP(&flagSessionCacheSingleItem, "session-cache-single-item", "", false, fmt.Sprintf("(alpha) Enable single-item session cache; aka %s", envSessionCacheSingleItem))
 }
 
@@ -161,5 +160,30 @@ func updateMfaConfig(cmd *cobra.Command, profiles lib.Profiles, profile string, 
 				config.FactorType = mfaFactorType
 			}
 		}
+	}
+}
+
+func getLogLevel(logLevel string, debug bool) log.Level {
+	if debug {
+		return log.DebugLevel
+	}
+
+	switch logLevel {
+	case "trace":
+		return log.TraceLevel
+	case "debug":
+		return log.DebugLevel
+	case "info":
+		return log.InfoLevel
+	case "warn":
+		return log.WarnLevel
+	case "error":
+		return log.ErrorLevel
+	case "fatal":
+		return log.FatalLevel
+	case "panic":
+		return log.PanicLevel
+	default:
+		return log.InfoLevel
 	}
 }
