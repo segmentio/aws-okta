@@ -168,22 +168,9 @@ func getLogLevel(logLevel string, debug bool) log.Level {
 		return log.DebugLevel
 	}
 
-	switch logLevel {
-	case "trace":
-		return log.TraceLevel
-	case "debug":
+	level, err := log.ParseLevel(logLevel)
+	if err != nil {
 		return log.DebugLevel
-	case "info":
-		return log.InfoLevel
-	case "warn":
-		return log.WarnLevel
-	case "error":
-		return log.ErrorLevel
-	case "fatal":
-		return log.FatalLevel
-	case "panic":
-		return log.PanicLevel
-	default:
-		return log.InfoLevel
 	}
+	return level
 }
