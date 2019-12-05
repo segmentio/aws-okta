@@ -56,10 +56,16 @@ func writeToCredentialsRun(cmd *cobra.Command, args []string) error {
 
 	updateMfaConfig(cmd, profiles, profile, &mfaConfig)
 
-	// check for an assume_role_ttl in the profile if we don't have a more explicit one
+	// check profile for both session durations if not explicitly set
 	if !cmd.Flags().Lookup("assume-role-ttl").Changed {
-		if err := updateDurationFromConfigProfile(profiles, profile, &assumeRoleTTL); err != nil {
-			fmt.Fprintln(os.Stderr, "warning: could not parse duration from profile config")
+		if err := updateDurationFromConfigProfile(profiles, profile, "assume_role_ttl", &assumeRoleTTL); err != nil {
+			fmt.Fprintln(os.Stderr, "warning: could not parse assume_role_ttl from profile config")
+		}
+	}
+
+	if !cmd.Flags().Lookup("session-ttl").Changed {
+		if err := updateDurationFromConfigProfile(profiles, profile, "session_ttl", &sessionTTL); err != nil {
+			fmt.Fprintln(os.Stderr, "warning: could not parse session_ttl from profile config")
 		}
 	}
 
