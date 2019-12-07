@@ -66,30 +66,37 @@ func sourceProfile(p string, from Profiles) string {
 	return p
 }
 
-func (p Profiles) GetValue(profile string, config_key string, recursive bool) (string, string, error) {
+// GetDirectValue looks for the given setting directly set in the specified
+// profile. Unlike GetValue, it does not descend into `search_profile` or
+// fallback to the `okta` profile.
+func (p Profiles) GetDirectValue(profile string, config_key string) (string, string, error) {
 	config_value, ok := p[profile][config_key]
 	if ok {
 		return config_value, profile, nil
 	}
 
-	if !recursive {
-		return "", "", fmt.Errorf("Could not find %s in %s", config_key, profile)
+	return "", "", fmt.Errorf("Could not find %s in profile %s", config_key, profile)
+}
+
+// GetValue looks for the given setting in the profile specified, its
+// `source_profile` (if set), and the `okta` profile, in that order. If found,
+// the corresponding value is returned. Otherwise, an error is returned.
+func (p Profiles) GetValue(profile string, config_key string) (string, string, error) {
+	if config_value, profile, err := p.GetDirectValue(profile, config_key); err == nil {
+		return config_value, profile, nil
 	}
 
-	// Lookup from the `source_profile`, if it exists
+	// If a `source_profile` is set, check it too
+	var ok bool
 	profile, ok = p[profile]["source_profile"]
 	if ok {
-		config_value, ok := p[profile][config_key]
-		if ok {
+		if config_value, profile, err := p.GetDirectValue(profile, config_key); err == nil {
 			return config_value, profile, nil
 		}
-
 	}
 
-	// Fallback to `okta` if no profile supplies the value
-	profile = "okta"
-	config_value, ok = p[profile][config_key]
-	if ok {
+	// Fallback to the `okta` profile
+	if config_value, profile, err := p.GetDirectValue("okta", config_key); err == nil {
 		return config_value, profile, nil
 	}
 

@@ -144,7 +144,7 @@ func updateMfaConfig(cmd *cobra.Command, profiles lib.Profiles, profile string, 
 		if ok {
 			config.Provider = mfaProvider
 		} else {
-			mfaProvider, _, err := profiles.GetValue(profile, "mfa_provider", true)
+			mfaProvider, _, err := profiles.GetValue(profile, "mfa_provider")
 			if err == nil {
 				config.Provider = mfaProvider
 			}
@@ -156,7 +156,7 @@ func updateMfaConfig(cmd *cobra.Command, profiles lib.Profiles, profile string, 
 		if ok {
 			config.FactorType = mfaFactorType
 		} else {
-			mfaFactorType, _, err := profiles.GetValue(profile, "mfa_factor_type", true)
+			mfaFactorType, _, err := profiles.GetValue(profile, "mfa_factor_type")
 			if err == nil {
 				config.FactorType = mfaFactorType
 			}

@@ -5,17 +5,17 @@ import "testing"
 func TestGetConfigValue(t *testing.T) {
 	config_profiles := make(Profiles)
 
-	t.Run("empty profile recursive search", func(t *testing.T) {
-		_, _, found_error := config_profiles.GetValue("profile_a", "config_key", true)
+	t.Run("empty profile normal value search", func(t *testing.T) {
+		_, _, found_error := config_profiles.GetValue("profile_a", "config_key")
 		if found_error == nil {
-			t.Error("Recursive search of an empty profile set should return an error")
+			t.Error("Normal value search of an empty profile set should return an error")
 		}
 	})
 
-	t.Run("empty profile non-recursive search", func(t *testing.T) {
-		_, _, found_error := config_profiles.GetValue("profile_a", "config_key", false)
+	t.Run("empty profile direct value search", func(t *testing.T) {
+		_, _, found_error := config_profiles.GetDirectValue("profile_a", "config_key")
 		if found_error == nil {
-			t.Error("Non-recursive search of an empty profile set should return an error")
+			t.Error("Direct value search of an empty profile set should return an error")
 		}
 	})
 
@@ -41,24 +41,24 @@ func TestGetConfigValue(t *testing.T) {
 		"key_f":          "f-c",
 	}
 
-	t.Run("missing key recursive search", func(t *testing.T) {
-		_, _, found_error := config_profiles.GetValue("profile_a", "config_key", true)
+	t.Run("missing key normal value search", func(t *testing.T) {
+		_, _, found_error := config_profiles.GetValue("profile_a", "config_key")
 		if found_error == nil {
-			t.Error("Recursive search for a missing key should return an error")
+			t.Error("Normal value search for a missing key should return an error")
 		}
 	})
 
-	t.Run("missing key non-recursive search", func(t *testing.T) {
-		_, _, found_error := config_profiles.GetValue("profile_a", "config_key", false)
+	t.Run("missing key direct value search", func(t *testing.T) {
+		_, _, found_error := config_profiles.GetDirectValue("profile_a", "config_key")
 		if found_error == nil {
-			t.Error("Non-recursive search for a missing key should return an error")
+			t.Error("Direct value search for a missing key should return an error")
 		}
 	})
 
-	t.Run("fallback to okta on recursive search", func(t *testing.T) {
-		found_value, found_profile, found_error := config_profiles.GetValue("profile_a", "key_a", true)
+	t.Run("fallback to okta on normal value search", func(t *testing.T) {
+		found_value, found_profile, found_error := config_profiles.GetValue("profile_a", "key_a")
 		if found_error != nil {
-			t.Error("Error when recursively searching for key_a")
+			t.Error("Error when performing normal value search for key_a")
 		}
 
 		if found_profile != "okta" {
@@ -70,10 +70,10 @@ func TestGetConfigValue(t *testing.T) {
 		}
 	})
 
-	t.Run("no fallback to okta on non-recursive search", func(t *testing.T) {
-		found_value, found_profile, found_error := config_profiles.GetValue("profile_a", "key_a", false)
+	t.Run("no fallback to okta on direct value search", func(t *testing.T) {
+		found_value, found_profile, found_error := config_profiles.GetDirectValue("profile_a", "key_a")
 		if found_error == nil {
-			t.Error("Non-recursive search for key missing from top-level should return an error")
+			t.Error("Direct value search for key missing from top-level should return an error")
 		}
 
 		if found_profile != "" {
@@ -85,8 +85,8 @@ func TestGetConfigValue(t *testing.T) {
 		}
 	})
 
-	t.Run("recursive search for item found in current profile", func(t *testing.T) {
-		found_value, found_profile, found_error := config_profiles.GetValue("profile_b", "key_d", true)
+	t.Run("normal value search for item found in current profile", func(t *testing.T) {
+		found_value, found_profile, found_error := config_profiles.GetValue("profile_b", "key_d")
 		if found_error != nil {
 			t.Error("Error when searching for key_d")
 		}
@@ -100,8 +100,8 @@ func TestGetConfigValue(t *testing.T) {
 		}
 	})
 
-	t.Run("non-recursive search for item found in current profile", func(t *testing.T) {
-		found_value, found_profile, found_error := config_profiles.GetValue("profile_b", "key_d", false)
+	t.Run("direct value search for item found in current profile", func(t *testing.T) {
+		found_value, found_profile, found_error := config_profiles.GetDirectValue("profile_b", "key_d")
 		if found_error != nil {
 			t.Error("Error when searching for key_d")
 		}
@@ -116,7 +116,7 @@ func TestGetConfigValue(t *testing.T) {
 	})
 
 	t.Run("traversing from child profile", func(t *testing.T) {
-		found_value, found_profile, found_error := config_profiles.GetValue("profile_b", "key_a", true)
+		found_value, found_profile, found_error := config_profiles.GetValue("profile_b", "key_a")
 		if found_error != nil {
 			t.Error("Error when searching for key_a")
 		}
@@ -131,7 +131,7 @@ func TestGetConfigValue(t *testing.T) {
 	})
 
 	t.Run("recursive traversing from child profile", func(t *testing.T) {
-		_, _, found_error := config_profiles.GetValue("profile_c", "key_c", true)
+		_, _, found_error := config_profiles.GetValue("profile_c", "key_c")
 		if found_error == nil {
 			t.Error("Recursive searching should not work")
 		}

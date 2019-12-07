@@ -70,7 +70,7 @@ func updateDurationFromConfigProfile(profiles lib.Profiles, profile string, val 
 	// When role chaining, AWS sets a hard 1h limit on the assume role TTL.
 	// So we require this value to be set on the profile directly.
 	// See: https://github.com/awsdocs/iam-user-guide/blob/8d78057/doc_source/id_roles_terms-and-concepts.md
-	fromProfile, _, err := profiles.GetValue(profile, "assume_role_ttl", false)
+	fromProfile, _, err := profiles.GetDirectValue(profile, "assume_role_ttl")
 	if err != nil {
 		return nil
 	}
