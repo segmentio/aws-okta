@@ -9,6 +9,7 @@ import (
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
 	"github.com/segmentio/aws-okta/lib"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -29,8 +30,16 @@ var credProcessCmd = &cobra.Command{
 	Use:       "cred-process <profile>",
 	Short:     "cred-process generates a credential_process ready output",
 	RunE:      credProcessRun,
+	PreRun:    credProcessPreRun,
 	Example:   "[profile foo]\ncredential_process = aws-okta cred-process profile",
 	ValidArgs: listProfileNames(mustListProfiles()),
+}
+
+func credProcessPreRun(cmd *cobra.Command, args []string) {
+	// https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html
+	// AWS Credential Program must generate only JSON output on STDOUT
+	// Send all informational logs to stderr
+	log.SetOutput(os.Stderr)
 }
 
 func init() {
