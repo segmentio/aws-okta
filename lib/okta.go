@@ -495,7 +495,7 @@ func (o *OktaClient) challengeMFA() (err error) {
 
 	payload, err = o.preChallenge(oktaFactorId, oktaFactorType)
 
-	err = o.Get("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify",
+	err = o.Get("POST", "api/v1/authn/factors/"+oktaFactorId+"/verify?rememberDevice=true",
 		payload, &o.UserAuth, "json",
 	)
 	if err != nil {
