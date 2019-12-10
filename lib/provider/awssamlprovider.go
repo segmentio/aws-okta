@@ -369,11 +369,22 @@ func GetRoleARN(c credentials.Value) (string, error) {
 	return arn, nil
 }
 
+func selectRole(roleARN string, roles []AssumableRole) (int, error) {
+	for roleIdx, role := range roles {
+		if role.Role == roleARN {
+			return roleIdx, nil
+		}
+	}
+	// if we got to this point we didn't find a matching role, return an error.
+	return -1, fmt.Errorf("invalid role arn passed in by configuration: %s", roleARN)
+}
+
 // Authenticates the user with AWS, if the auth process is successful a valid
 // set of STS credentials are returned otherwise and error will be returned
 // containing a message to explain the error.
 func (p *AWSSAMLProvider) authenticateProfileWithRegion(profileARN string, duration time.Duration, oktaAWSSAMLURL string, region string) (sts.Credentials, error) {
 	var assertion SAMLAssertion
+	var roleIndex int
 	queryParams := url.Values{}
 
 	// Attempt to reuse session cookie
@@ -395,15 +406,21 @@ func (p *AWSSAMLProvider) authenticateProfileWithRegion(profileARN string, durat
 		return sts.Credentials{}, err
 	}
 
-	roleIndex, err := p.selector.ChooseRole(roles)
-	if err != nil {
-		return sts.Credentials{}, err
-	}
+	if profileARN != "" {
+		roleIndex, err = selectRole(profileARN, roles)
+		if err != nil {
+			return sts.Credentials{}, fmt.Errorf("invalid role arn passed in by configuration: %s", profileARN)
+		}
+	} else {
+		roleIndex, err := p.selector.ChooseRole(roles)
+		if err != nil {
+			return sts.Credentials{}, err
+		}
 
-	if roleIndex < 0 || roleIndex >= len(roles) {
-		return sts.Credentials{}, fmt.Errorf("invalid index (%d) return by supplied `ChooseRole`. There are %d roles", roleIndex, len(roles))
+		if roleIndex < 0 || roleIndex >= len(roles) {
+			return sts.Credentials{}, fmt.Errorf("invalid index (%d) return by supplied `ChooseRole`. There are %d roles", roleIndex, len(roles))
+		}
 	}
-
 	var samlSess *aws_session.Session
 	if region != "" {
 		log.Debugf("Using region: %s\n", region)
