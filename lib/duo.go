@@ -180,12 +180,12 @@ func (d *DuoClient) ChallengeU2f(verificationHost string) (err error) {
 						log.Printf("Authentication succeeded, continuing")
 					} else if _, ok := err.(*u2fhost.TestOfUserPresenceRequiredError); ok {
 						if !prompted {
-							fmt.Println("Touch the flashing U2F device to authenticate...")
-							fmt.Println()
+							fmt.Fprintln(os.Stderr, "Touch the flashing U2F device to authenticate...")
+							fmt.Fprintln(os.Stderr)
 						}
 						prompted = true
 					} else {
-						fmt.Printf("Got status response %#v\n", err)
+						log.Printf("Got status response %#v\n", err)
 						break
 					}
 				}
@@ -381,7 +381,7 @@ func (d *DuoClient) DoPrompt(sid string) (txid string, err error) {
 	// I'm not certain that belongs here
 	if d.Device == "token" {
 		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("Press button on your hardware token: ")
+		fmt.Fprintln(os.Stderr, "Press button on your hardware token: ")
 		text, err := reader.ReadString('\n')
 		if err != nil {
 			return "", fmt.Errorf("Failed to read the stdin for hardware token auth: %s", err)
