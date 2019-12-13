@@ -15,22 +15,6 @@ test:
 ## More information about cover reports:
 ## https://blog.golang.org/cover
 
-staticcheck:
-	go vet
-	staticcheck cmd/*.go
-	staticcheck lib/client/*.go
-	staticcheck lib/client/mfa/*.go
-	staticcheck lib/provider/*.go
-
-sec-lib:
-	gosec lib/provider/
-	gosec lib/client/
-	gosec lib/client/mfa/
-	gosec lib/client/types/
-
-sec-cli:
-	gosec cmd/
-
 all: linux darwin
 linux: dist/aws-okta-$(VERSION)-linux-amd64
 darwin: dist/aws-okta-$(VERSION)-darwin-amd64
