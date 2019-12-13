@@ -110,7 +110,7 @@ func GetAssumableRolesFromSAML(resp *Response) (AssumableRoles, error) {
 					roleList = append(roleList, AssumableRole{Role: tokens[0],
 						Principal: tokens[1]})
 				} else {
-					return AssumableRoles{}, fmt.Errorf("Unable to get roles from %s", v.Value)
+					return AssumableRoles{}, fmt.Errorf("unable to get roles from %s", v.Value)
 				}
 
 			}
@@ -123,7 +123,7 @@ func GetRole(roleList AssumableRoles, profileARN string) (AssumableRole, error) 
 
 	// if the user doesn't have any roles they can assume return an error.
 	if len(roleList) == 0 {
-		return AssumableRole{}, fmt.Errorf("There are no roles that can be assumed")
+		return AssumableRole{}, fmt.Errorf("there are no roles that can be assumed")
 	}
 
 	// A role arn was provided as part of the profile, we will assume that role.
@@ -164,14 +164,14 @@ func GetRole(roleList AssumableRoles, profileARN string) (AssumableRole, error) 
 		return AssumableRole{}, err
 	}
 	if i == "" {
-		return AssumableRole{}, errors.New("Invalid selection - Please use an option that is listed")
+		return AssumableRole{}, errors.New("invalid selection - Please use an option that is listed")
 	}
 	factorIdx, err := strconv.Atoi(i)
 	if err != nil {
 		return AssumableRole{}, err
 	}
 	if factorIdx > (len(roleList) - 1) {
-		return AssumableRole{}, errors.New("Invalid selection - Please use an option that is listed")
+		return AssumableRole{}, errors.New("invalid selection - Please use an option that is listed")
 	}
 	return roleList[factorIdx], nil
 }

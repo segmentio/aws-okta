@@ -3,8 +3,8 @@ package client
 import "errors"
 
 var (
-	InvalidCredentialsError = errors.New("Okta credentials are not valid")
-	InvalidSessionError     = errors.New("Okta session is not valid")
-	UnexpectedResponseError = errors.New("We got an unexpected response")
-	NotImplementedError     = errors.New("Not implemented")
+	ErrInvalidCredentials = errors.New("okta credentials are not valid")
+	ErrInvalidSession     = errors.New("okta session is not valid")
+	ErrUnexpectedResponse = errors.New("we got an unexpected response")
+	ErrNotImplemented     = errors.New("not implemented")
 )
