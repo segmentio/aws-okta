@@ -111,7 +111,7 @@ func createOktaClient(kr *keyring.Keyring, mfaConfig client.MFAConfig) (*client.
 	sessionCache := session.New(*kr)
 	oktaClient, err := client.NewOktaClient(oktaCreds, sessionCache, &mfaChooser, nil)
 	if err != nil {
-		if errors.Is(err, client.InvalidCredentialsError) {
+		if errors.Is(err, client.ErrInvalidCredentials) {
 			err = errors.New("credentials aren't complete. To remedy this, re-add your credentials with `aws-okta add`")
 		}
 		return nil, err

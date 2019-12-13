@@ -384,7 +384,7 @@ func (p *AWSSAMLProvider) authenticateProfileWithRegion(profileARN string, durat
 	}
 
 	if roleIndex < 0 || roleIndex >= len(roles) {
-		return sts.Credentials{}, fmt.Errorf("Invalid index (%d) return by supplied `ChooseRole`. There are %d roles", roleIndex, len(roles))
+		return sts.Credentials{}, fmt.Errorf("invalid index (%d) return by supplied `ChooseRole`. There are %d roles", roleIndex, len(roles))
 	}
 
 	var samlSess *session.Session
@@ -441,7 +441,7 @@ func (p *AWSSAMLProvider) getAWSSAML(path string, queryParams url.Values, data [
 			}
 			if err := ParseSAML(rawData, recv.(*SAMLAssertion)); err != nil {
 				log.Debug("SAML parsing failed: ", err)
-				return fmt.Errorf("Okta user does not have the AWS app added to their account.  Please contact your Okta admin to make sure things are configured properly.")
+				return fmt.Errorf("okta user does not have the AWS app added to their account, contact your Okta admin to make sure things are configured properly")
 			}
 		}
 	}

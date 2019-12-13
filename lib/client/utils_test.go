@@ -106,7 +106,7 @@ func TestOktaClientUtils(t *testing.T) {
 
 		for factorType, authnFactor := range mfaIdTests {
 			err := isFactorSupported(authnFactor)
-			assert.Equal(t, true, errors.Is(err, NotImplementedError), "confirm we get the correct error for "+factorType)
+			assert.Equal(t, true, errors.Is(err, ErrNotImplemented), "confirm we get the correct error for "+factorType)
 		}
 	})
 }

@@ -39,6 +39,6 @@ func (c *OktaCredential) Validate() error {
 	if errorReasonString == "" {
 		return nil
 	} else {
-		return fmt.Errorf("%v %w", errorReasonString, InvalidCredentialsError)
+		return fmt.Errorf("%v %w", errorReasonString, ErrInvalidCredentials)
 	}
 }
