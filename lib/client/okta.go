@@ -414,7 +414,7 @@ func (o *OktaClient) selectMFADevice() (mfa.Config, error) {
 			}
 		}
 		return mfa.Config{}, fmt.Errorf(
-			"Unable to use configured MFA Provider: %s, FactorType: %s %w",
+			"unable to use configured MFA Provider: %s, FactorType: %s %w",
 			o.creds.MFA.Provider,
 			o.creds.MFA.FactorType,
 			types.ErrInvalidCredentials)
