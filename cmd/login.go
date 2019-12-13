@@ -67,7 +67,7 @@ func loginRun(cmd *cobra.Command, args []string) error {
 
 	prof, ok := profiles[profile]
 	if !ok {
-		return fmt.Errorf("Profile '%s' not found in your aws config", profile)
+		return fmt.Errorf("profile '%s' not found in your aws config", profile)
 	}
 
 	updateMfaConfig(cmd, profiles, profile, &mfaConfig)
@@ -166,7 +166,7 @@ func federatedLogin(p *provider.AWSSAMLProvider, profile string, profiles lib.Pr
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Call to getSigninToken failed with %v", resp.Status)
+		return fmt.Errorf("call to getSigninToken failed with %v", resp.Status)
 	}
 
 	var respParsed map[string]string

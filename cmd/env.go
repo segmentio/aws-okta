@@ -45,7 +45,7 @@ func envRun(cmd *cobra.Command, args []string) error {
 	}
 
 	if _, ok := profiles[profile]; !ok {
-		return fmt.Errorf("Profile '%s' not found in your aws config. Use list command to see configured profiles", profile)
+		return fmt.Errorf("profile '%s' not found in your aws config. Use list command to see configured profiles", profile)
 	}
 
 	updateMfaConfig(cmd, profiles, profile, &mfaConfig)
