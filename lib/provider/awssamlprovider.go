@@ -13,7 +13,6 @@ import (
 	"github.com/segmentio/aws-okta/internal/sessioncache"
 	"github.com/segmentio/aws-okta/lib"
 
-	"github.com/99designs/keyring"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -54,7 +53,6 @@ type AWSSAMLProvider struct {
 	credentials.Expiry
 	AWSSAMLProviderOptions
 	oktaClient             OktaClient
-	keyring                keyring.Keyring
 	profileARN             string
 	oktaAWSSAMLURL         string
 	oktaAccountName        string
