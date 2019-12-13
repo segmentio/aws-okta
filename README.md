@@ -4,13 +4,7 @@
 
 ## Installing
 
-If you have a functional go environment, you can install with:
-
-```bash
-$ go get github.com/segmentio/aws-okta
-```
-
-[See the wiki for more installation options like Linux packages and precompiled binaries.](https://github.com/segmentio/aws-okta/wiki/Installation)
+[See the wiki for more installation options.](https://github.com/segmentio/aws-okta/wiki/Installation)
 
 ### MacOS
 
@@ -19,6 +13,12 @@ You can install with `brew`:
 ```bash
 $ brew install aws-okta
 ```
+
+Shout-out to the fine maintainers of [the core formula](https://github.com/Homebrew/homebrew-core/blob/master/Formula/aws-okta.rb).
+
+### Linux
+
+[Download a binary from our release page](https://github.com/segmentio/aws-okta/releases), or [see the wiki for more installation options like deb/rpm packages](https://github.com/segmentio/aws-okta/wiki/Installation).
 
 ### Windows
 
