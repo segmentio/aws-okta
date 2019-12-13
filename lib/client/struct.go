@@ -5,10 +5,6 @@ type oktaUser struct {
 	Password string `json:"password"`
 }
 
-type sessionRequest struct {
-	SessionToken string `json:"sessionToken"`
-}
-
 type oktaUserAuthn struct {
 	StateToken   string                `json:"stateToken"`
 	SessionToken string                `json:"sessionToken"`

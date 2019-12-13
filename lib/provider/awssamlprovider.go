@@ -127,7 +127,7 @@ func NewAWSSAMLProvider(sessions SessionCacheInterface, profile string, opts AWS
 		// if `role_arn` isn't provided as part of the profile we can still prompt
 		// for it later after we get the saml assertion and know all the roles the
 		// user can assume.
-		profileARN, _ = opts.Profiles[source]["role_arn"]
+		profileARN = opts.Profiles[source]["role_arn"]
 	}
 
 	provider := AWSSAMLProvider{
@@ -191,7 +191,7 @@ func (p *AWSSAMLProvider) Retrieve() (credentials.Value, error) {
 
 	log.Debugf("Using session %s, expires in %s",
 		(*(creds.AccessKeyId))[len(*(creds.AccessKeyId))-4:],
-		creds.Expiration.Sub(time.Now()).String())
+		time.Until(*creds.Expiration).String())
 
 	// If SourceProfile returns the same source then we do not need to assume a
 	// second role. Not assuming a second role allows us to assume IDP enabled
@@ -206,7 +206,7 @@ func (p *AWSSAMLProvider) Retrieve() (credentials.Value, error) {
 
 			log.Debugf("using role %s expires in %s",
 				(*(creds.AccessKeyId))[len(*(creds.AccessKeyId))-4:],
-				creds.Expiration.Sub(time.Now()).String())
+				time.Until(*creds.Expiration).String())
 		}
 	}
 
