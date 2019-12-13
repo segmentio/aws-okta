@@ -83,7 +83,7 @@ func (c *SAMLRoleChooser) ChooseRole(roles []provider.AssumableRole) (int, error
 
 }
 
-func getKeyring(backend string) (*keyring.Keyring, error) {
+func getKeyring(backend string) (keyring.Keyring, error) {
 	var allowedBackends []keyring.BackendType
 	if backend != "" {
 		allowedBackends = append(allowedBackends, keyring.BackendType(backend))
@@ -93,7 +93,7 @@ func getKeyring(backend string) (*keyring.Keyring, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &kr, nil
+	return kr, nil
 }
 
 func createOktaClient(kr *keyring.Keyring, mfaConfig mfa.Config) (*client.OktaClient, error) {
@@ -126,20 +126,18 @@ func createAWSSAMLProvider(backend string,
 	mfaConfig mfa.Config,
 	profile string,
 	opts provider.AWSSAMLProviderOptions) (*provider.AWSSAMLProvider, error) {
-	var kr *keyring.Keyring
 	var oktaClient *client.OktaClient
-	var err error
 
-	kr, err = getKeyring(backend)
+	kr, err := getKeyring(backend)
 	if err != nil {
 		return nil, err
 	}
 
-	oktaClient, err = createOktaClient(kr, mfaConfig)
+	oktaClient, err = createOktaClient(&kr, mfaConfig)
 	if err != nil {
 		return nil, err
 	}
-	sessions := &sessioncache.SingleKrItemStore{*kr}
+	sessions := &sessioncache.SingleKrItemStore{Keyring: kr}
 
 	roleChooser := SAMLRoleChooser{Label: "Choose a role to assume"}
 	p, err := provider.NewAWSSAMLProvider(sessions, profile, opts, oktaClient, &roleChooser)
