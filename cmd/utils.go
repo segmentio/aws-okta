@@ -102,7 +102,7 @@ func createOktaClient(kr *keyring.Keyring, mfaConfig client.MFAConfig) (*client.
 	}
 
 	if err = json.Unmarshal(item.Data, &oktaCreds); err != nil {
-		return nil, fmt.Errorf("Failed to get okta credentials from your keyring.  Please make sure you have added okta credentials with `aws-okta add`")
+		return nil, fmt.Errorf("failed to get okta credentials from your keyring.  Please make sure you have added okta credentials with `aws-okta add`")
 	}
 	oktaCreds.MFA = mfaConfig
 
