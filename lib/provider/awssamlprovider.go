@@ -232,7 +232,11 @@ func (p *AWSSAMLProvider) GetRoleARNWithRegion(creds credentials.Value) (string,
 	if region := p.Profiles[lib.SourceProfile(p.profile, p.Profiles)]["region"]; region != "" {
 		config.WithRegion(region)
 	}
-	client := sts.New(aws_session.New(&config))
+	awsSession, err := aws_session.NewSession(&config)
+	if err != nil {
+		return "", err
+	}
+	client := sts.New(awsSession)
 
 	indentity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -299,11 +303,18 @@ func (p *AWSSAMLProvider) getSAMLSessionCreds() (sts.Credentials, error) {
 
 // assumeRoleFromSession takes a session created with an okta SAML login and uses that to assume a role
 func (p *AWSSAMLProvider) assumeRoleFromSession(creds sts.Credentials, roleArn string) (sts.Credentials, error) {
-	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
-		*creds.AccessKeyId,
-		*creds.SecretAccessKey,
-		*creds.SessionToken,
-	)}))
+	awsSession, err := aws_session.NewSession(
+		&aws.Config{
+			Credentials: credentials.NewStaticCredentials(
+				*creds.AccessKeyId,
+				*creds.SecretAccessKey,
+				*creds.SessionToken,
+			)})
+	if err != nil {
+		return sts.Credentials{}, err
+	}
+
+	client := sts.New(awsSession)
 
 	input := &sts.AssumeRoleInput{
 		RoleArn:         aws.String(roleArn),
@@ -339,7 +350,15 @@ func (p *AWSSAMLProvider) roleSessionName() string {
 // GetRoleARN makes a call to AWS to get-caller-identity and returns the
 // assumed role's name and ARN.
 func GetRoleARN(c credentials.Value) (string, error) {
-	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentialsFromCreds(c)}))
+	awsSession, err := aws_session.NewSession(
+		&aws.Config{
+			Credentials: credentials.NewStaticCredentialsFromCreds(c),
+		})
+	if err != nil {
+		return "", err
+	}
+
+	client := sts.New(awsSession)
 
 	indentity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
