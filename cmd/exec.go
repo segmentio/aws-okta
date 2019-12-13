@@ -224,9 +224,9 @@ func execRun(cmd *cobra.Command, args []string) error {
 	ecmd.Stderr = os.Stderr
 	ecmd.Env = env
 
-	// Forward SIGINT, SIGTERM, SIGKILL to the child command
+	// Forward SIGINT, SIGTERM to the child command
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM, os.Interrupt, os.Kill)
+	signal.Notify(sigChan, syscall.SIGTERM, os.Interrupt) // SA1016
 
 	go func() {
 		sig := <-sigChan
