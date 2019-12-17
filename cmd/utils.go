@@ -3,11 +3,11 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/99designs/keyring"
-	"github.com/manifoldco/promptui"
 	"strings"
 
-	"github.com/segmentio/aws-okta/lib"
+	"github.com/99designs/keyring"
+	"github.com/manifoldco/promptui"
+
 	"github.com/segmentio/aws-okta/lib/client"
 	"github.com/segmentio/aws-okta/lib/client/mfa"
 	"github.com/segmentio/aws-okta/lib/client/types"
@@ -82,19 +82,6 @@ func (c *SAMLRoleChooser) ChooseRole(roles []provider.AssumableRole) (int, error
 
 }
 
-func getKeyring(backend string) (keyring.Keyring, error) {
-	var allowedBackends []keyring.BackendType
-	if backend != "" {
-		allowedBackends = append(allowedBackends, keyring.BackendType(backend))
-	}
-
-	kr, err := lib.OpenKeyring(allowedBackends)
-	if err != nil {
-		return nil, err
-	}
-	return kr, nil
-}
-
 func createOktaClient(kr *keyring.Keyring, mfaConfig mfa.Config) (*client.OktaClient, error) {
 	var oktaCreds client.OktaCredential
 
@@ -127,7 +114,7 @@ func createAWSSAMLProvider(backend string,
 	opts provider.AWSSAMLProviderOptions) (*provider.AWSSAMLProvider, error) {
 	var oktaClient *client.OktaClient
 
-	kr, err := getKeyring(backend)
+	kr, err := openKeyring(backend)
 	if err != nil {
 		return nil, err
 	}

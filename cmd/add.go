@@ -35,11 +35,7 @@ func init() {
 }
 
 func add(cmd *cobra.Command, args []string) error {
-	var allowedBackends []keyring.BackendType
-	if backend != "" {
-		allowedBackends = append(allowedBackends, keyring.BackendType(backend))
-	}
-	kr, err := lib.OpenKeyring(allowedBackends)
+	kr, err := openKeyring(backend)
 
 	if err != nil {
 		log.Fatal(err)
