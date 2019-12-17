@@ -10,8 +10,9 @@ import (
 	"time"
 
 	analytics "github.com/segmentio/analytics-go"
-	"github.com/segmentio/aws-okta/lib"
+	"github.com/segmentio/aws-okta/cmd/configload"
 	"github.com/segmentio/aws-okta/lib/provider"
+	"github.com/segmentio/aws-okta/profiles"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 )
@@ -55,22 +56,22 @@ func loginRun(cmd *cobra.Command, args []string) error {
 
 	profile := args[0]
 
-	config, err := lib.NewConfigFromEnv()
+	config, err := configload.NewConfigFromEnv()
 	if err != nil {
 		return err
 	}
 
-	profiles, err := config.Parse()
+	ps, err := config.Parse()
 	if err != nil {
 		return err
 	}
 
-	prof, ok := profiles[profile]
+	prof, ok := ps[profile]
 	if !ok {
 		return fmt.Errorf("profile '%s' not found in your aws config", profile)
 	}
 
-	updateMfaConfig(cmd, profiles, profile, &mfaConfig)
+	updateMfaConfig(cmd, ps, profile, &mfaConfig)
 
 	// check profile for both session durations if not explicitly set
 	if !cmd.Flags().Lookup("assume-role-ttl").Changed {
@@ -86,7 +87,7 @@ func loginRun(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := provider.AWSSAMLProviderOptions{
-		Profiles:           profiles,
+		Profiles:           ps,
 		SessionDuration:    sessionTTL,
 		AssumeRoleDuration: assumeRoleTTL,
 	}
@@ -111,7 +112,7 @@ func loginRun(cmd *cobra.Command, args []string) error {
 	if _, ok := prof["aws_saml_url"]; ok {
 		return oktaLogin(p)
 	}
-	return federatedLogin(p, profile, profiles)
+	return federatedLogin(p, profile, ps)
 }
 
 func oktaLogin(p *provider.AWSSAMLProvider) error {
@@ -129,7 +130,7 @@ func oktaLogin(p *provider.AWSSAMLProvider) error {
 	return nil
 }
 
-func federatedLogin(p *provider.AWSSAMLProvider, profile string, profiles lib.Profiles) error {
+func federatedLogin(p *provider.AWSSAMLProvider, profile string, ps profiles.Profiles) error {
 	creds, err := p.Retrieve()
 	if err != nil {
 		return err
@@ -180,7 +181,7 @@ func federatedLogin(p *provider.AWSSAMLProvider, profile string, profiles lib.Pr
 	}
 
 	destination := "https://console.aws.amazon.com/"
-	prof := profiles[profile]
+	prof := ps[profile]
 	if region, ok := prof["region"]; ok {
 		destination = fmt.Sprintf(
 			"https://%s.console.aws.amazon.com/console/home?region=%s",

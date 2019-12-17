@@ -10,6 +10,10 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+func prompt(prompt string, sensitive bool) (string, error) {
+	return promptWithOutput(prompt, sensitive, os.Stderr)
+}
+
 func promptWithOutput(prompt string, sensitive bool, output *os.File) (string, error) {
 	fmt.Fprintf(output, "%s: ", prompt)
 	defer fmt.Fprintf(output, "\n")

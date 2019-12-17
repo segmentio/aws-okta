@@ -11,7 +11,7 @@ import (
 	"time"
 
 	analytics "github.com/segmentio/analytics-go"
-	"github.com/segmentio/aws-okta/lib"
+	"github.com/segmentio/aws-okta/cmd/configload"
 	"github.com/segmentio/aws-okta/lib/provider"
 	"github.com/spf13/cobra"
 	ini "gopkg.in/ini.v1"
@@ -40,7 +40,7 @@ func writeToCredentialsRun(cmd *cobra.Command, args []string) error {
 	}
 
 	profile := args[0]
-	config, err := lib.NewConfigFromEnv()
+	config, err := configload.NewConfigFromEnv()
 	if err != nil {
 		return err
 	}

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/segmentio/aws-okta/lib"
+	lib "github.com/segmentio/aws-okta/lib_old"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 )
@@ -118,6 +118,8 @@ func GetAssumableRolesFromSAML(resp *Response) (AssumableRoles, error) {
 	}
 	return roleList, nil
 }
+
+// TODO(nick): use promptRole from stash
 
 func GetRole(roleList AssumableRoles, profileARN string) (AssumableRole, error) {
 

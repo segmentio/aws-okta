@@ -7,7 +7,8 @@ import (
 	"text/tabwriter"
 
 	analytics "github.com/segmentio/analytics-go"
-	"github.com/segmentio/aws-okta/lib"
+	"github.com/segmentio/aws-okta/cmd/configload"
+	"github.com/segmentio/aws-okta/profiles"
 	"github.com/spf13/cobra"
 )
 
@@ -22,8 +23,10 @@ func init() {
 	RootCmd.AddCommand(listCmd)
 }
 
-func listProfiles() (lib.Profiles, error) {
-	config, err := lib.NewConfigFromEnv()
+// TODO(nick): mv lib.Profiles from lib into cmd
+
+func listProfiles() (profiles.Profiles, error) {
+	config, err := configload.NewConfigFromEnv()
 	if err != nil {
 		return nil, err
 	}
@@ -36,11 +39,12 @@ func listProfiles() (lib.Profiles, error) {
 	return profiles, nil
 }
 
-func listProfileNames(profiles lib.Profiles) []string {
+// TODO(nick): mv lib.Profiles from lib into cmd
+func listProfileNames(ps profiles.Profiles) []string {
 	// Let's sort this list of profiles so we can have some more deterministic output:
 	var profileNames []string
 
-	for profile := range profiles {
+	for profile := range ps {
 		profileNames = append(profileNames, profile)
 	}
 

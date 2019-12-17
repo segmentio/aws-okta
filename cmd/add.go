@@ -8,8 +8,9 @@ import (
 
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
-	"github.com/segmentio/aws-okta/lib"
 	"github.com/segmentio/aws-okta/lib/client"
+	"github.com/segmentio/aws-okta/profiles"
+
 	"github.com/spf13/cobra"
 )
 
@@ -54,12 +55,12 @@ func add(cmd *cobra.Command, args []string) error {
 
 	// Ask Okta organization details if not given in command line argument
 	if oktaDomain == "" {
-		organization, err = lib.Prompt("Okta organization", false)
+		organization, err = prompt("Okta organization", false)
 		if err != nil {
 			return err
 		}
 
-		oktaRegion, err = lib.Prompt("Okta region ([us], emea, preview)", false)
+		oktaRegion, err = prompt("Okta region ([us], emea, preview)", false)
 		if err != nil {
 			return err
 		}
@@ -73,7 +74,7 @@ func add(cmd *cobra.Command, args []string) error {
 		}
 		defaultOktaDomain := fmt.Sprintf("%s.%s", organization, tld)
 
-		oktaDomain, err = lib.Prompt("Okta domain ["+defaultOktaDomain+"]", false)
+		oktaDomain, err = prompt("Okta domain ["+defaultOktaDomain+"]", false)
 		if err != nil {
 			return err
 		}
@@ -83,7 +84,7 @@ func add(cmd *cobra.Command, args []string) error {
 	}
 
 	if username == "" {
-		username, err = lib.Prompt("Okta username", false)
+		username, err = prompt("Okta username", false)
 		if err != nil {
 			return err
 		}
@@ -97,7 +98,7 @@ func add(cmd *cobra.Command, args []string) error {
 	log.Debugf("Keyring key: %s", oktaAccountName)
 
 	// Ask for password from prompt
-	password, err := lib.Prompt("Okta password", true)
+	password, err := prompt("Okta password", true)
 	if err != nil {
 		return err
 	}
@@ -111,7 +112,7 @@ func add(cmd *cobra.Command, args []string) error {
 
 	// Profiles aren't parsed during `add`, but still want
 	// to centralize the MFA config logic
-	var dummyProfiles lib.Profiles
+	var dummyProfiles profiles.Profiles
 	updateMfaConfig(cmd, dummyProfiles, "", &mfaConfig)
 	creds.MFA = mfaConfig
 	oktaClient, err := client.NewOktaClient(creds, nil, nil, nil)

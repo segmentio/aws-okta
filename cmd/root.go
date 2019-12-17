@@ -9,8 +9,8 @@ import (
 
 	"github.com/99designs/keyring"
 	analytics "github.com/segmentio/analytics-go"
-	"github.com/segmentio/aws-okta/lib"
 	"github.com/segmentio/aws-okta/lib/client/mfa"
+	"github.com/segmentio/aws-okta/profiles"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/xerrors"
@@ -130,7 +130,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&flagSessionCacheSingleItem, "session-cache-single-item", "", false, fmt.Sprintf("(alpha) Enable single-item session cache; aka %s", envSessionCacheSingleItem))
 }
 
-func updateMfaConfig(cmd *cobra.Command, profiles lib.Profiles, profile string, config *mfa.Config) {
+func updateMfaConfig(cmd *cobra.Command, ps profiles.Profiles, profile string, config *mfa.Config) {
 	if !cmd.Flags().Lookup("mfa-duo-device").Changed {
 		mfaDeviceFromEnv, ok := os.LookupEnv("AWS_OKTA_MFA_DUO_DEVICE")
 		if ok {
@@ -145,7 +145,7 @@ func updateMfaConfig(cmd *cobra.Command, profiles lib.Profiles, profile string, 
 		if ok {
 			config.Provider = mfaProvider
 		} else {
-			mfaProvider, _, err := profiles.GetValue(profile, "mfa_provider")
+			mfaProvider, _, err := ps.GetValue(profile, "mfa_provider")
 			if err == nil {
 				config.Provider = mfaProvider
 			}
@@ -157,7 +157,7 @@ func updateMfaConfig(cmd *cobra.Command, profiles lib.Profiles, profile string, 
 		if ok {
 			config.FactorType = mfaFactorType
 		} else {
-			mfaFactorType, _, err := profiles.GetValue(profile, "mfa_factor_type")
+			mfaFactorType, _, err := ps.GetValue(profile, "mfa_factor_type")
 			if err == nil {
 				config.FactorType = mfaFactorType
 			}
