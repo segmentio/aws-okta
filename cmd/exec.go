@@ -13,8 +13,9 @@ import (
 	"time"
 
 	analytics "github.com/segmentio/analytics-go"
-	"github.com/segmentio/aws-okta/lib"
+	"github.com/segmentio/aws-okta/cmd/configload"
 	"github.com/segmentio/aws-okta/lib/provider"
+	"github.com/segmentio/aws-okta/profiles"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +25,7 @@ var (
 	assumeRoleARN string
 )
 
-func mustListProfiles() lib.Profiles {
+func mustListProfiles() profiles.Profiles {
 	profiles, err := listProfiles()
 	if err != nil {
 		log.Panicf("Failed to list profiles: %v", err)
@@ -83,8 +84,8 @@ func loadStringFlagFromEnv(cmd *cobra.Command, flagName string, envVar string, v
 	return nil
 }
 
-func updateDurationFromConfigProfile(profiles lib.Profiles, profile string, val *time.Duration) error {
-	fromProfile, _, err := profiles.GetValue(profile, "assume_role_ttl")
+func updateDurationFromConfigProfile(ps profiles.Profiles, profile string, val *time.Duration) error {
+	fromProfile, _, err := ps.GetValue(profile, "assume_role_ttl")
 	if err != nil {
 		return nil
 	}
@@ -134,7 +135,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 		commandArgs = commandPart[1:]
 	}
 
-	config, err := lib.NewConfigFromEnv()
+	config, err := configload.NewConfigFromEnv()
 	if err != nil {
 		return err
 	}

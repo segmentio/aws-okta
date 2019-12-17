@@ -10,14 +10,15 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/segmentio/aws-okta/lib"
 	"github.com/segmentio/aws-okta/lib/session"
+	"github.com/segmentio/aws-okta/profiles"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	aws_session "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	log "github.com/sirupsen/logrus"
+
 	// use xerrors until 1.13 is stable/oldest supported version
 	"golang.org/x/xerrors"
 )
@@ -67,7 +68,7 @@ type AWSSAMLProviderOptions struct {
 	SessionDuration    time.Duration
 	AssumeRoleDuration time.Duration
 	ExpiryWindow       time.Duration
-	Profiles           lib.Profiles
+	Profiles           profiles.Profiles
 	AssumeRoleArn      string
 
 	// this option is deprecated.
@@ -114,7 +115,7 @@ func NewAWSSAMLProvider(sessions SessionCacheInterface, profile string, opts AWS
 
 	log.Debug("Provider Option is deprecated: SessionCacheSingleItem")
 
-	source := lib.SourceProfile(profile, opts.Profiles)
+	source := profiles.SourceProfile(profile, opts.Profiles)
 
 	// if the assumable role is passed it have it override what is in the profile
 	if opts.AssumeRoleArn != "" {
@@ -154,7 +155,7 @@ func (p *AWSSAMLProvider) Retrieve() (credentials.Value, error) {
 	}
 
 	// TODO(nick): why are we using the source profile name and not the actual profile's name?
-	source := lib.SourceProfile(p.profile, p.Profiles)
+	source := profiles.SourceProfile(p.profile, p.Profiles)
 	profileConf, ok := p.Profiles[p.profile]
 	if !ok {
 		return credentials.Value{}, fmt.Errorf("missing profile named %s", p.profile)
@@ -229,7 +230,7 @@ func (p *AWSSAMLProvider) GetRoleARNWithRegion(creds credentials.Value) (string,
 		creds.SecretAccessKey,
 		creds.SessionToken,
 	)}
-	if region := p.Profiles[lib.SourceProfile(p.profile, p.Profiles)]["region"]; region != "" {
+	if region := p.Profiles[profiles.SourceProfile(p.profile, p.Profiles)]["region"]; region != "" {
 		config.WithRegion(region)
 	}
 	awsSession, err := aws_session.NewSession(&config)
