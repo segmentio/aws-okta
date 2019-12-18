@@ -13,9 +13,9 @@ import (
 
 	"golang.org/x/net/publicsuffix"
 
+	"github.com/segmentio/aws-okta/duoclient"
 	"github.com/segmentio/aws-okta/lib/client/mfa"
 	"github.com/segmentio/aws-okta/lib/client/types"
-	lib "github.com/segmentio/aws-okta/lib_old"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,7 +33,7 @@ type OktaClientOptions struct {
 type OktaClient struct {
 	creds      OktaCredential
 	userAuth   *types.OktaUserAuthn
-	DuoClient  *lib.DuoClient
+	DuoClient  *duoclient.DuoClient
 	BaseURL    *url.URL
 	sessions   SessionCache
 	client     http.Client
