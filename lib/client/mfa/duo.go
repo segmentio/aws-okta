@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/segmentio/aws-okta/duoclient"
 	"github.com/segmentio/aws-okta/lib/client/types"
-	lib "github.com/segmentio/aws-okta/lib_old"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,7 +33,7 @@ func (d *DUODevice) Verify(authResp types.OktaUserAuthn) (string, []byte, error)
 
 	if authResp.Status == "MFA_CHALLENGE" && !d.challengeCompleted {
 		f := authResp.Embedded.Factor
-		duoClient := &lib.DuoClient{
+		duoClient := &duoclient.DuoClient{
 			Host:      f.Embedded.Verification.Host,
 			Signature: f.Embedded.Verification.Signature,
 			Callback:  f.Embedded.Verification.Links.Complete.Href,
