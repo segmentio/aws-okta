@@ -17,30 +17,10 @@ import (
 
 var awsRoleARNRegex = regexp.MustCompile(`arn:[a-z-]+:iam::(\d{12}):role/(.*)`)
 
-func ParseSAML(body []byte, resp *SAMLAssertion) (err error) {
-	var val string
-	var data []byte
-	var doc *html.Node
-	doc, err = html.Parse(strings.NewReader(string(body)))
-	if err != nil {
-		return
-	}
-
-	val, _ = GetNode(doc, "SAMLResponse")
-	if val != "" {
-		resp.RawData = []byte(val)
-		val = strings.Replace(val, "&#x2b;", "+", -1)
-		val = strings.Replace(val, "&#x3d;", "=", -1)
-		data, err = base64.StdEncoding.DecodeString(val)
-		if err != nil {
-			return
-		}
-	}
-
-	err = xml.Unmarshal(data, &resp.Resp)
-	return
-}
-func GetNode(n *html.Node, name string) (val string, node *html.Node) {
+// TODO: document this mysterious monstrosity
+// this is identical to the one found in duoclient, and comes from
+// lib/utils.go pre-refactor
+func getNode(n *html.Node, name string) (val string, node *html.Node) {
 	var isMatch bool
 	if n.Type == html.ElementNode && n.Data == "input" {
 		for _, a := range n.Attr {
@@ -54,12 +34,36 @@ func GetNode(n *html.Node, name string) (val string, node *html.Node) {
 	}
 	if node == nil || val == "" {
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			val, node = GetNode(c, name)
+			val, node = getNode(c, name)
 			if val != "" {
 				return
 			}
 		}
 	}
+	return
+}
+
+func ParseSAML(body []byte, resp *SAMLAssertion) (err error) {
+	var val string
+	var data []byte
+	var doc *html.Node
+	doc, err = html.Parse(strings.NewReader(string(body)))
+	if err != nil {
+		return
+	}
+
+	val, _ = getNode(doc, "SAMLResponse")
+	if val != "" {
+		resp.RawData = []byte(val)
+		val = strings.Replace(val, "&#x2b;", "+", -1)
+		val = strings.Replace(val, "&#x3d;", "=", -1)
+		data, err = base64.StdEncoding.DecodeString(val)
+		if err != nil {
+			return
+		}
+	}
+
+	err = xml.Unmarshal(data, &resp.Resp)
 	return
 }
 
