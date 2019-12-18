@@ -3,14 +3,10 @@ package provider
 import (
 	"encoding/base64"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"regexp"
-	"sort"
-	"strconv"
 	"strings"
 
-	lib "github.com/segmentio/aws-okta/lib_old"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 )
@@ -67,19 +63,6 @@ func ParseSAML(body []byte, resp *SAMLAssertion) (err error) {
 	return
 }
 
-func GetRoleFromSAML(resp *Response, profileARN string) (string, string, error) {
-
-	roles, err := GetAssumableRolesFromSAML(resp)
-	if err != nil {
-		return "", "", err
-	}
-	role, err := GetRole(roles, profileARN)
-	if err != nil {
-		return "", "", err
-	}
-	return role.Principal, role.Role, nil
-}
-
 func GetAssumableRolesFromSAML(resp *Response) (AssumableRoles, error) {
 	roleList := []AssumableRole{}
 
@@ -121,76 +104,4 @@ func GetAssumableRolesFromSAML(resp *Response) (AssumableRoles, error) {
 		}
 	}
 	return roleList, nil
-}
-
-// TODO(nick): use promptRole from stash
-
-func GetRole(roleList AssumableRoles, profileARN string) (AssumableRole, error) {
-
-	// if the user doesn't have any roles they can assume return an error.
-	if len(roleList) == 0 {
-		return AssumableRole{}, fmt.Errorf("there are no roles that can be assumed")
-	}
-
-	// A role arn was provided as part of the profile, we will assume that role.
-	if profileARN != "" {
-		for _, arole := range roleList {
-			if profileARN == arole.Role {
-				return arole, nil
-			}
-		}
-		return AssumableRole{}, fmt.Errorf("ARN isn't valid")
-	}
-
-	// if the user only has one role assume that role without prompting.
-	if len(roleList) == 1 {
-		return roleList[0], nil
-	}
-
-	// Sort the roles in alphabetical order
-	sort.Slice(roleList, func(i, j int) bool {
-		return roleList[i].Role < roleList[j].Role
-	})
-
-	var roleName, previousAccountID, currentAccountID string
-
-	for i, arole := range roleList {
-		currentAccountID, roleName = accountIDAndRoleFromRoleARN(arole.Role)
-		if currentAccountID != previousAccountID {
-			fmt.Printf("\nAccount: %s\n", currentAccountID)
-		}
-		previousAccountID = currentAccountID
-
-		fmt.Printf("%4d - %s\n", i, roleName)
-	}
-	fmt.Println("")
-
-	i, err := lib.Prompt("Select Role to Assume", false)
-	if err != nil {
-		return AssumableRole{}, err
-	}
-	if i == "" {
-		return AssumableRole{}, errors.New("invalid selection - Please use an option that is listed")
-	}
-	factorIdx, err := strconv.Atoi(i)
-	if err != nil {
-		return AssumableRole{}, err
-	}
-	if factorIdx > (len(roleList) - 1) {
-		return AssumableRole{}, errors.New("invalid selection - Please use an option that is listed")
-	}
-	return roleList[factorIdx], nil
-}
-func accountIDAndRoleFromRoleARN(roleARN string) (string, string) {
-	matches := awsRoleARNRegex.FindStringSubmatch(roleARN)
-
-	// matches will contain ("roleARN", "accountID", "roleName")
-	if len(matches) == 3 {
-		return matches[1], matches[2]
-	}
-
-	// Getting here means we failed to extract accountID and roleName from
-	// roleARN. It should "not" happen, but if it does, return empty string
-	// as accountID and roleARN as roleName instead.
-	return "", roleARN
 }
