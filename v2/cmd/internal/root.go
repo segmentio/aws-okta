@@ -7,7 +7,7 @@ import (
 
 	"github.com/99designs/keyring"
 	"github.com/apex/log"
-	"github.com/segmentio/aws-okta/cmd/v2/internal/analytics"
+	"github.com/segmentio/aws-okta/v2/cmd/internal/analytics"
 	"github.com/spf13/cobra"
 )
 

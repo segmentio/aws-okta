@@ -1,4 +1,4 @@
-module github.com/segmentio/aws-okta/cmd/v2
+module github.com/segmentio/aws-okta/v2
 
 require (
 	github.com/99designs/keyring v1.1.3
@@ -10,10 +10,10 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 
 	github.com/segmentio/analytics-go v3.0.1+incompatible
-	github.com/segmentio/aws-okta/lib/v2 v2.0.0-00010101000000-000000000000
+	github.com/segmentio/aws-okta/v2/lib v0.0.0-00010101000000-000000000000
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
-	github.com/segmentio/errors-go v1.0.0
-	github.com/sirupsen/logrus v1.4.2
+	github.com/segmentio/errors-go v1.0.0 // indirect
+	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/spf13/cobra v0.0.0-20170621173259-31694f19adee
 	github.com/spf13/pflag v1.0.0 // indirect
 	github.com/stretchr/testify v1.4.0 // indirect
@@ -26,8 +26,8 @@ require (
 
 go 1.13
 
-// TODO
-replace github.com/segmentio/aws-okta/lib/v2 => ../../lib/v2
+// TODO: remove? not really sure why this is necessary
+replace github.com/segmentio/aws-okta/v2/lib => ./lib
 
 // oof https://github.com/99designs/keyring/issues/56#issuecomment-566256653
 replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
