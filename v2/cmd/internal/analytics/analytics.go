@@ -1,6 +1,8 @@
 package analytics
 
 import (
+	"log"
+
 	analytics "github.com/segmentio/analytics-go"
 )
 
@@ -35,7 +37,15 @@ const (
 
 	EventRanCommand     = "Ran Command"
 	PropertyCommandName = "command"
+	PropertyProfileName = "profile"
 )
+
+var AllProperties = map[string]struct{}{
+	PropertyVersion:        struct{}{},
+	PropertyKeyringBackend: struct{}{},
+	PropertyCommandName:    struct{}{},
+	PropertyProfileName:    struct{}{},
+}
 
 func (a Client) Identify() {
 	if a.client == nil {
@@ -48,17 +58,27 @@ func (a Client) Identify() {
 	})
 }
 
-func (a Client) TrackRanCommand(commandName string) {
+func (a Client) TrackRanCommand(commandName string, extraProps ...[2]string) {
 	if a.client == nil {
 		return
 	}
+	props := analytics.NewProperties().
+		Set(PropertyKeyringBackend, a.KeyringBackend).
+		Set(PropertyVersion, a.Version).
+		Set(PropertyCommandName, commandName)
+	for _, p := range extraProps {
+		k := p[0]
+		v := p[1]
+
+		if _, ok := AllProperties[k]; !ok {
+			log.Fatalf("invalid analytics property %s", k)
+		}
+		props.Set(k, v)
+	}
 	a.client.Enqueue(analytics.Track{
-		UserId: a.UserId,
-		Event:  EventRanCommand,
-		Properties: analytics.NewProperties().
-			Set(PropertyKeyringBackend, a.KeyringBackend).
-			Set(PropertyVersion, a.Version).
-			Set(PropertyCommandName, commandName),
+		UserId:     a.UserId,
+		Event:      EventRanCommand,
+		Properties: props,
 	})
 }
 
