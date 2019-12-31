@@ -14,7 +14,7 @@ import (
 type AssumeRoleWithCreds struct {
 	BaseRoleCreds awsokta.AWSCreds
 	TargetRoleARN string
-	// TODO: prompter
+	// TODO: prompter?
 
 	// Opts must have had ApplyDefaults and Validate called
 	Opts Opts
@@ -34,9 +34,10 @@ func (a AssumeRoleWithCreds) Assume() (Creds, error) {
 	if a.Opts.SessionCache != nil {
 		k := sessionCacheKey{TargetRoleARN: r.TargetRoleARN}
 		if creds, err := a.Opts.SessionCache.Get(k); err != nil {
-			r.Opts.Log.Infof("cache miss: %s", k)
+			r.Opts.Log.Infof("session cache hit: %s", k)
 			return creds, nil
 		}
+		r.Opts.Log.Infof("session cache miss: %s", k)
 	}
 	sess, err := awssession.NewSession(
 		&aws.Config{

@@ -23,7 +23,7 @@ func init() {
 	}
 	RootCmd.AddCommand(addCmd)
 	// TODO: does this even need to be configurable?
-	addCmd.Flags().StringVarP(&FlagOktaAccountAlias, "account-alias", "", "", "Okta account alias (default <username>@<domain>)")
+	addCmd.Flags().StringVarP(&FlagOktaAccountAlias, "account-alias", "", "", "Okta account alias (default `default`)")
 	addCmd.Flags().BoolVarP(&FlagCredsNoValidate, "no-validate", "", false, "Disable credentials validation with Okta")
 }
 
@@ -43,7 +43,8 @@ func add(cmd *cobra.Command, args []string) error {
 
 	accountAlias := FlagOktaAccountAlias
 	if accountAlias == "" {
-		accountAlias = fmt.Sprintf("%s@%s", username, domain)
+		// TODO const
+		accountAlias = "default"
 	}
 
 	password, err := prompt("Okta password", true)
@@ -62,16 +63,16 @@ func add(cmd *cobra.Command, args []string) error {
 	creds := oktaclient.Creds{
 		Username: username,
 		Password: password,
+		Domain:   domain,
 	}
 
 	oktaCl := oktaclient.Client{
-		Creds:  creds,
-		Domain: domain,
+		Creds: creds,
 	}
 
 	if !FlagCredsNoValidate {
 		fmt.Fprintf(os.Stderr, "Validating credentials...\n")
-		if err := oktaCl.ValidateCredentials(); err != nil {
+		if err := oktaCl.AuthenticateCreds(); err != nil {
 			return fmt.Errorf("Failed to validate credentials: %w", err)
 		}
 		fmt.Fprintf(os.Stderr, "Credentials validated!\n")

@@ -62,3 +62,23 @@ func keyringCredsPut(accountAlias string, creds oktaclient.Creds) error {
 
 	return kr.Set(item)
 }
+
+func keyringCredsGet(accountAlias string) (oktaclient.Creds, error) {
+	kr, err := keyringOpen(FlagKeyringBackend)
+	if err != nil {
+		return oktaclient.Creds{}, fmt.Errorf("opening keyring: %w", err)
+	}
+	k := accountAlias
+
+	item, err := kr.Get(k)
+	if err != nil {
+		return oktaclient.Creds{}, err
+	}
+
+	var oktaCreds oktaclient.Creds
+	if err = json.Unmarshal(item.Data, &oktaCreds); err != nil {
+		return oktaCreds, fmt.Errorf("unmarshalling okta creds: %w", err)
+	}
+
+	return oktaCreds, nil
+}

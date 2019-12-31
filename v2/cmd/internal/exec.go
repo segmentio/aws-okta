@@ -12,6 +12,8 @@ import (
 	"github.com/segmentio/aws-okta/v2/cmd/internal/analytics"
 	"github.com/segmentio/aws-okta/v2/cmd/internal/configload"
 	awsokta "github.com/segmentio/aws-okta/v2/lib"
+	"github.com/segmentio/aws-okta/v2/lib/assumerolewithsaml"
+	"github.com/segmentio/aws-okta/v2/lib/oktaclient"
 )
 
 // execCmd represents the exec command
@@ -29,6 +31,8 @@ var execCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(execCmd)
+	// TODO: do we need this?
+	execCmd.Flags().StringVarP(&FlagOktaAccountAlias, "account-alias", "", "", "Okta account alias (default `default`)")
 	/* TODO
 	execCmd.Flags().DurationVarP(&sessionTTL, "session-ttl", "t", time.Hour, "Expiration time for okta role session")
 	execCmd.Flags().DurationVarP(&assumeRoleTTL, "assume-role-ttl", "a", time.Hour, "Expiration time for assumed role")
@@ -88,49 +92,54 @@ func execRun(cmd *cobra.Command, args []string) error {
 
 	Analytics.TrackRanCommand(AnalyticsCommandNameExec, [2]string{analytics.PropertyProfileName, profileName})
 
-	/* TODO?
-	opts := provider.AWSSAMLProviderOptions{
-		Profiles:           profiles,
-		SessionDuration:    sessionTTL,
-		AssumeRoleDuration: assumeRoleTTL,
-		AssumeRoleArn:      assumeRoleARN,
+	accountAlias := FlagOktaAccountAlias
+	if accountAlias == "" {
+		accountAlias = "default"
 	}
-
-
-	p, err := createAWSSAMLProvider(backend, mfaConfig, profile, opts)
+	oktaCreds, err := keyringCredsGet(accountAlias)
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to get Okta creds from keyring; maybe try `add` first: %w", err)
 	}
 
+	var creds awsokta.AWSCreds
+	if sourceProfileName == "" {
+		// assume role with SAML
+		oktaCl := oktaclient.Client{
+			Creds: oktaCreds,
+		}
+		// TODO: use const
+		samlURL, err := profiles.Get(profileName, "aws_saml_url")
+		if err != nil {
+			return fmt.Errorf("Failed to find aws_saml_url: %w", err)
+		}
+		a := assumerolewithsaml.AssumeRoleWithSAML{
+			OktaClient: oktaCl,
+			AWSSAMLURL: samlURL,
+			// TODO
+			TargetRoleARNChooser: assumerolewithsaml.StaticChooser{profile["role_arn"]},
+		}
+		credsSpecific, err := a.Assume()
+		if err != nil {
+			return fmt.Errorf("Failed to assume role: %w", err)
+		}
+		creds = credsSpecific.AWSCreds
 
-	roleARN, err := p.GetRoleARNWithRegion(creds)
-	if err != nil {
-		return err
-	}
-	*/
-	p := awsokta.AWSCredsProvider{
-		Region:      profiles.GetWithDefault(profileName, "region", "us-west-2"),
-		BaseRoleARN: profile["role_arn"],
-	}
-
-	if sourceProfileName != "" {
-		p.BaseRoleARN = sourceProfile["role_arn"]
-		p.AssumeRoleARN = profile["role_arn"]
-	}
-
-	creds, err := p.Refresh()
-	if err != nil {
-		return fmt.Errorf("failed to refresh credentials: %w", err)
+	} else {
+		_ = sourceProfile
+		// TODO: assumerolewithsamlandcreds
 	}
 
 	env := kvEnv{}
 	env.LoadFromEnviron(os.Environ()...)
+	env.AddCreds(creds)
 	env.AddInfo(infoEnvs{
-		ProfileName:    profileName,
+		ProfileName: profileName,
+		/* TODO
 		Region:         creds.Meta.Region,
 		BaseRoleARN:    creds.Meta.BaseRoleARN,
 		AssumedRoleARN: creds.Meta.AssumedRoleARN,
 		ExpiresAt:      creds.Meta.ExpiresAt,
+		*/
 	})
 
 	command := commandPart[0]

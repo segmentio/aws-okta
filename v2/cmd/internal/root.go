@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/99designs/keyring"
-	"github.com/apex/log"
 	"github.com/segmentio/aws-okta/v2/cmd/internal/analytics"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
