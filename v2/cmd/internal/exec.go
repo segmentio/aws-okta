@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/segmentio/aws-okta/v2/cmd/internal/analytics"
+	"github.com/segmentio/aws-okta/v2/cmd/internal/configload"
 	awsokta "github.com/segmentio/aws-okta/v2/lib"
 )
 
@@ -52,22 +53,25 @@ func execRun(cmd *cobra.Command, args []string) error {
 	}
 
 	profileName := args[0]
-
-	/* TODO
-	config, err := configload.NewConfigFromEnv()
+	profiles, err := configload.FindAndParse()
 	if err != nil {
 		return err
 	}
 
-	profiles, err := config.Parse()
-	if err != nil {
-		return err
+	profile, ok := profiles[profileName]
+	if !ok {
+		return fmt.Errorf("Profile '%s' not found in your AWS config. Use `list` to see configured profiles.", profileName)
 	}
 
-	if _, ok := profiles[profile]; !ok {
-		return fmt.Errorf("profile '%s' not found in your aws config, use list command to see configured profiles", profile)
+	sourceProfileName, ok := profile["source_profile"]
+	// TODO: types
+	var sourceProfile configload.Profile
+	if ok {
+		sourceProfile, ok = profiles[sourceProfileName]
+		if !ok {
+			return fmt.Errorf("Profile '%s' sources '%s', but it was not found.", profileName, sourceProfileName)
+		}
 	}
-	*/
 
 	/* TODO
 	updateMfaConfig(cmd, profiles, profile, &mfaConfig)
@@ -84,7 +88,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 
 	Analytics.TrackRanCommand(AnalyticsCommandNameExec, [2]string{analytics.PropertyProfileName, profileName})
 
-	/* TODO
+	/* TODO?
 	opts := provider.AWSSAMLProviderOptions{
 		Profiles:           profiles,
 		SessionDuration:    sessionTTL,
@@ -98,10 +102,6 @@ func execRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	creds, err := p.Retrieve()
-	if err != nil {
-		return err
-	}
 
 	roleARN, err := p.GetRoleARNWithRegion(creds)
 	if err != nil {
@@ -109,10 +109,15 @@ func execRun(cmd *cobra.Command, args []string) error {
 	}
 	*/
 	p := awsokta.AWSCredsProvider{
-		// TODO
-		BaseRoleARN: "arn:aws:iam::1234567890:role/fake-role",
-		Region:      "us-west-2",
+		Region:      profiles.GetWithDefault(profileName, "region", "us-west-2"),
+		BaseRoleARN: profile["role_arn"],
 	}
+
+	if sourceProfileName != "" {
+		p.BaseRoleARN = sourceProfile["role_arn"]
+		p.AssumeRoleARN = profile["role_arn"]
+	}
+
 	creds, err := p.Refresh()
 	if err != nil {
 		return fmt.Errorf("failed to refresh credentials: %w", err)
