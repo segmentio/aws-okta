@@ -9,16 +9,28 @@ import (
 	"github.com/segmentio/aws-okta/v2/lib/oktaclient"
 )
 
+// Client is stateful. Methods cache their results. Call Reset
 type Client struct {
 	OktaClient oktaclient.Client
 
 	SAMLURL string
 
-	samlAssertionData []byte
+	body []byte
+
+	samlResponseB64 []byte
+}
+
+func (c *Client) Reset() {
+	c.body = nil
+	c.samlResponseB64 = nil
+
 }
 
 // Gets SAML assertion and stores it in client
-func (c *Client) GetSAMLAssertionData() ([]byte, error) {
+func (c *Client) Get() ([]byte, error) {
+	if c.body != nil {
+		return c.body, nil
+	}
 	res, err := c.OktaClient.Get(c.SAMLURL)
 	if err != nil {
 		return nil, fmt.Errorf("GET SAML URL %s: %w", c.SAMLURL, err)
@@ -33,19 +45,35 @@ func (c *Client) GetSAMLAssertionData() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("reading SAML body: %w", err)
 	}
-	c.samlAssertionData = rawData
+	c.body = rawData
 	return rawData, nil
 }
 
-// Parses assumable roels from SAML assertion. Will call GetSAMLAssertionData on your behalf
+func (c *Client) GetSAMLResponseB64() ([]byte, error) {
+	if c.samlResponseB64 != nil {
+		return c.samlResponseB64, nil
+	}
+	body, err := c.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := parseSAMLResponseB64(body)
+	if err != nil {
+		return nil, err
+	}
+	c.samlResponseB64 = r
+	return r, err
+}
+
+// Parses assumable roles from SAML assertion. Will call GetSAMLAssertionData on your behalf
 // if it hasn't been called yet
 func (c *Client) GetAssumableRoles() ([]awsokta.AssumableRole, error) {
-	if c.samlAssertionData != nil {
-		if _, err := c.GetSAMLAssertionData(); err != nil {
-			return nil, fmt.Errorf("getting SAML assertion: %w", err)
-		}
+	samlResponseB64, err := c.GetSAMLResponseB64()
+	if err != nil {
+		return nil, err
 	}
-	samlAssertion, err := parse(c.samlAssertionData)
+	samlAssertion, err := parseSAMLAssertion(samlResponseB64)
 	if err != nil {
 		return nil, fmt.Errorf("parsing SAML assertion: %w", err)
 	}

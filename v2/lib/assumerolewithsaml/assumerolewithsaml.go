@@ -49,7 +49,7 @@ type AssumeRoleWithSAML struct {
 }
 
 type CredsMeta struct {
-	// TODO
+	Region string
 }
 
 type Creds struct {
@@ -75,11 +75,6 @@ func (a AssumeRoleWithSAML) Assume() (Creds, error) {
 		OktaClient: a.OktaClient,
 		SAMLURL:    a.AWSSAMLURL,
 	}
-	samlAssertionData, err := cl.GetSAMLAssertionData()
-	if err != nil {
-		return Creds{}, fmt.Errorf("getting SAML assertion from Okta: %w", err)
-	}
-
 	assumableRoles, err := cl.GetAssumableRoles()
 	if err != nil {
 		return Creds{}, fmt.Errorf("fetching assumable roles: %w", err)
@@ -106,11 +101,15 @@ func (a AssumeRoleWithSAML) Assume() (Creds, error) {
 	sess := awssession.Must(awssession.NewSession(sessConf))
 
 	svc := sts.New(sess)
-	a.Opts.Log.Debugf("assuming role %v", targetRole)
+	samlResponseB64, err := cl.GetSAMLResponseB64()
+	if err != nil {
+		return Creds{}, fmt.Errorf("getting SAMLResponse: %w", err)
+	}
+	a.Opts.Log.Debugf("assuming role %s", targetRole.Role)
 	resp, err := svc.AssumeRoleWithSAML(&sts.AssumeRoleWithSAMLInput{
 		PrincipalArn:    aws.String(targetRole.Principal),
 		RoleArn:         aws.String(targetRole.Role),
-		SAMLAssertion:   aws.String(string(samlAssertionData)),
+		SAMLAssertion:   aws.String(string(samlResponseB64)),
 		DurationSeconds: aws.Int64(int64(a.Opts.SessionDuration.Seconds())),
 	})
 	if err != nil {
@@ -119,7 +118,9 @@ func (a AssumeRoleWithSAML) Assume() (Creds, error) {
 
 	creds := Creds{
 		// TODO
-		CredsMeta: CredsMeta{},
+		CredsMeta: CredsMeta{
+			Region: a.Opts.Region,
+		},
 		AWSCreds: awsokta.AWSCreds{
 			AccessKeyID:     *resp.Credentials.AccessKeyId,
 			SecretAccessKey: *resp.Credentials.SecretAccessKey,

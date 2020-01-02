@@ -112,11 +112,16 @@ func execRun(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("Failed to find aws_saml_url: %w", err)
 		}
+		opts := assumerolewithsaml.Opts{
+			Region: FlagAWSRegion,
+		}
+		opts.ApplyDefaults()
 		a := assumerolewithsaml.AssumeRoleWithSAML{
 			OktaClient: oktaCl,
 			AWSSAMLURL: samlURL,
 			// TODO
 			TargetRoleARNChooser: assumerolewithsaml.StaticChooser{profile["role_arn"]},
+			Opts:                 opts,
 		}
 		credsSpecific, err := a.Assume()
 		if err != nil {
@@ -134,8 +139,8 @@ func execRun(cmd *cobra.Command, args []string) error {
 	env.AddCreds(creds)
 	env.AddInfo(infoEnvs{
 		ProfileName: profileName,
+		Region:      FlagAWSRegion,
 		/* TODO
-		Region:         creds.Meta.Region,
 		BaseRoleARN:    creds.Meta.BaseRoleARN,
 		AssumedRoleARN: creds.Meta.AssumedRoleARN,
 		ExpiresAt:      creds.Meta.ExpiresAt,

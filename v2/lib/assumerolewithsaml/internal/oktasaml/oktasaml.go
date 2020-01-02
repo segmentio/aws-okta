@@ -131,10 +131,8 @@ func getNode(n *html.Node, name string) (val string, node *html.Node) {
 	return
 }
 
-func parse(body []byte) (*SAMLAssertion, error) {
+func parseSAMLResponseB64(body []byte) ([]byte, error) {
 	var val string
-	var resp SAMLAssertion
-	var data []byte
 	var doc *html.Node
 	doc, err := html.Parse(strings.NewReader(string(body)))
 	if err != nil {
@@ -147,11 +145,19 @@ func parse(body []byte) (*SAMLAssertion, error) {
 		return nil, fmt.Errorf("missing SAMLResponse node")
 
 	}
-	// TODO: this is weird
-	resp.RawData = []byte(val)
+
+	//TODO: poor man's XML entity decoding?
 	val = strings.Replace(val, "&#x2b;", "+", -1)
 	val = strings.Replace(val, "&#x3d;", "=", -1)
-	data, err = base64.StdEncoding.DecodeString(val)
+	return []byte(val), nil
+}
+
+func parseSAMLAssertion(samlResponseB64 []byte) (*SAMLAssertion, error) {
+	var resp SAMLAssertion
+	// TODO: not sure why we do this
+	resp.RawData = []byte(samlResponseB64)
+
+	data, err := base64.StdEncoding.DecodeString(string(samlResponseB64))
 	if err != nil {
 		return nil, fmt.Errorf("decoding SAML response: %w", err)
 	}

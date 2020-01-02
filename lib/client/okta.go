@@ -397,7 +397,7 @@ func (o *OktaClient) selectMFADevice() (mfa.Config, error) {
 			Id:         factor.Id}
 
 		for _, device := range o.mfaDevices {
-			log.Debug("checking factor: ", factor, " against device: ", device)
+			log.Debugf("checking factor %v against device %v", factor, device)
 			if device.Supported(mfaConfig) == nil {
 				mfaConfig.Device = device
 				devices = append(devices, mfaConfig)
@@ -479,6 +479,11 @@ func (o *OktaClient) GetURL(path string) (fullURL *url.URL, err error) {
 // -- clientOptions. this would include things like encoding and follow redirects
 func (o *OktaClient) Request(method string, path string, queryParams url.Values, data []byte, format string, followRedirects bool) (res *http.Response, err error) {
 	var header http.Header
+
+	// use our session token if set
+	if o.userAuth.SessionToken != "" {
+		queryParams["onetimetoken"] = []string{o.userAuth.SessionToken}
+	}
 
 	requestUrl, err := url.Parse(fmt.Sprintf(
 		"%s/%s", o.BaseURL, path,

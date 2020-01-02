@@ -12,6 +12,10 @@ const (
 	MinSessionDuration = time.Minute * 15
 
 	DefaultSessionDuration = time.Hour * 4
+
+	// this is the implied default for the API
+	// https://docs.aws.amazon.com/STS/latest/APIReference/Welcome.html
+	DefaultRegion = "us-east-1"
 )
 
 type Opts struct {
@@ -34,6 +38,9 @@ func (o *Opts) ApplyDefaults() *Opts {
 	}
 	if o.Log == nil {
 		o.Log = logrus.StandardLogger()
+	}
+	if o.Region == "" {
+		o.Region = DefaultRegion
 	}
 	return o
 }

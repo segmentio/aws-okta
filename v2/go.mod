@@ -2,7 +2,6 @@ module github.com/segmentio/aws-okta/v2
 
 require (
 	github.com/99designs/keyring v1.1.3
-	github.com/apex/log v1.1.1
 	github.com/keybase/go-keychain v0.0.0-20191220220820-f65a47cbe0b1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 

@@ -7,6 +7,7 @@ import (
 
 	oldclient "github.com/segmentio/aws-okta/lib/client"
 	"github.com/segmentio/aws-okta/lib/client/mfa"
+	oldclientmfa "github.com/segmentio/aws-okta/lib/client/mfa"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -54,6 +55,10 @@ func (c *Client) DoAuth() error {
 				Username: c.Creds.Username,
 				Password: c.Creds.Password,
 				Domain:   c.Creds.Domain,
+				// TODO
+				MFA: oldclientmfa.Config{
+					DuoDevice: "phone1",
+				},
 			},
 			nil,
 			mfaInputs{},
@@ -79,5 +84,5 @@ func (c *Client) Get(path string) (*http.Response, error) {
 	}
 	// TODO: this needs to handle `onetimetoken` query param
 	// we never use the JSON parsing AFAICT, and we always follow redirects
-	return c.oldClient.Request("GET", path, url.Values{}, nil, "", true)
+	return c.oldClient.Request("GET", path+"?onetimetoken="+c.oldClient.GetSessionToken(), url.Values{}, nil, "", true)
 }

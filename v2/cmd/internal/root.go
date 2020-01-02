@@ -14,6 +14,7 @@ import (
 var (
 	FlagKeyringBackend string
 	FlagDebug          bool
+	FlagAWSRegion      string
 )
 
 var (
@@ -89,4 +90,5 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVarP(&FlagKeyringBackend, "backend", "b", "", fmt.Sprintf("Secret backend to use %s", backendsAvailable))
 	RootCmd.PersistentFlags().BoolVarP(&FlagDebug, "debug", "d", false, "Enable debug logging")
+	RootCmd.PersistentFlags().StringVarP(&FlagAWSRegion, "aws-region", "r", "us-east-1", "AWS region")
 }
