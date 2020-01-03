@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	awsokta "github.com/segmentio/aws-okta/v2/lib"
 	"github.com/segmentio/aws-okta/v2/lib/oktaclient"
 )
 
-// Client is stateful. Methods cache their results. Call Reset
+// Note: most methods cache their results; use `Reset` to clear.
 type Client struct {
 	OktaClient oktaclient.Client
 
@@ -23,7 +24,6 @@ type Client struct {
 func (c *Client) Reset() {
 	c.body = nil
 	c.samlResponseB64 = nil
-
 }
 
 // Gets SAML assertion and stores it in client
@@ -31,7 +31,22 @@ func (c *Client) Get() ([]byte, error) {
 	if c.body != nil {
 		return c.body, nil
 	}
-	res, err := c.OktaClient.Get(c.SAMLURL)
+	header := http.Header{
+		"Accept-Encoding": []string{"identity"},
+		"Cache-Control":   []string{"no-cache"},
+	}
+	req := &http.Request{
+		Method: http.MethodGet,
+		URL:    &url.URL{Path: c.SAMLURL},
+		/* TODO: needed?
+		// force HTTP/1.1; 2 breaks
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		*/
+		Header: header,
+	}
+	res, err := c.OktaClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("GET SAML URL %s: %w", c.SAMLURL, err)
 	}
