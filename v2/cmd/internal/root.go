@@ -13,7 +13,7 @@ import (
 
 var (
 	FlagKeyringBackend string
-	FlagDebug          bool
+	FlagVerbosity      int
 	FlagAWSRegion      string
 )
 
@@ -71,9 +71,14 @@ func prerun(cmd *cobra.Command, args []string) {
 
 	Analytics.KeyringBackend = FlagKeyringBackend
 
-	if FlagDebug {
+	if FlagVerbosity == 1 {
+		log.SetLevel(log.InfoLevel)
+	} else if FlagVerbosity == 2 {
 		log.SetLevel(log.DebugLevel)
+	} else if FlagVerbosity >= 3 {
+		log.SetLevel(log.TraceLevel)
 	}
+	log.Infof("log level: %s", log.GetLevel().String())
 
 	Analytics.Identify()
 }
@@ -89,6 +94,6 @@ func init() {
 	}
 
 	RootCmd.PersistentFlags().StringVarP(&FlagKeyringBackend, "backend", "b", "", fmt.Sprintf("Secret backend to use %s", backendsAvailable))
-	RootCmd.PersistentFlags().BoolVarP(&FlagDebug, "debug", "d", false, "Enable debug logging")
+	RootCmd.PersistentFlags().CountVarP(&FlagVerbosity, "verbose", "v", "Increase logging verbosity (default 0; 1=info, 2=debug, 3=trace)")
 	RootCmd.PersistentFlags().StringVarP(&FlagAWSRegion, "aws-region", "r", "us-east-1", "AWS region")
 }
