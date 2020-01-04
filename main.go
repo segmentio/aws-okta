@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/segmentio/aws-okta/cmd"
-)
+import cmd "github.com/segmentio/aws-okta/v2/cmd"
 
 // These are set via linker flags
 var (
@@ -11,6 +9,5 @@ var (
 )
 
 func main() {
-	// vars set by linker flags must be strings...
 	cmd.Execute(Version, AnalyticsWriteKey)
 }
