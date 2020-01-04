@@ -3,7 +3,7 @@ package mfa
 import (
 	"fmt"
 
-	"github.com/segmentio/aws-okta/v2/lib/oktaclient/internal/marshal"
+	"github.com/segmentio/aws-okta/lib/v2/oktaclient/internal/marshal"
 )
 
 // TODO: test

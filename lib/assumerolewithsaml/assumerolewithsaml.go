@@ -6,9 +6,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	awssession "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	awsokta "github.com/segmentio/aws-okta/v2/lib"
-	"github.com/segmentio/aws-okta/v2/lib/assumerolewithsaml/internal/oktasaml"
-	"github.com/segmentio/aws-okta/v2/lib/oktaclient"
+	awsokta "github.com/segmentio/aws-okta/lib/v2"
+	"github.com/segmentio/aws-okta/lib/v2/assumerolewithsaml/internal/oktasaml"
+	"github.com/segmentio/aws-okta/lib/v2/oktaclient"
 )
 
 type RoleChooser interface {

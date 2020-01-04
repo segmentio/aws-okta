@@ -1,6 +1,6 @@
 package oktaclient
 
-import "github.com/segmentio/aws-okta/v2/lib/oktaclient/internal/marshal"
+import "github.com/segmentio/aws-okta/lib/v2/oktaclient/internal/marshal"
 
 type MFAConfigDUO struct {
 	DeviceName string

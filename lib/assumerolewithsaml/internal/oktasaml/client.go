@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/url"
 
-	awsokta "github.com/segmentio/aws-okta/v2/lib"
-	"github.com/segmentio/aws-okta/v2/lib/oktaclient"
+	awsokta "github.com/segmentio/aws-okta/lib/v2"
+	"github.com/segmentio/aws-okta/lib/v2/oktaclient"
 )
 
 // Note: most methods cache their results; use `Reset` to clear.

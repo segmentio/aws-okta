@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/segmentio/aws-okta/v2/lib/oktaclient/internal/marshal"
+	"github.com/segmentio/aws-okta/lib/v2/oktaclient/internal/marshal"
 	log "github.com/sirupsen/logrus"
 
 	u2fhost "github.com/marshallbrekka/go-u2fhost"

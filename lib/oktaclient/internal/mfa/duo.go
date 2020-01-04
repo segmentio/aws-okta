@@ -3,8 +3,8 @@ package mfa
 import (
 	"fmt"
 
-	"github.com/segmentio/aws-okta/v2/lib/oktaclient/internal/marshal"
-	"github.com/segmentio/aws-okta/v2/lib/oktaclient/internal/mfa/internal/duoclient"
+	"github.com/segmentio/aws-okta/lib/v2/oktaclient/internal/marshal"
+	"github.com/segmentio/aws-okta/lib/v2/oktaclient/internal/mfa/internal/duoclient"
 	log "github.com/sirupsen/logrus"
 )
 

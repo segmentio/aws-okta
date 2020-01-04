@@ -9,11 +9,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	awsokta "github.com/segmentio/aws-okta/lib/v2"
+	"github.com/segmentio/aws-okta/lib/v2/assumerolewithsaml"
+	"github.com/segmentio/aws-okta/lib/v2/oktaclient"
 	"github.com/segmentio/aws-okta/v2/cmd/internal/analytics"
 	"github.com/segmentio/aws-okta/v2/cmd/internal/configload"
-	awsokta "github.com/segmentio/aws-okta/v2/lib"
-	"github.com/segmentio/aws-okta/v2/lib/assumerolewithsaml"
-	"github.com/segmentio/aws-okta/v2/lib/oktaclient"
 )
 
 // execCmd represents the exec command

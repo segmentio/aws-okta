@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/99designs/keyring"
-	"github.com/segmentio/aws-okta/v2/lib/oktaclient"
+	"github.com/segmentio/aws-okta/lib/v2/oktaclient"
 )
 
 // changing any of these will break keyring compatibility

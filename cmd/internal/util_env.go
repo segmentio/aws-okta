@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	awsokta "github.com/segmentio/aws-okta/v2/lib"
+	awsokta "github.com/segmentio/aws-okta/lib/v2"
 )
 
 type kvEnv map[string]string

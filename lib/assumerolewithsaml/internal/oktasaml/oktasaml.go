@@ -9,7 +9,7 @@ import (
 	logrus "github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 
-	awsokta "github.com/segmentio/aws-okta/v2/lib"
+	awsokta "github.com/segmentio/aws-okta/lib/v2"
 )
 
 // TODO: allow customization?

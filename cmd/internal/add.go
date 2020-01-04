@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/segmentio/aws-okta/v2/lib/oktaclient"
+	"github.com/segmentio/aws-okta/lib/v2/oktaclient"
 	"github.com/spf13/cobra"
 )
 

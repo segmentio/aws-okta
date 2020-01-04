@@ -11,8 +11,8 @@ import (
 
 	// "net/url"
 
-	"github.com/segmentio/aws-okta/v2/lib/oktaclient/internal/marshal"
-	"github.com/segmentio/aws-okta/v2/lib/oktaclient/internal/mfa"
+	"github.com/segmentio/aws-okta/lib/v2/oktaclient/internal/marshal"
+	"github.com/segmentio/aws-okta/lib/v2/oktaclient/internal/mfa"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 )

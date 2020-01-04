@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	awssession "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	awsokta "github.com/segmentio/aws-okta/v2/lib"
+	awsokta "github.com/segmentio/aws-okta/lib/v2"
 )
 
 type AssumeRoleWithCreds struct {
