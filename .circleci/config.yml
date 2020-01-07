@@ -14,7 +14,7 @@ jobs:
       - run:
           name: Test
           command: |
-            go build -o aws-okta ./cmd
+            go build -mod=readonly -o aws-okta ./cmd
             ./aws-okta version
 
   test:
@@ -30,7 +30,7 @@ jobs:
       - run:
           name: Test
           command: |
-            go test -v ./...
+            go test -mod=readonly -v ./...
       - run:
           name: Check modules are tidy and checked in
           command: |
