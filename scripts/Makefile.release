@@ -150,9 +150,13 @@ dist/aws-okta-$(VERSION)-linux-amd64: | dist/
 .PHONY: clean all
 dist: dist-darwin dist-linux dist/aws-okta-$(VERSION).sha256sums
 
-dist-darwin: dist/aws-okta-$(VERSION)-darwin-amd64
+build-darwin: dist/aws-okta-$(VERSION)-darwin-amd64
+
+dist-darwin: build-darwin
+
+build-linux: dist/aws-okta-$(VERSION)-linux-amd64
 	
-dist-linux: dist/aws-okta-$(VERSION)-linux-amd64 dist/aws-okta_$(VERSION)_amd64.deb dist/aws-okta_$(VERSION)_amd64.rpm
+dist-linux: build-linux dist/aws-okta_$(VERSION)_amd64.deb dist/aws-okta_$(VERSION)_amd64.rpm
 
 dist/aws-okta-$(VERSION).sha256sums: dist/aws-okta-$(VERSION)-darwin-amd64 dist/aws-okta-$(VERSION)-linux-amd64 dist/aws-okta_$(VERSION)_amd64.deb dist/aws-okta_$(VERSION)_amd64.rpm
 	sha256sum $^ | sed 's|dist/||g' > $@
@@ -168,7 +172,9 @@ dist/aws-okta_$(VERSION)_amd64.rpm: dist/nfpm-$(VERSION).yaml dist/aws-okta-$(VE
 
 .PHONY: \
 	dist \
+	build-darwin \
 	dist-darwin \
+	build-linux \
 	dist-linux \
 	publish \
 	publish-github \
