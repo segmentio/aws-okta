@@ -14,13 +14,12 @@ jobs:
       - run:
           name: Test
           command: |
-            go build -mod=vendor
+            go build -o aws-okta ./cmd
             ./aws-okta version
 
   test:
     docker:
       - image: circleci/golang:1.13
-    working_directory: /go/src/github.com/segmentio/aws-okta
     steps:
       - checkout
       - run:
@@ -31,7 +30,7 @@ jobs:
       - run:
           name: Test
           command: |
-            make test
+            go test -v ./...
       - run:
           name: Check modules are tidy and checked in
           command: |
@@ -48,13 +47,12 @@ jobs:
   dist-linux:
     docker:
       - image: circleci/golang:1.13
-    working_directory: /go/src/github.com/segmentio/aws-okta
     steps:
       - checkout
       - run:
           name: Install nfpm, rpmbuild
           command: |
-            sudo make -f Makefile.tools nfpm-debian rpmbuild-debian
+            scripts/install-tools.sh nfpm rpmbuild
       - run:
           name: Install libusb
           command: |
@@ -63,7 +61,7 @@ jobs:
       - run:
           name: Make distributables
           command: |
-            make -f Makefile.release dist-linux
+            make -f scripts/Makefile.release dist-linux
       - persist_to_workspace:
           root: .
           paths: ['dist/*']
@@ -78,27 +76,29 @@ jobs:
       - run:
           name: Install tools
           command: |
-            make -f Makefile.tools github-release
+            scripts/install-tools.sh github-release
             # this is all for package_cloud :/
             sudo apt update -q
             sudo apt install -yq ruby ruby-dev build-essential
             # fixes https://askubuntu.com/questions/872399/error-failed-to-build-gem-native-extension-when-trying-to-download-rubocop
             sudo gem install rake
-            sudo make -f Makefile.tools package_cloud
-            make -f Makefile.release publish-packagecloud
+            sudo scripts/install-tools.sh package_cloud
+            make -f scripts/Makefile.release publish-packagecloud
 
   publish-github-linux:
     docker:
       - image: circleci/golang:1.13
-    working_directory: /go/src/github.com/segmentio/aws-okta
     steps:
       - checkout
       - attach_workspace: { at: . }
       - run:
-          name: Install tools
+          name: Install github-release
           command: |
-            make -f Makefile.tools github-release
-            make -f Makefile.release publish-github-linux
+            scripts/install-tools.sh github-release
+
+      - run:
+          name: Github Release
+            make -f scripts/Makefile.release publish-github-linux
 
 workflows:
   version: 2

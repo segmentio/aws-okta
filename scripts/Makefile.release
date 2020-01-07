@@ -1,3 +1,4 @@
+# TODO: convert to bash
 # Goals:
 # - Linux releases can be published to Github automatically by CircleCI
 #
