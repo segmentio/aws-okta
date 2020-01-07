@@ -36,7 +36,7 @@ jobs:
           command: |
             export GO111MODULE=on
             go mod tidy
-            go mod vendor
+            cd lib && go mod tidy
             if [ "$(git status --porcelain)" != "" ]; then
               echo "git tree is dirty after tidying and vendoring modules"
               echo "ensure go.mod and go.sum are tidy and vendor is checked in"
