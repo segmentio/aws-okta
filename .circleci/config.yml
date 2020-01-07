@@ -44,11 +44,30 @@ jobs:
               exit 1
             fi
 
+  build:
+    docker:
+      - image: circleci/golang:1.13
+    steps:
+      - checkout
+      - run:
+          name: Install libusb
+          command: |
+            sudo apt update -q
+            sudo apt install -yq libusb-dev libusb-1.0.0-dev
+      - run:
+          name: Build
+          command: |
+            make -f scripts/Makefile.release dist-linux
+      - persist_to_workspace:
+          root: .
+          paths: ['dist/*']
+
   dist-linux:
     docker:
       - image: circleci/golang:1.13
     steps:
       - checkout
+      - attach_workspace: { at: . }
       - run:
           name: Install nfpm, rpmbuild
           command: |
@@ -109,9 +128,13 @@ workflows:
     jobs:
       - test
       - test-build-golang-prev
+      - build
       - dist-linux:
-          # needed to ensure dist happens on tag events
           filters:
+            # never publish from a branch event
+            branches:
+              ignore: /.*/
+            # needed to ensure dist happens on tag events
             tags:
               only: /.*/
       - publish-packagecloud:

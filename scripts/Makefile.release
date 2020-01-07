@@ -135,6 +135,19 @@ publish-packagecloud-rpm: dist/aws-okta_$(VERSION)_amd64.rpm packagecloud.conf.j
 			grep -v 'with token:' ; \
 	done
 
+clean:
+	rm -rf ./dist
+
+dist/:
+	mkdir -p dist
+
+dist/aws-okta-$(VERSION)-darwin-amd64: | dist/
+	GOOS=darwin GOARCH=amd64 GO111MODULE=on go build $(LDFLAGS) -o $@ ./cmd
+
+dist/aws-okta-$(VERSION)-linux-amd64: | dist/
+	GOOS=linux GOARCH=amd64 GO111MODULE=on go build $(LDFLAGS) -o $@ ./cmd
+
+.PHONY: clean all
 dist: dist-darwin dist-linux dist/aws-okta-$(VERSION).sha256sums
 
 dist-darwin: dist/aws-okta-$(VERSION)-darwin-amd64
