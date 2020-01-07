@@ -14,6 +14,17 @@ jobs:
           name: Test
           command: |
             go test -mod=readonly -v ./...
+
+  test-tidy:
+    docker:
+      - image: circleci/golang:1.13
+    steps:
+      - checkout
+      - run:
+          name: Install linux dependencies - libusb
+          command: |
+            sudo apt update -q
+            sudo apt install -yq libusb-dev libusb-1.0.0-dev
       - run:
           name: Check modules are tidy and checked in
           command: |
@@ -110,6 +121,7 @@ workflows:
   test-dist-publish-linux:
     jobs:
       - test
+      - test-tidy
       - build
       - dist-linux:
           filters:
