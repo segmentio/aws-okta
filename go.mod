@@ -10,7 +10,7 @@ require (
 
 	github.com/segmentio/analytics-go v3.0.1+incompatible
 	// RC temporary until GA
-	github.com/segmentio/aws-okta/lib/v2 v2.0.0-rc1.2
+	github.com/segmentio/aws-okta/lib/v2 v2.0.0-rc1.4
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.0-20170621173259-31694f19adee
@@ -27,3 +27,5 @@ go 1.13
 
 // oof https://github.com/99designs/keyring/issues/56#issuecomment-566256653
 replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
+
+replace github.com/segmentio/aws-okta/lib/v2 => ./lib

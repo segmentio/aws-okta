@@ -71,7 +71,9 @@ func prerun(cmd *cobra.Command, args []string) {
 
 	Analytics.KeyringBackend = FlagKeyringBackend
 
-	if FlagVerbosity == 1 {
+	if FlagVerbosity == 0 {
+		log.SetLevel(log.WarnLevel)
+	} else if FlagVerbosity == 1 {
 		log.SetLevel(log.InfoLevel)
 	} else if FlagVerbosity == 2 {
 		log.SetLevel(log.DebugLevel)
