@@ -108,6 +108,10 @@ func (c *Client) ReAuth() error {
 	if err != nil {
 		return fmt.Errorf("creating cookie jar: %w", err)
 	}
+
+	if err := c.initHTTPClient(); err != nil {
+		return fmt.Errorf("initializing HTTP client: %w", err)
+	}
 	c.client.Jar = jar
 	return c.DoAuth()
 }
