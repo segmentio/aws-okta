@@ -1,0 +1,2 @@
+/vendor/** linguist-vendored -diff
+/go.sum linguist-generated -diff
