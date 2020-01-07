@@ -75,9 +75,11 @@ type Profile map[string]string
 
 type Profiles map[string]Profile
 
-func (p Profiles) Get(profileName string, key string) (value string, err error) {
+// this probably doesn't need exporting
+func (p Profiles) getWithSection(profileName string, key string) (value string, sectionName string, err error) {
 	value, ok := p[profileName][key]
 	if ok {
+		sectionName = profileName
 		return
 	}
 
@@ -86,6 +88,7 @@ func (p Profiles) Get(profileName string, key string) (value string, err error) 
 	if ok {
 		value, ok = p[sourceProfile][key]
 		if ok {
+			sectionName = sourceProfile
 			return
 		}
 
@@ -94,14 +97,20 @@ func (p Profiles) Get(profileName string, key string) (value string, err error) 
 	// Fallback to `okta` if no profile supplies the value
 	value, ok = p["okta"][key]
 	if ok {
+		sectionName = "okta"
 		return
 	}
 
-	return "", &ErrNotFound{
+	return "", "", &ErrNotFound{
 		Profile:       profileName,
 		Key:           key,
 		SourceProfile: sourceProfile,
 	}
+}
+
+func (p Profiles) Get(profileName string, key string) (value string, err error) {
+	value, _, err = p.getWithSection(profileName, key)
+	return
 }
 
 func (p Profiles) GetWithDefault(profileName string, key string, defaultValue string) string {

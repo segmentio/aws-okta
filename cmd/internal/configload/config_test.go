@@ -6,7 +6,7 @@ func TestGetConfigValue(t *testing.T) {
 	config_profiles := make(Profiles)
 
 	t.Run("empty profile", func(t *testing.T) {
-		_, _, found_error := config_profiles.GetValue("profile_a", "config_key")
+		_, found_error := config_profiles.Get("profile_a", "config_key")
 		if found_error == nil {
 			t.Error("Searching an empty profile set should return an error")
 		}
@@ -35,14 +35,14 @@ func TestGetConfigValue(t *testing.T) {
 	}
 
 	t.Run("missing key", func(t *testing.T) {
-		_, _, found_error := config_profiles.GetValue("profile_a", "config_key")
+		_, found_error := config_profiles.Get("profile_a", "config_key")
 		if found_error == nil {
 			t.Error("Searching for a missing key should return an error")
 		}
 	})
 
 	t.Run("fallback to okta", func(t *testing.T) {
-		found_value, found_profile, found_error := config_profiles.GetValue("profile_a", "key_a")
+		found_value, found_profile, found_error := config_profiles.getWithSection("profile_a", "key_a")
 		if found_error != nil {
 			t.Error("Error when searching for key_a")
 		}
@@ -57,7 +57,7 @@ func TestGetConfigValue(t *testing.T) {
 	})
 
 	t.Run("found in current profile", func(t *testing.T) {
-		found_value, found_profile, found_error := config_profiles.GetValue("profile_b", "key_d")
+		found_value, found_profile, found_error := config_profiles.getWithSection("profile_b", "key_d")
 		if found_error != nil {
 			t.Error("Error when searching for key_d")
 		}
@@ -72,7 +72,7 @@ func TestGetConfigValue(t *testing.T) {
 	})
 
 	t.Run("traversing from child profile", func(t *testing.T) {
-		found_value, found_profile, found_error := config_profiles.GetValue("profile_b", "key_a")
+		found_value, found_profile, found_error := config_profiles.getWithSection("profile_b", "key_a")
 		if found_error != nil {
 			t.Error("Error when searching for key_a")
 		}
@@ -87,7 +87,7 @@ func TestGetConfigValue(t *testing.T) {
 	})
 
 	t.Run("recursive traversing from child profile", func(t *testing.T) {
-		_, _, found_error := config_profiles.GetValue("profile_c", "key_c")
+		_, found_error := config_profiles.Get("profile_c", "key_c")
 		if found_error == nil {
 			t.Error("Recursive searching should not work")
 		}
