@@ -52,7 +52,7 @@ jobs:
       - run:
           name: Install nfpm, rpmbuild
           command: |
-            scripts/install-tools.sh nfpm rpmbuild
+            sudo scripts/install-tools.sh nfpm rpmbuild
       - run:
           name: Install libusb
           command: |
