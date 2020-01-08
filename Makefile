@@ -9,6 +9,9 @@ LDFLAGS := -ldflags='-X "main.Version=$(VERSION)"'
 
 test:
 	GO111MODULE=on go test -v ./...
+	cd lib && \
+		GO111MODULE=on go test -v ./... ; \
+		cd ..
 
 build:
 	GO111MODULE=on go build -o aws-okta ./cmd
