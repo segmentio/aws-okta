@@ -139,7 +139,7 @@ func (c *Client) DoAuth() error {
 
 	var userAuthn marshal.UserAuthn
 	if err := json.NewDecoder(res.Body).Decode(&userAuthn); err != nil {
-		return fmt.Errorf("decoding api/v1/authn response: %w")
+		return fmt.Errorf("decoding api/v1/authn response: %w", err)
 	}
 
 	if userAuthn.Status == marshal.UserAuthnStatusPasswordExpired {
@@ -315,7 +315,7 @@ type ErrInvalidAuthState struct {
 }
 
 func (e *ErrInvalidAuthState) Error() string {
-	return fmt.Sprintf("invalid auth state %s; expected %s", e.actual, e.expected)
+	return fmt.Sprintf("invalid auth state %t; expected %t", e.actual, e.expected)
 }
 
 func (c *Client) baseURL() string {

@@ -14,8 +14,12 @@ func TestParseSAMLAssertion(t *testing.T) {
 		t.FailNow()
 	}
 
-	s, err := parse(rawData)
-	if !assert.NoError(t, err, "able to parse saml assertion without errors") {
+	r, err := parseSAMLResponseB64(rawData)
+	if !assert.NoError(t, err, "parsing SAML response") {
+		t.FailNow()
+	}
+	s, err := parseSAMLAssertion(r)
+	if !assert.NoError(t, err, "parsing SAML assertion") {
 		t.FailNow()
 	}
 	assert.Equal(t, "", s.Resp.SAMLP, "parsing samlp")
