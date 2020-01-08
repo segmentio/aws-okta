@@ -11,8 +11,13 @@ jobs:
             sudo apt update -q
             sudo apt install -yq libusb-dev libusb-1.0.0-dev
       - run:
-          name: Test
+          name: Test main module
           command: |
+            go test -mod=readonly -v ./...
+      - run:
+          name: Test lib
+          command: |
+            cd lib
             go test -mod=readonly -v ./...
 
   test-tidy:
