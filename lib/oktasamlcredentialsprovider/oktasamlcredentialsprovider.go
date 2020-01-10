@@ -136,7 +136,7 @@ func (p *Provider) Retrieve() (awscredentials.Value, error) {
 	if err != nil {
 		return awscredentials.Value{}, fmt.Errorf("getting SAMLResponse: %w", err)
 	}
-	p.Opts.Log.Debugf("assuming role %s", targetRole.Role)
+	p.Opts.Log.Debugf("assuming role %s with duration %s", targetRole.Role, p.Opts.SessionDuration)
 	resp, err := svc.AssumeRoleWithSAML(&sts.AssumeRoleWithSAMLInput{
 		PrincipalArn:    aws.String(targetRole.Principal),
 		RoleArn:         aws.String(targetRole.Role),
