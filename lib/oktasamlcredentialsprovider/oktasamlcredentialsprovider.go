@@ -59,10 +59,11 @@ type Provider struct {
 
 func (p *Provider) IsExpired() bool {
 	if p.retrieved == nil {
+		p.Opts.Log.Debugf("IsExpired: %t", true)
 		return true
 	}
 	expired := aws.TimeValue(p.retrieved.Expiration).Before(time.Now())
-	p.Opts.Log.Debugf("IsExpired: %t", expired)
+	p.Opts.Log.Debugf("IsExpired: %t; expiration %s", expired, p.retrieved.Expiration)
 	return expired
 }
 
