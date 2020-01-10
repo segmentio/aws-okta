@@ -1,4 +1,4 @@
-package assumerolewithsaml
+package oktasamlcredentialsprovider
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ type Opts struct {
 	SessionDuration time.Duration
 
 	// if unset, no session caching will be done
-	SessionCache SessionCache
+	SessionCache sessionCache
 
 	Log *logrus.Logger
 

@@ -9,11 +9,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	awsokta "github.com/segmentio/aws-okta/lib/v2"
-	"github.com/segmentio/aws-okta/lib/v2/assumerolewithsaml"
 	"github.com/segmentio/aws-okta/lib/v2/oktaclient"
+	oktasamlcredentialsprovider "github.com/segmentio/aws-okta/lib/v2/oktasamlcredentialsprovider"
 	"github.com/segmentio/aws-okta/v2/cmd/internal/analytics"
 	"github.com/segmentio/aws-okta/v2/cmd/internal/configload"
+
+	awscredentials "github.com/aws/aws-sdk-go/aws/credentials"
 )
 
 // execCmd represents the exec command
@@ -101,7 +102,7 @@ func execRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Failed to get Okta creds from keyring; maybe try `add` first: %w", err)
 	}
 
-	var creds awsokta.AWSCreds
+	var creds awscredentials.Value
 	if sourceProfileName == "" {
 		// assume role with SAML
 		oktaCl := oktaclient.Client{
@@ -112,23 +113,21 @@ func execRun(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("Failed to find aws_saml_url: %w", err)
 		}
-		opts := assumerolewithsaml.Opts{
+		opts := oktasamlcredentialsprovider.Opts{
 			Region: FlagAWSRegion,
 		}
 		opts.ApplyDefaults()
-		a := assumerolewithsaml.AssumeRoleWithSAML{
+		p := oktasamlcredentialsprovider.Provider{
 			OktaClient: oktaCl,
 			AWSSAMLURL: samlURL,
 			// TODO
-			TargetRoleARNChooser: assumerolewithsaml.StaticChooser{profile["role_arn"]},
+			TargetRoleARNChooser: oktasamlcredentialsprovider.StaticChooser{profile["role_arn"]},
 			Opts:                 opts,
 		}
-		credsSpecific, err := a.Assume()
+		creds, err = p.Retrieve()
 		if err != nil {
 			return fmt.Errorf("Failed to assume role: %w", err)
 		}
-		creds = credsSpecific.AWSCreds
-
 	} else {
 		_ = sourceProfile
 		// TODO: assumerolewithsamlandcreds

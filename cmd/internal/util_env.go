@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	awsokta "github.com/segmentio/aws-okta/lib/v2"
+	awscredentials "github.com/aws/aws-sdk-go/aws/credentials"
 )
 
 type kvEnv map[string]string
@@ -29,7 +29,7 @@ func (e kvEnv) Environ() []string {
 	return r
 }
 
-func (e kvEnv) AddCreds(creds awsokta.AWSCreds) {
+func (e kvEnv) AddCreds(creds awscredentials.Value) {
 	e["AWS_SESSION_TOKEN"] = creds.SessionToken
 	e["AWS_SECURITY_TOKEN"] = creds.SessionToken
 	e["AWS_ACCESS_KEY_ID"] = creds.AccessKeyID

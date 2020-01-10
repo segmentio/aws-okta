@@ -2,6 +2,7 @@ module github.com/segmentio/aws-okta/v2
 
 require (
 	github.com/99designs/keyring v1.1.3
+	github.com/aws/aws-sdk-go v1.26.8
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/keybase/go-keychain v0.0.0-20191220220820-f65a47cbe0b1 // indirect
