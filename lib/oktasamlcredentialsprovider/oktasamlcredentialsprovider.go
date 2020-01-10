@@ -61,7 +61,9 @@ func (p *Provider) IsExpired() bool {
 	if p.retrieved == nil {
 		return true
 	}
-	return aws.TimeValue(p.retrieved.Expiration).Before(time.Now())
+	expired := aws.TimeValue(p.retrieved.Expiration).Before(time.Now())
+	p.Opts.Log.Debugf("IsExpired: %t", expired)
+	return expired
 }
 
 // implements awscredentials.Expirer
@@ -71,6 +73,7 @@ func (p *Provider) ExpiresAt() time.Time {
 		// TODO: is this correct?
 		return time.Time{}
 	}
+	p.Opts.Log.Debugf("ExpiresAt: %s", aws.TimeValue(p.retrieved.Expiration))
 	return aws.TimeValue(p.retrieved.Expiration)
 }
 
