@@ -77,15 +77,25 @@ func (p *Provider) ExpiresAt() time.Time {
 	return aws.TimeValue(p.retrieved.Expiration)
 }
 
+// ugh
+func credsC2V(stsCreds sts.Credentials) awscredentials.Value {
+	return awscredentials.Value{
+		AccessKeyID:     aws.StringValue(stsCreds.AccessKeyId),
+		SecretAccessKey: aws.StringValue(stsCreds.SecretAccessKey),
+		SessionToken:    aws.StringValue(stsCreds.SessionToken),
+	}
+}
+
 // TODO: needs testing
 func (p *Provider) Retrieve() (awscredentials.Value, error) {
 	if p.Opts.SessionCache != nil {
 		// TODO check caching logic
 		if r, isStatic := p.TargetRoleARNChooser.(StaticChooser); isStatic {
 			k := sessionCacheKey{TargetRoleARN: r.RoleARN}
-			if creds, err := p.Opts.SessionCache.Get(k); err != nil {
+			if cacheValue, err := p.Opts.SessionCache.Get(k); err != nil {
 				p.Opts.Log.Infof("session cache hit: %s", k)
-				return creds.Value, nil
+				p.retrieved = &cacheValue.Credentials
+				return credsC2V(cacheValue.Credentials), nil
 			}
 			p.Opts.Log.Infof("session cache miss: %s", k)
 		}
@@ -106,9 +116,10 @@ func (p *Provider) Retrieve() (awscredentials.Value, error) {
 
 	if p.Opts.SessionCache != nil {
 		k := sessionCacheKey{TargetRoleARN: targetRole.Role}
-		if creds, err := p.Opts.SessionCache.Get(k); err != nil {
+		if cacheValue, err := p.Opts.SessionCache.Get(k); err != nil {
 			p.Opts.Log.Infof("session cache hit: %s", k)
-			return creds.Value, nil
+			p.retrieved = &cacheValue.Credentials
+			return credsC2V(cacheValue.Credentials), nil
 		}
 		p.Opts.Log.Infof("session cache miss: %s", k)
 	}
@@ -135,18 +146,12 @@ func (p *Provider) Retrieve() (awscredentials.Value, error) {
 	if err != nil {
 		return awscredentials.Value{}, fmt.Errorf("assuming role with SAML: %w", err)
 	}
-
-	creds := resp.Credentials
-	credsValue := awscredentials.Value{
-		AccessKeyID:     aws.StringValue(creds.AccessKeyId),
-		SecretAccessKey: aws.StringValue(creds.SecretAccessKey),
-		SessionToken:    aws.StringValue(creds.SessionToken),
-		ProviderName:    ProviderName,
-	}
+	stsCreds := resp.Credentials
 	if p.Opts.SessionCache != nil {
-		if err := p.Opts.SessionCache.Put(sessionCacheKey{TargetRoleARN: targetRole.Role}, sessionCacheValue{Value: credsValue}); err != nil {
+		if err := p.Opts.SessionCache.Put(sessionCacheKey{TargetRoleARN: targetRole.Role}, sessionCacheValue{Credentials: *stsCreds}); err != nil {
 			p.Opts.Log.Errorf("failed to put to session cache: %s", err)
 		}
 	}
-	return credsValue, nil
+	p.retrieved = stsCreds
+	return credsC2V(*stsCreds), nil
 }

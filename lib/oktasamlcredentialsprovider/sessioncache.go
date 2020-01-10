@@ -1,6 +1,6 @@
 package oktasamlcredentialsprovider
 
-import awscredentials "github.com/aws/aws-sdk-go/aws/credentials"
+import "github.com/aws/aws-sdk-go/service/sts"
 
 // TODO
 type sessionCacheKey struct {
@@ -8,7 +8,7 @@ type sessionCacheKey struct {
 }
 
 type sessionCacheValue struct {
-	awscredentials.Value
+	sts.Credentials
 }
 
 // TODO: this needs expiry?
