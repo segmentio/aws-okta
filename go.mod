@@ -23,7 +23,9 @@ require (
 
 go 1.13
 
-// oof https://github.com/99designs/keyring/issues/56#issuecomment-566256653
-replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
+// TODO: temp WIP
+replace github.com/keybase/go-keychain => ./go-keychain
+
+replace github.com/99designs/keyring => ./keyring
 
 replace github.com/segmentio/aws-okta/lib/v2 => ./lib

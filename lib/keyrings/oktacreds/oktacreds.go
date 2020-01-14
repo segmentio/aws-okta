@@ -6,6 +6,7 @@ import (
 
 	"github.com/99designs/keyring"
 	"github.com/segmentio/aws-okta/lib/v2/oktaclient"
+	log "github.com/sirupsen/logrus"
 )
 
 // changing any of these will break keyring compatibility
@@ -51,6 +52,7 @@ func (k *Keyring) Open() error {
 
 // Put will Open if not open already
 func (k *Keyring) Put(accountAlias string, creds oktaclient.Creds) error {
+	log.Tracef("keyring %s putting creds: %v", accountAlias, creds)
 	if k.keyring == nil {
 		if err := k.Open(); err != nil {
 			return fmt.Errorf("opening keyring: %w", err)
@@ -69,10 +71,12 @@ func (k *Keyring) Put(accountAlias string, creds oktaclient.Creds) error {
 		KeychainNotTrustApplication: false,
 	}
 
+	log.Tracef("keyring %s put item: %v", accountAlias, item)
 	return k.keyring.Set(item)
 }
 
 func (k *Keyring) Get(accountAlias string) (oktaclient.Creds, error) {
+	log.Tracef("keyring %s getting creds", accountAlias)
 	if k.keyring == nil {
 		if err := k.Open(); err != nil {
 			return oktaclient.Creds{}, fmt.Errorf("opening keyring: %w", err)
@@ -89,5 +93,6 @@ func (k *Keyring) Get(accountAlias string) (oktaclient.Creds, error) {
 		return oktaCreds, fmt.Errorf("unmarshalling okta creds: %w", err)
 	}
 
+	log.Tracef("keyring %s got creds %v", accountAlias, oktaCreds)
 	return oktaCreds, nil
 }
