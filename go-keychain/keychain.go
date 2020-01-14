@@ -15,6 +15,7 @@ package keychain
 import "C"
 import (
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -355,6 +356,26 @@ func NewGenericPassword(service string, account string, label string, data []byt
 
 // AddItem adds a Item to a Keychain
 func AddItem(item Item) error {
+	// TODO: unhack
+	accessibilityTypeRef := C.CFTypeRef(C.kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly)
+	var errorRef *C.CFErrorRef
+	access := C.SecAccessControlCreateWithFlags(
+		C.kCFAllocatorDefault,
+		accessibilityTypeRef,
+		C.kSecAccessControlBiometryCurrentSet,
+		// error should probably not be ignored?
+		errorRef,
+	)
+	defer Release(C.CFTypeRef(access))
+	if errorRef != nil {
+		// TODO: Release(C.CFTypeRef(errorRef))
+		return fmt.Errorf("CFErrorRef: %s", C.CFErrorCopyDescription(*errorRef))
+	}
+	// TODO: necessary?
+	log.Printf(">>> add secaccesscontrol type: %T", access)
+	item.attr[attrKey(C.CFTypeRef(C.kSecAttrAccessControl))] = access
+	_ = access
+
 	cfDict, err := ConvertMapToCFDictionary(item.attr)
 	if err != nil {
 		return err
@@ -373,6 +394,19 @@ func UpdateItem(queryItem Item, updateItem Item) error {
 		return err
 	}
 	defer Release(C.CFTypeRef(cfDict))
+
+	// TODO: unhack
+	accessibilityTypeRef := C.CFTypeRef(C.kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly)
+	access := C.SecAccessControlCreateWithFlags(
+		C.kCFAllocatorDefault,
+		accessibilityTypeRef,
+		C.kSecAccessControlBiometryCurrentSet,
+		// error should probably not be ignored?
+		nil,
+	)
+	log.Printf(">>> update secaccesscontrol type: %T", access)
+	defer Release(C.CFTypeRef(access))
+	updateItem.attr[attrKey(C.CFTypeRef(C.kSecAttrAccessControl))] = access
 	cfDictUpdate, err := ConvertMapToCFDictionary(updateItem.attr)
 	if err != nil {
 		return err

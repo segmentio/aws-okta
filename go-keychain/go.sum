@@ -1,0 +1,4 @@
+github.com/keybase/go.dbus v0.0.0-20190604182340-7ce83444282d/go.mod h1:a8clEhrrGV/d76/f9r2I41BwANMihfZYV9C223vaxqE=
+github.com/pkg/errors v0.8.2-0.20190227000051-27936f6d90f9/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
+golang.org/x/crypto v0.0.0-20180820150726-614d502a4dac/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
