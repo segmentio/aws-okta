@@ -147,8 +147,8 @@ The `cmd` directory contains a sample CLI program that allows you to run the `re
 ### What platforms has this been tested on?
 At the moment only Mac OS, however nothing in the go codebase is platform specific, and the hid library supports Mac, Windows, and Linux, so in theory it should work on all platforms.
 
-There is a known issue that prevents HID devices from being identified on Linux, as the hid library does not expose the usage page.
-There is a known workaround for this (and an issue filed), so it is not something fundamentally wrong with this implementation, and should be resolved in the near future.
+### Linux
+If you are using a linux device you need to add [these udev rules](https://github.com/Yubico/libu2f-host/blob/master/70-u2f.rules).
 
 ### The interface seems too low level, why isn't it easier to use?
 Mostly because I wasn't sure what a good high level API would look like, and opted to provide a more general purpose low level API.

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/karalabe/hid"
 	butil "github.com/marshallbrekka/go-u2fhost/bytes"
-	"github.com/marshallbrekka/go.hid"
 )
 
 // The HID message structure is defined at the following url.
@@ -25,52 +25,48 @@ const CMD_APDU uint8 = 0x03
 const STAT_ERR uint8 = 0xbf
 
 /** Interfaces **/
-
-type BaseDevice interface {
-	Open() error
-	Close()
-	Write([]byte) (int, error)
-	ReadTimeout([]byte, int) (int, error)
-}
-
 type Device interface {
 	Open() error
 	Close()
 	SendAPDU(instruction, p1, p2 uint8, data []byte) (uint16, []byte, error)
 }
 
+type baseDevice interface {
+	Open() error
+	Close()
+	Write([]byte) (int, error)
+	Read([]byte) (int, error)
+}
+
 // Returns an array of available HID devices.
 func Devices() []*HidDevice {
 	u2fDevices := []*HidDevice{}
-	devices, _ := hid.Enumerate(0x0, 0x0)
-	for _, device := range devices {
-		// need to add some custom code to get hid usage from linux.
-		// use the firefox u2f extension codebase as a reference.
-		// https://github.com/prefiks/u2f4moz/blob/master/c_src/libu2f-host/devs.c#L117-L142
+	devices := hid.Enumerate(0x0, 0x0)
+	for i, device := range devices {
 		if device.UsagePage == 0xf1d0 && device.Usage == 1 {
-			u2fDevices = append(u2fDevices, newHidDevice(newRawHidDevice(device)))
+			u2fDevices = append(u2fDevices, newHidDevice(newRawHidDevice(&devices[i])))
 		}
 	}
 	return u2fDevices
 }
 
 type HidDevice struct {
-	Device    BaseDevice
+	device    baseDevice
 	channelId uint32
 	// Use the crypto/rand reader directly so we can unit test
 	randReader io.Reader
 }
 
-func newHidDevice(dev BaseDevice) *HidDevice {
+func newHidDevice(device baseDevice) *HidDevice {
 	return &HidDevice{
-		Device:     dev,
+		device:     device,
 		channelId:  0xffffffff,
 		randReader: rand.Reader,
 	}
 }
 
 func (dev *HidDevice) Open() error {
-	err := dev.Device.Open()
+	err := dev.device.Open()
 	if err != nil {
 		return err
 	}
@@ -79,7 +75,7 @@ func (dev *HidDevice) Open() error {
 	if err != nil {
 		return err
 	}
-	channelId, err := initDevice(dev.Device, dev.channelId, nonce)
+	channelId, err := initDevice(dev.device, dev.channelId, nonce)
 	if err != nil {
 		return err
 	}
@@ -88,7 +84,7 @@ func (dev *HidDevice) Open() error {
 }
 
 func (dev *HidDevice) Close() {
-	dev.Device.Close()
+	dev.device.Close()
 	dev.channelId = 0xffffffff
 }
 
@@ -100,7 +96,7 @@ func (dev *HidDevice) SendAPDU(instruction, p1, p2 uint8, data []byte) (uint16, 
 		data,
 		[]byte{0x04, 0x00},
 	)
-	resp, err := call(dev.Device, dev.channelId, CMD_APDU, request)
+	resp, err := call(dev.device, dev.channelId, CMD_APDU, request)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -110,7 +106,7 @@ func (dev *HidDevice) SendAPDU(instruction, p1, p2 uint8, data []byte) (uint16, 
 
 /** Helper Functions **/
 
-func call(dev BaseDevice, channelId uint32, command uint8, data []byte) ([]byte, error) {
+func call(dev baseDevice, channelId uint32, command uint8, data []byte) ([]byte, error) {
 	err := sendRequest(dev, channelId, command, data)
 	if err != nil {
 		return nil, err
@@ -118,7 +114,7 @@ func call(dev BaseDevice, channelId uint32, command uint8, data []byte) ([]byte,
 	return readResponse(dev, channelId, command)
 }
 
-func sendRequest(dev BaseDevice, channelId uint32, command uint8, data []byte) error {
+func sendRequest(dev baseDevice, channelId uint32, command uint8, data []byte) error {
 	copyLength := min(uint16(len(data)), HID_RPT_SIZE-7)
 	offset := copyLength
 	var sequence uint8 = 0
@@ -162,11 +158,11 @@ func sendRequest(dev BaseDevice, channelId uint32, command uint8, data []byte) e
 	return nil
 }
 
-func readResponse(dev BaseDevice, channelId uint32, command uint8) ([]byte, error) {
+func readResponse(dev baseDevice, channelId uint32, command uint8) ([]byte, error) {
 	header := butil.Concat(int32bytes(channelId), []byte{TYPE_INIT | command})
 	response := make([]byte, HID_RPT_SIZE)
 	for !bytes.Equal(header, response[:5]) {
-		_, err := dev.ReadTimeout(response, 2000)
+		_, err := dev.Read(response)
 		if err != nil {
 			return nil, err
 		}
@@ -181,7 +177,7 @@ func readResponse(dev BaseDevice, channelId uint32, command uint8) ([]byte, erro
 	var sequence uint8 = 0
 	for totalRead < dataLength {
 		response = make([]byte, HID_RPT_SIZE)
-		_, err := dev.ReadTimeout(response, 2000)
+		_, err := dev.Read(response)
 		if err != nil {
 			return nil, err
 		}
@@ -199,7 +195,7 @@ func readResponse(dev BaseDevice, channelId uint32, command uint8) ([]byte, erro
 	return data, nil
 }
 
-func initDevice(dev BaseDevice, channelId uint32, nonce []byte) (uint32, error) {
+func initDevice(dev baseDevice, channelId uint32, nonce []byte) (uint32, error) {
 	resp, err := call(dev, channelId, CMD_INIT, nonce)
 	if err != nil {
 		return 0, err

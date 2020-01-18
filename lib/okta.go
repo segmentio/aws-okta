@@ -75,7 +75,7 @@ type OktaCreds struct {
 }
 
 type OktaCookies struct {
-	Session string
+	Session     string
 	DeviceToken string
 }
 
@@ -419,15 +419,14 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, ok
 		} else if oktaFactorProvider == "FIDO" {
 			f := o.UserAuth.Embedded.Factor
 
-			log.Debug("FIDO U2F Details:")
-			log.Debug("  ChallengeNonce: ", f.Embedded.Challenge.Nonce)
-			log.Debug("  AppId: ", f.Profile.AppId)
+			log.Debug("FIDO WebAuthn Details:")
+			log.Debug("  ChallengeNonce: ", f.Embedded.Challenge.Challenge)
+			log.Debug("  AppId: ", o.Domain)
 			log.Debug("  CredentialId: ", f.Profile.CredentialId)
 			log.Debug("  StateToken: ", o.UserAuth.StateToken)
 
-			fidoClient, err := mfa.NewFidoClient(f.Embedded.Challenge.Nonce,
-				f.Profile.AppId,
-				f.Profile.Version,
+			fidoClient, err := mfa.NewFidoClient(f.Embedded.Challenge.Challenge,
+				o.Domain,
 				f.Profile.CredentialId,
 				o.UserAuth.StateToken)
 			if err != nil {
@@ -526,7 +525,7 @@ func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
 		id = f.Id
 	case "sms":
 		id = f.Id
-	case "u2f":
+	case "u2f", "webauthn":
 		id = f.Id
 	case "push":
 		if f.Provider == "OKTA" || f.Provider == "DUO" {

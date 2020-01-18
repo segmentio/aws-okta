@@ -22,19 +22,19 @@ var (
 type FidoClient struct {
 	ChallengeNonce string
 	AppId          string
-	Version        string
 	Device         u2fhost.Device
 	KeyHandle      string
 	StateToken     string
 }
 
 type SignedAssertion struct {
-	StateToken    string `json:"stateToken"`
-	ClientData    string `json:"clientData"`
-	SignatureData string `json:"signatureData"`
+	StateToken        string `json:"stateToken"`
+	ClientData        string `json:"clientData"`
+	SignatureData     string `json:"signatureData"`
+	AuthenticatorData string `json:"authenticatorData"`
 }
 
-func NewFidoClient(challengeNonce, appId, version, keyHandle, stateToken string) (FidoClient, error) {
+func NewFidoClient(challengeNonce, appId, keyHandle, stateToken string) (FidoClient, error) {
 	var device u2fhost.Device
 	var err error
 
@@ -55,7 +55,6 @@ func NewFidoClient(challengeNonce, appId, version, keyHandle, stateToken string)
 			Device:         device,
 			ChallengeNonce: challengeNonce,
 			AppId:          appId,
-			Version:        version,
 			KeyHandle:      keyHandle,
 			StateToken:     stateToken,
 		}, nil
@@ -72,9 +71,10 @@ func (d *FidoClient) ChallengeU2f() (*SignedAssertion, error) {
 	request := &u2fhost.AuthenticateRequest{
 		Challenge: d.ChallengeNonce,
 		// the appid is the only facet.
-		Facet:     d.AppId,
+		Facet:     "https://" + d.AppId,
 		AppId:     d.AppId,
 		KeyHandle: d.KeyHandle,
+		WebAuthn:  true,
 	}
 	// do the change
 	prompted := false
@@ -96,9 +96,10 @@ func (d *FidoClient) ChallengeU2f() (*SignedAssertion, error) {
 			response, err := d.Device.Authenticate(request)
 			if err == nil {
 				responsePayload = &SignedAssertion{
-					StateToken:    d.StateToken,
-					ClientData:    response.ClientData,
-					SignatureData: response.SignatureData,
+					StateToken:        d.StateToken,
+					ClientData:        response.ClientData,
+					SignatureData:     response.SignatureData,
+					AuthenticatorData: response.AuthenticatorData,
 				}
 				fmt.Printf("  ==> Touch accepted. Proceeding with authentication\n")
 				return responsePayload, nil
