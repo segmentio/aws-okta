@@ -197,6 +197,9 @@ func (c *Client) doMFA(userAuthn *marshal.UserAuthn) error {
 		&mfa.DUODevice{
 			DeviceName: "phone1",
 		},
+		&mfa.FIDODevice{
+			Domain: c.Creds.Domain,
+		},
 	}
 	mfaDevId, mfaDev, err := selectMFADevice(mfaDevices, *userAuthn)
 	if err != nil {

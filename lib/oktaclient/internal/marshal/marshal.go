@@ -44,6 +44,7 @@ type UserAuthnFactorEmbeddedVerification struct {
 }
 
 type UserAuthnFactorEmbeddedChallenge struct {
+	Challenge       string `json:"challenge"`
 	Nonce           string `json:"nonce"`
 	TimeoutSeconnds int    `json:"timeoutSeconds"`
 }
