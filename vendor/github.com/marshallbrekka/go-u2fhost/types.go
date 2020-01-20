@@ -72,14 +72,19 @@ type AuthenticateRequest struct {
 	// This can be used to determine if a U2F device matches any of the provided key handles
 	// before attempting to prompt the user to activate their devices.
 	CheckOnly bool
+
+	// Optional boolean (defaults to false) to use WebAuthn authentication with U2f
+	// devices
+	WebAuthn bool
 }
 
 // A response from an Authenticate operation.
 // The response fields are typically passed back to the server.
 type AuthenticateResponse struct {
-	KeyHandle     string `json:"keyHandle"`
-	ClientData    string `json:"clientData"`
-	SignatureData string `json:"signatureData"`
+	KeyHandle         string `json:"keyHandle"`
+	ClientData        string `json:"clientData"`
+	SignatureData     string `json:"signatureData"`
+	AuthenticatorData string `json:"authenticatorData,omitempty"`
 }
 
 type JSONWebKey struct {
@@ -90,7 +95,8 @@ type JSONWebKey struct {
 }
 
 type clientData struct {
-	Type               string      `json:"typ"`
+	Typ                string      `json:"typ,omitempty"`
+	Type               string      `json:"type,omitempty"`
 	Challenge          string      `json:"challenge"`
 	ChannelIdPublicKey interface{} `json:"cid_pubkey,omitempty"`
 	Origin             string      `json:"origin"`

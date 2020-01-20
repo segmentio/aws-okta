@@ -28,7 +28,7 @@ func registerRequest(req *RegisterRequest) ([]byte, []byte, error) {
 
 	// Construct the client json
 	client := clientData{
-		Type:               "navigator.id.finishEnrollment",
+		Typ:                "navigator.id.finishEnrollment",
 		Challenge:          req.Challenge,
 		Origin:             req.Facet,
 		ChannelIdPublicKey: cid,
