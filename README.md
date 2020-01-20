@@ -2,6 +2,8 @@
 
 `aws-okta` allows you to authenticate with AWS using your Okta credentials.
 
+⚠️ As per [#278](https://github.com/segmentio/aws-okta/issues/278), development and maintenance of `aws-okta` is halted. If you're not already using it, now would be a bad time to start. ⚠️
+
 ## Installing
 
 [See the wiki for more installation options.](https://github.com/segmentio/aws-okta/wiki/Installation)
