@@ -22,6 +22,11 @@ jobs:
       - image: circleci/golang:1.13
     working_directory: /go/src/github.com/segmentio/aws-okta
     steps:
+      - run:
+          # Do this prior to checkout so that it doesn't modify go.mod file.
+          name: Install modvendor
+          command: |
+            go get -u github.com/goware/modvendor
       - checkout
       - run:
           name: Install linux dependencies - libusb
@@ -38,6 +43,7 @@ jobs:
             export GO111MODULE=on
             go mod tidy
             go mod vendor
+            modvendor -copy="**/*.c **/*.h" -v
             if [ "$(git status --porcelain)" != "" ]; then
               echo "git tree is dirty after tidying and vendoring modules"
               echo "ensure go.mod and go.sum are tidy and vendor is checked in"
