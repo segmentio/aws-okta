@@ -229,6 +229,17 @@ func (o *OktaClient) AuthenticateProfile3(profileARN string, duration time.Durat
 	if err != nil {
 		log.Debug("Failed to reuse session token, starting flow from start")
 
+		// Clear DT cookie before starting AuthN flow again. Bug #279.
+		o.CookieJar.SetCookies(o.BaseURL, []*http.Cookie{
+			{
+				Name:  "DT",
+				MaxAge: -1,
+			},
+		})
+
+		// Call again to get a new DT cookie and ignore the error
+		err := o.Get("GET", o.OktaAwsSAMLUrl, nil, &assertion, "saml")
+
 		if err := o.AuthenticateUser(); err != nil {
 			return sts.Credentials{}, oc, err
 		}
