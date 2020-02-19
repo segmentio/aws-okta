@@ -12,7 +12,7 @@ SHELL := /bin/bash
 export PATH := /go/bin:$(PATH)
 
 # github-release user
-GH_USER := dkujawski
+GH_USER := segmentio
 
 # set --pre-release if not tagged or tree is dirty or there's a `-` in the tag
 ifneq (,$(findstring -,$(VERSION)))

@@ -189,7 +189,7 @@ workflows:
             tags:
               only: /.*/
       - publish-github-windows:
-          context: github-dkujawskicircle-oss-release
+          context: github-segmentcircle-oss-release
           requires:
             - dist-windows
           filters:
