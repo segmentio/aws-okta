@@ -1,0 +1,100 @@
+<?xml version='1.0' encoding='windows-1252'?>
+
+<?define Name = "aws-okta" ?>
+<?define Manufacturer = "Segment" ?>
+<?define Version = "${VERSION}" ?>
+<?define Description = "Installer for the aws-okta commandline tool" ?>
+<?define Comments = "See project repo at https://github.com/segmentio/aws-okta" ?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+    <Product 
+        Id="*"
+        Name="$(var.Name)" 
+        Manufacturer="$(var.Manufacturer)" 
+        Version="$(var.Version)" 
+        UpgradeCode='b2a6bcaa-bda3-4c7f-8dec-d8665d7a9b69' 
+        Language='1033' 
+        Codepage='1252'>
+        
+        <Package 
+            Id='*' 
+            Keywords='Installer' 
+            Description="$(var.Description)"
+            Comments="$(var.Comments)"
+            Manufacturer="$(var.Manufacturer)" 
+            InstallerVersion='100' 
+            InstallScope="perUser"
+            Languages='1033' 
+            Compressed='yes' 
+            SummaryCodepage='1252' />
+
+        <MediaTemplate EmbedCab='yes' />
+        
+        <Directory 
+            Id='TARGETDIR' 
+            Name='SourceDir'>
+            
+            <Directory 
+                Id='AppDataFolder' 
+                Name='PFiles'>
+                
+                <Directory 
+                    Id="$(var.Manufacturer)" 
+                    Name="$(var.Manufacturer)">
+                    
+                    <Directory 
+                        Id='INSTALLDIR' 
+                        Name="$(var.Name)" />
+
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <DirectoryRef 
+            Id='INSTALLDIR'>
+            
+            <Component 
+                Id='MainExecutable' 
+                Guid='83f48fd1-1df3-4cc7-820b-ea8ffb5eff16'>
+                
+                <File 
+                    Id="$(var.Name)EXE" 
+                    Name="$(var.Name).exe" 
+                    Source="dist/$(var.Name).exe" 
+                    KeyPath='yes' />
+
+            </Component>
+        </DirectoryRef>
+        
+        <DirectoryRef 
+            Id='TARGETDIR'>
+
+            <Component 
+                Id='RegistryEntries' 
+                Guid='96ab348f-309c-48c7-926e-6641ca3e9189'> 
+                
+                <RegistryKey 
+                    Root='HKCU' 
+                    Key='Environment' 
+                    Action='createAndRemoveOnUninstall'>
+                    
+                    <RegistryValue 
+                        Type='string' 
+                        Name='PATH' 
+                        Value="[INSTALLDIR]" 
+                        KeyPath='yes' />
+
+                </RegistryKey>
+            </Component>
+        </DirectoryRef>
+
+        <Feature 
+            Id='Complete' 
+            Level='1'>
+            
+            <ComponentRef Id='MainExecutable' />
+            <ComponentRef Id='RegistryEntries' />
+        
+        </Feature>
+    </Product>
+</Wix>

@@ -8,6 +8,12 @@ include Makefile
 # use bash so we can use set -o pipefail
 SHELL := /bin/bash
 
+# github-release install location
+export PATH := /go/bin:$(PATH)
+
+# github-release user
+GH_USER := dkujawski
+
 # set --pre-release if not tagged or tree is dirty or there's a `-` in the tag
 ifneq (,$(findstring -,$(VERSION)))
 	GITHUB_RELEASE_FLAGS := "--pre-release"
@@ -42,13 +48,15 @@ publish-github-darwin: publish-github-darwin-bin
 
 publish-github-linux: publish-github-linux-bin publish-github-deb publish-github-rpm
 
+publish-github-windows: publish-github-windows-exe publish-github-windows-msi
+
 publish-packagecloud: publish-packagecloud-deb publish-packagecloud-rpm
 
 github-release:
 	set -o pipefail; \
 	scripts/changelog | github-release release \
 	--security-token $$GH_LOGIN \
-	--user segmentio \
+	--user $(GH_USER) \
 	--repo aws-okta \
 	$(GITHUB_RELEASE_FLAGS) \
 	--tag $(VERSION) \
@@ -56,14 +64,14 @@ github-release:
 	--name $(VERSION) || \
 	github-release info \
 	--security-token $$GH_LOGIN \
-	--user segmentio \
+	--user $(GH_USER) \
 	--repo aws-okta \
 	--tag $(VERSION)
 
 publish-github-darwin-bin: dist/aws-okta-$(VERSION)-darwin-amd64 | github-release
 	github-release upload \
 	--security-token $$GH_LOGIN \
-	--user segmentio \
+	--user $(GH_USER) \
 	--repo aws-okta \
 	--tag $(VERSION) \
 	--name aws-okta-$(VERSION)-darwin-amd64 \
@@ -73,17 +81,37 @@ publish-github-darwin-bin: dist/aws-okta-$(VERSION)-darwin-amd64 | github-releas
 publish-github-linux-bin: dist/aws-okta-$(VERSION)-linux-amd64 | github-release
 	github-release upload \
 	--security-token $$GH_LOGIN \
-	--user segmentio \
+	--user $(GH_USER) \
 	--repo aws-okta \
 	--tag $(VERSION) \
 	--name aws-okta-$(VERSION)-linux-amd64 \
 	--replace \
 	--file $<
 
+publish-github-windows-exe: dist/aws-okta-$(VERSION).exe | github-release
+	github-release upload \
+	--security-token $$GH_LOGIN \
+	--user $(GH_USER) \
+	--repo aws-okta \
+	--tag $(VERSION) \
+	--name aws-okta.exe \
+	--replace \
+	--file dist/aws-okta.exe
+
+publish-github-windows-msi: dist/aws-okta-$(VERSION).msi | github-release
+	github-release upload \
+	--security-token $$GH_LOGIN \
+	--user $(GH_USER) \
+	--repo aws-okta \
+	--tag $(VERSION) \
+	--name aws-okta-$(VERSION).msi \
+	--replace \
+	--file $<
+
 publish-github-deb: dist/aws-okta_$(VERSION)_amd64.deb | github-release
 	github-release upload \
 	--security-token $$GH_LOGIN \
-	--user segmentio \
+	--user $(GH_USER) \
 	--repo aws-okta \
 	--tag $(VERSION) \
 	--name aws-okta_$(VERSION)_amd64.deb \
@@ -93,7 +121,7 @@ publish-github-deb: dist/aws-okta_$(VERSION)_amd64.deb | github-release
 publish-github-rpm: dist/aws-okta_$(VERSION)_amd64.rpm | github-release
 	github-release upload \
 	--security-token $$GH_LOGIN \
-	--user segmentio \
+	--user $(GH_USER) \
 	--repo aws-okta \
 	--tag $(VERSION) \
 	--name aws-okta_$(VERSION)_amd64.rpm \
@@ -103,7 +131,7 @@ publish-github-rpm: dist/aws-okta_$(VERSION)_amd64.rpm | github-release
 publish-github-sha256sums: dist/aws-okta-$(VERSION).sha256sums | github-release
 	github-release upload \
 	--security-token $$GH_LOGIN \
-	--user segmentio \
+	--user $(GH_USER) \
 	--repo aws-okta \
 	--tag $(VERSION) \
 	--name aws-okta-$(VERSION).sha256sums \
@@ -140,17 +168,26 @@ dist-darwin: dist/aws-okta-$(VERSION)-darwin-amd64
 	
 dist-linux: dist/aws-okta-$(VERSION)-linux-amd64 dist/aws-okta_$(VERSION)_amd64.deb dist/aws-okta_$(VERSION)_amd64.rpm
 
+dist-windows: dist/aws-okta-$(VERSION).exe dist/aws-okta-$(VERSION).msi
+
 dist/aws-okta-$(VERSION).sha256sums: dist/aws-okta-$(VERSION)-darwin-amd64 dist/aws-okta-$(VERSION)-linux-amd64 dist/aws-okta_$(VERSION)_amd64.deb dist/aws-okta_$(VERSION)_amd64.rpm
 	sha256sum $^ | sed 's|dist/||g' > $@
 
 dist/nfpm-$(VERSION).yaml: | dist/
 	sed -e "s/\$${VERSION}/$(VERSION)/g" -e "s|\$${DIST_BIN}|dist/aws-okta-$(VERSION)-linux-amd64|g" < nfpm.yaml.tmpl > $@
 
+dist/wixl-$(WINVERSION).wix: | dist/
+	sed -i -e "s/\$${WINVERSION}/$(WINVERSION)/g" WindowsMSI.wxs 
+
 dist/aws-okta_$(VERSION)_amd64.deb: dist/nfpm-$(VERSION).yaml dist/aws-okta-$(VERSION)-linux-amd64
 	nfpm -f $< pkg --target $@
 
 dist/aws-okta_$(VERSION)_amd64.rpm: dist/nfpm-$(VERSION).yaml dist/aws-okta-$(VERSION)-linux-amd64
 	nfpm -f $< pkg --target $@
+
+dist/aws-okta-$(VERSION).msi: dist/wixl-$(WINVERSION).wix dist/aws-okta-$(VERSION).exe
+	wixl -v WindowsMSI.wxs -o dist/aws-okta-$(VERSION).msi
+
 
 .PHONY: \
 	dist \

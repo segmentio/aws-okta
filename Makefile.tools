@@ -24,7 +24,12 @@ sha256sum-darwin:
 	brew install coreutils && ln -s $$(which gsha256sum) /usr/local/bin/sha256sum`
 
 github-release:
-	GO111MODULE=off go get -u github.com/aktau/github-release
+	GO111MODULE=off go get -u -v github.com/aktau/github-release
+	go env
+	/go/bin/github-release --version
+
+windows-wixl:
+	apt update -q && apt install wixl -yq
 
 package_cloud:
 	gem install package_cloud

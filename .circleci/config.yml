@@ -74,6 +74,25 @@ jobs:
           root: .
           paths: ['dist/*']
 
+  dist-windows:
+    docker:
+      - image: circleci/golang:1.13
+    working_directory: /go/src/github.com/segmentio/aws-okta
+    steps:
+      - checkout
+      - run: 
+          name: Install MSI building tools
+          command: |
+            sudo apt update -q
+            sudo apt install -yq wixl
+      - run:
+          name: Make distributables
+          command: |
+            make -f Makefile.release dist-windows
+      - persist_to_workspace:
+          root: .
+          paths: ['dist/*']
+
   publish-packagecloud:
     docker:
       - image: circleci/golang:1.13
@@ -105,6 +124,24 @@ jobs:
           command: |
             make -f Makefile.tools github-release
             make -f Makefile.release publish-github-linux
+
+  publish-github-windows:
+    docker:
+      - image: circleci/golang:1.13
+    working_directory: /go/src/github.com/segmentio/aws-okta
+    steps:
+      - checkout
+      - attach_workspace: { at: . }
+      - run: 
+          name: Install tools
+          command: |
+            make -f Makefile.tools github-release
+            sudo apt update -q
+            sudo apt install -yq wixl
+      - run:
+          name: Publish Windows exe and msi to github
+          command: |
+            make -f Makefile.release publish-github-windows
 
 workflows:
   version: 2
@@ -140,5 +177,23 @@ workflows:
             branches:
               ignore: /.*/
             # release only on tag push events like vX[.Y.Z...][-whatever]
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(-[a-zA-Z0-9-]+)?/
+
+  test-dist-publish-windows:
+    jobs:
+      - test-build-golang-prev
+      - dist-windows:
+          # needed to ensure dist happens on tag events
+          filters:
+            tags:
+              only: /.*/
+      - publish-github-windows:
+          context: github-dkujawskicircle-oss-release
+          requires:
+            - dist-windows
+          filters:
+            branches:
+              ignore: /.*/
             tags:
               only: /v[0-9]+(\.[0-9]+)*(-[a-zA-Z0-9-]+)?/
