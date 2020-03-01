@@ -35,6 +35,8 @@ github.com/aws/aws-sdk-go/private/protocol/rest
 github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
 github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/service/sts/stsiface
+# github.com/beiriannydd/useragent v1.0.2
+github.com/beiriannydd/useragent
 # github.com/danieljoos/wincred v1.0.2
 github.com/danieljoos/wincred
 # github.com/davecgh/go-spew v1.1.1

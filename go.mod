@@ -4,6 +4,7 @@ require (
 	github.com/99designs/keyring v1.0.0
 	github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053
 	github.com/aws/aws-sdk-go v1.25.25
+	github.com/beiriannydd/useragent v1.0.2
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/karalabe/hid v1.0.0 // indirect

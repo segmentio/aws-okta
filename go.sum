@@ -4,6 +4,10 @@ github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053 h1:H/GMMKYPkEI
 github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053/go.mod h1:xW8sBma2LE3QxFSzCnH9qe6gAE2yO9GvQaWwX89HxbE=
 github.com/aws/aws-sdk-go v1.25.25 h1:j3HLOqcDWjNox1DyvJRs+kVQF42Ghtv6oL6cVBfXS3U=
 github.com/aws/aws-sdk-go v1.25.25/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
+github.com/beiriannydd/useragent v1.0.1 h1:KzvSWgwrtyC7c0ZWfu2KAx+I39cVuZ5gFfRJYRCK0fI=
+github.com/beiriannydd/useragent v1.0.1/go.mod h1:tsWZrxEludQcRtcM2xG6ra1xQ2idI6kKyYTB6T6WhG0=
+github.com/beiriannydd/useragent v1.0.2 h1:JyXOEyS1ge4P3td96VmI6+4OFlPv6Oxi15vDx2IpTBM=
+github.com/beiriannydd/useragent v1.0.2/go.mod h1:tsWZrxEludQcRtcM2xG6ra1xQ2idI6kKyYTB6T6WhG0=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 h1:DDGfHa7BWjL4YnC6+E63dPcxHo2sUxDIu8g3QgEJdRY=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dRnpXw/yCqJaO+ZrUyxD+3VXMFFr56k5XYrpB4=
 github.com/danieljoos/wincred v1.0.2 h1:zf4bhty2iLuwgjgpraD2E9UbvO+fe54XXGJbOwe23fU=

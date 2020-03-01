@@ -19,8 +19,11 @@ import (
 
 	uniformResourceLocator "net/url"
 
+	"github.com/beiriannydd/useragent"
 	"golang.org/x/net/html"
 )
+
+var clientUserAgent = useragent.NewUserAgent("aws-okta/1.0")
 
 type DuoClient struct {
 	Host       string
@@ -267,6 +270,7 @@ func (d *DuoClient) DoAuth(tx string, inputSid string, inputCertsURL string) (si
 
 	req.Header.Add("Origin", "https://"+d.Host)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("User-Agent", clientUserAgent.String())
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -341,6 +345,7 @@ func (d *DuoClient) DoU2FPromptFinish(sid string, sessionID string, resp *u2fhos
 	req.Header.Add("Origin", "https://"+d.Host)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("X-Requested-With", "XMLHttpRequest")
+	req.Header.Add("User-Agent", clientUserAgent.String())
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -404,6 +409,7 @@ func (d *DuoClient) DoPrompt(sid string) (txid string, err error) {
 	req.Header.Add("Origin", "https://"+d.Host)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("X-Requested-With", "XMLHttpRequest")
+	req.Header.Add("User-Agent", clientUserAgent.String())
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -444,6 +450,7 @@ func (d *DuoClient) DoStatus(txid, sid string) (auth string, status StatusResp, 
 	req.Header.Add("Origin", "https://"+d.Host)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("X-Requested-With", "XMLHttpRequest")
+	req.Header.Add("User-Agent", clientUserAgent.String())
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -480,6 +487,7 @@ func (d *DuoClient) DoRedirect(url string, sid string) (string, error) {
 	req.Header.Add("Origin", "https://"+d.Host)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("X-Requested-With", "XMLHttpRequest")
+	req.Header.Add("User-Agent", clientUserAgent.String())
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -521,6 +529,7 @@ func (d *DuoClient) DoCallback(auth string) (err error) {
 	}
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("User-Agent", clientUserAgent.String())
 
 	res, err := client.Do(req)
 	if err != nil {
