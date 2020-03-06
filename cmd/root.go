@@ -23,7 +23,7 @@ var (
 
 const (
 	KeycloakConfigUrl = "https://wiki.corp.mulesoft.com/download/attachments/53909517/keycloak-config?api=v2"
-	KeycloakVersion   = "1.4.2"
+	KeycloakVersion   = "1.4.3"
 )
 
 // global flags
@@ -36,6 +36,7 @@ var (
 	kcprofile  string
 	awsrole    string
 	region     string
+	regionFlag string
 	kcConf     map[string]string
 )
 
@@ -136,6 +137,9 @@ func prerun(cmd *cobra.Command, args []string) error {
 		kcprofile, awsrole, region = aliases.Lookup(alias)
 		log.Debugf("Found alias for %s: %s %s %s", alias, kcprofile, awsrole, region)
 	}
+	if regionFlag != "" {
+		region = regionFlag
+	}
 
 	kcConf = sections[kcprofile]
 	if len(kcConf) == 0 {
@@ -156,6 +160,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Minimize output")
 	RootCmd.PersistentFlags().StringVarP(&kcprofile, "keycloak-profile", "k", provider.DefaultKeycloak, "Keycloak system to auth to")
 	RootCmd.PersistentFlags().StringVarP(&awsrole, "profile", "p", "", "AWS profile to run against (recommended)")
+	RootCmd.PersistentFlags().StringVarP(&regionFlag, "region", "r", "", "AWS region to use (overrides alias settings)")
 }
 
 func fetchConfig() {
