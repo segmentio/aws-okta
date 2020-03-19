@@ -698,7 +698,7 @@ func (p *OktaProvider) Retrieve() (sts.Credentials, string, error) {
 }
 
 func (p *OktaProvider) GetSAMLLoginURL() (*url.URL, error) {
-	item, err := p.Keyring.Get("okta-creds")
+	item, err := p.Keyring.Get(p.OktaAccountName)
 	if err != nil {
 		log.Debugf("couldnt get okta creds from keyring: %s", err)
 		return &url.URL{}, err
