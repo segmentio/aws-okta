@@ -23,7 +23,7 @@ var (
 
 const (
 	KeycloakConfigUrl = "https://wiki.corp.mulesoft.com/download/attachments/53909517/keycloak-config?api=v2"
-	KeycloakVersion   = "1.4.3"
+	KeycloakVersion   = "1.5.0"
 )
 
 // global flags

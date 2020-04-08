@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -78,6 +81,10 @@ func runWithAwsEnv(includeFullEnv bool, name string, arg ...string) error {
 	return runWithEnv(name, env, arg...)
 }
 
+/**
+ * This method will only return if there is an erorr running the subcommand.
+ * Otherwise it will Exit with the appropriate exit code.
+ */
 func runWithEnv(name string, env []string, arg ...string) error {
 	binary, err := exec.LookPath(name)
 	if err != nil {
@@ -87,10 +94,54 @@ func runWithEnv(name string, env []string, arg ...string) error {
 	cmd := exec.Command(binary, arg...)
 	cmd.Env = env
 
+	writer, _ := cmd.StdinPipe()
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
 
-	err = cmd.Run()
+	errChan := make(chan error, 1)
+	go func() {
+		defer writer.Close()
+		stdin := bufio.NewReader(os.Stdin)
+		for {
+			input, err := stdin.ReadByte()
+			if err == io.EOF {
+				errChan <- nil
+				break
+			}
+			if err == nil {
+				_, err = writer.Write([]byte{input})
+			}
+			if err != nil {
+				errChan <- err
+				break
+			}
+		}
+	}()
+
+	// This is subtly different from simply `cmd.Run()`, though I don't understand why.
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	err = cmd.Wait()
+
+	writer.Close()
+	close(errChan)
+
+	readErr := <-errChan
+	if readErr != nil {
+		os.Stderr.WriteString(readErr.Error())
+		os.Exit(1)
+	}
+
+	if err == nil {
+		os.Exit(0)
+	}
+
+	var exit *exec.ExitError
+	if errors.As(err, &exit) {
+		os.Exit(exit.ProcessState.ExitCode())
+	}
+
 	return err
 }
