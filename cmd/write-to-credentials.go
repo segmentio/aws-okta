@@ -125,7 +125,7 @@ func writeToCredentialsRun(cmd *cobra.Command, args []string) error {
 	section.Key("aws_session_token").SetValue(creds.SessionToken)
 	section.Key("aws_security_token").SetValue(creds.SessionToken)
 
-	credFile, err := os.OpenFile(credFilePath, os.O_WRONLY, 0600)
+	credFile, err := os.OpenFile(credFilePath, os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
