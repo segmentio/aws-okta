@@ -135,7 +135,12 @@ func updateMfaConfig(cmd *cobra.Command, profiles lib.Profiles, profile string, 
 		if ok {
 			config.DuoDevice = mfaDeviceFromEnv
 		} else {
-			config.DuoDevice = DefaultMFADuoDevice
+			duoDevice, _, err := profiles.GetValue(profile, "mfa_duo_device")
+			if err == nil {
+				config.DuoDevice = duoDevice
+			} else {
+				config.DuoDevice = DefaultMFADuoDevice
+			}
 		}
 	}
 
