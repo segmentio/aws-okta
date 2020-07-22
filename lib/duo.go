@@ -463,7 +463,14 @@ func (d *DuoClient) DoStatus(txid, sid string) (auth string, status StatusResp, 
 
 	if status.Response.Result == "SUCCESS" {
 		if status.Response.ResultURL != "" {
-			auth, err = d.DoRedirect(status.Response.ResultURL, status.Response.SessionID)
+			// DUO appears to waver on whether a session ID should come back
+			// in the response here, if it does, it should be used in the redirect
+			// before calling the Okta callback.
+			if status.Response.SessionID != "" {
+				sid = status.Response.SessionID
+			}
+			log.Debugf("Redirecting: %s; sid: %s", status.Response.ResultURL, sid)
+			auth, err = d.DoRedirect(status.Response.ResultURL, sid)
 		} else {
 			auth = status.Response.Cookie
 		}
