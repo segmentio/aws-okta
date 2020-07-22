@@ -232,7 +232,7 @@ func (o *OktaClient) AuthenticateProfile3(profileARN string, duration time.Durat
 		// Clear DT cookie before starting AuthN flow again. Bug #279.
 		o.CookieJar.SetCookies(o.BaseURL, []*http.Cookie{
 			{
-				Name:  "DT",
+				Name:   "DT",
 				MaxAge: -1,
 			},
 		})
@@ -412,6 +412,7 @@ func (o *OktaClient) postChallenge(payload []byte, oktaFactorProvider string, ok
 					Callback:   f.Embedded.Verification.Links.Complete.Href,
 					Device:     o.MFAConfig.DuoDevice,
 					StateToken: o.UserAuth.StateToken,
+					FactorID:   f.Id,
 				}
 
 				log.Debugf("Host:%s\nSignature:%s\nStateToken:%s\n",
