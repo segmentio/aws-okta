@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bytes"
+        "crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -578,10 +579,19 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 		}
 	}
 
+       // FORCE TLS negotiation to only support HTTP/1.1
+       tlsCfg := &tls.Config{
+                NextProtos: []string{"h1"},
+       }
+
 	transCfg := &http.Transport{
 		Proxy:               http.ProxyFromEnvironment,
 		TLSHandshakeTimeout: Timeout,
+                DisableKeepAlives:   true,
+                MaxIdleConnsPerHost: -1,
+                TLSClientConfig: tlsCfg,
 	}
+
 	client = http.Client{
 		Transport: transCfg,
 		Timeout:   Timeout,
