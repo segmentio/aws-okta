@@ -553,7 +553,6 @@ func GetFactorId(f *OktaUserAuthnFactor) (id string, err error) {
 
 func (o *OktaClient) Get(method string, path string, data []byte, recv interface{}, format string) (err error) {
 	var res *http.Response
-	var body []byte
 	var header http.Header
 	var client http.Client
 
@@ -596,7 +595,7 @@ func (o *OktaClient) Get(method string, path string, data []byte, recv interface
 		ProtoMinor:    1,
 		Header:        header,
 		Body:          ioutil.NopCloser(bytes.NewReader(data)),
-		ContentLength: int64(len(body)),
+		ContentLength: int64(len(data)),
 	}
 
 	if res, err = client.Do(req); err != nil {
