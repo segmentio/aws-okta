@@ -103,6 +103,7 @@ jobs:
       - run:
           name: Install tools
           command: |
+            # disabled (temporarily?) due to https://github.com/segmentio/aws-okta/issues/301
             make -f Makefile.tools github-release
             make -f Makefile.release publish-github-linux
 
