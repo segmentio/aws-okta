@@ -23,7 +23,8 @@ PACKAGECLOUD_DEB_DISTROS := \
 	ubuntu/xenial \
 	ubuntu/bionic \
 	ubuntu/disco \
-	ubuntu/eoan
+	ubuntu/eoan \
+	ubuntu/focal
 
 PACKAGECLOUD_RPM_DISTROS := \
 	fedora/27 \
