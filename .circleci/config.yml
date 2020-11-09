@@ -139,6 +139,7 @@ workflows:
             # never publish from a branch event
             branches:
               ignore: /.*/
+            # disabled (temporarily?) due to https://github.com/segmentio/aws-okta/issues/301
             # release only on tag push events like vX[.Y.Z...][-whatever]
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*(-[a-zA-Z0-9-]+)?/
+            # tags:
+            #   only: /v[0-9]+(\.[0-9]+)*(-[a-zA-Z0-9-]+)?/
