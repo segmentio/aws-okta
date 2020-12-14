@@ -2,7 +2,7 @@
 github.com/99designs/keyring
 # github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053
 github.com/alessio/shellescape
-# github.com/aws/aws-sdk-go v1.25.25
+# github.com/aws/aws-sdk-go v1.25.35
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/awserr
 github.com/aws/aws-sdk-go/aws/awsutil
