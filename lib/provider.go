@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"github.com/segmentio/aws-okta/sessioncache"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/99designs/keyring"
@@ -301,11 +302,19 @@ func (p *Provider) GetSAMLLoginURL() (*url.URL, error) {
 
 // assumeRoleFromSession takes a session created with an okta SAML login and uses that to assume a role
 func (p *Provider) assumeRoleFromSession(creds sts.Credentials, roleArn string) (sts.Credentials, error) {
-	client := sts.New(aws_session.New(&aws.Config{Credentials: credentials.NewStaticCredentials(
-		*creds.AccessKeyId,
-		*creds.SecretAccessKey,
-		*creds.SessionToken,
-	)}))
+	conf := &aws.Config{
+		Credentials: credentials.NewStaticCredentials(
+			*creds.AccessKeyId,
+			*creds.SecretAccessKey,
+			*creds.SessionToken,
+		),
+	}
+	if region := p.profiles[sourceProfile(p.profile, p.profiles)]["region"]; region != "" {
+		conf.WithRegion(region)
+		conf.WithSTSRegionalEndpoint(endpoints.RegionalSTSEndpoint)
+	}
+	sess := aws_session.Must(aws_session.NewSession(conf))
+	client := sts.New(sess)
 
 	input := &sts.AssumeRoleInput{
 		RoleArn:         aws.String(roleArn),
@@ -341,15 +350,19 @@ func (p *Provider) roleSessionName() string {
 // GetRoleARN uses temporary credentials to call AWS's get-caller-identity and
 // returns the assumed role's ARN
 func (p *Provider) GetRoleARNWithRegion(creds credentials.Value) (string, error) {
-	config := aws.Config{Credentials: credentials.NewStaticCredentials(
-		creds.AccessKeyID,
-		creds.SecretAccessKey,
-		creds.SessionToken,
-	)}
-	if region := p.profiles[sourceProfile(p.profile, p.profiles)]["region"]; region != "" {
-		config.WithRegion(region)
+	conf := &aws.Config{
+		Credentials: credentials.NewStaticCredentials(
+			creds.AccessKeyID,
+			creds.SecretAccessKey,
+			creds.SessionToken,
+		),
 	}
-	client := sts.New(aws_session.New(&config))
+	if region := p.profiles[sourceProfile(p.profile, p.profiles)]["region"]; region != "" {
+		conf.WithRegion(region)
+		conf.WithSTSRegionalEndpoint(endpoints.RegionalSTSEndpoint)
+	}
+	sess := aws_session.Must(aws_session.NewSession(conf))
+	client := sts.New(sess)
 
 	indentity, err := client.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
