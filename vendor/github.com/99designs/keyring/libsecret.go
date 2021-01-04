@@ -4,7 +4,7 @@ package keyring
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 
 	"github.com/godbus/dbus"
 	"github.com/gsterjov/go-libsecret"
@@ -54,6 +54,8 @@ func (e *secretsError) Error() string {
 	return e.message
 }
 
+var errCollectionNotFound = errors.New("The collection does not exist. Please add a key first")
+
 func (k *secretsKeyring) openSecrets() error {
 	session, err := k.service.Open()
 	if err != nil {
@@ -85,10 +87,11 @@ func (k *secretsKeyring) openCollection() error {
 	}
 
 	if k.collection == nil {
-		return &secretsError{fmt.Sprintf(
-			"The collection %q does not exist. Please add a key first",
-			k.name,
-		)}
+		return errCollectionNotFound
+		// return &secretsError{fmt.Sprintf(
+		// 	"The collection %q does not exist. Please add a key first",
+		// 	k.name,
+		// )}
 	}
 
 	return nil
@@ -96,6 +99,9 @@ func (k *secretsKeyring) openCollection() error {
 
 func (k *secretsKeyring) Get(key string) (Item, error) {
 	if err := k.openCollection(); err != nil {
+		if err == errCollectionNotFound {
+			return Item{}, ErrKeyNotFound
+		}
 		return Item{}, err
 	}
 
@@ -105,7 +111,7 @@ func (k *secretsKeyring) Get(key string) (Item, error) {
 	}
 
 	if len(items) == 0 {
-		return Item{}, err
+		return Item{}, ErrKeyNotFound
 	}
 
 	// use the first item whenever there are multiples
@@ -128,13 +134,25 @@ func (k *secretsKeyring) Get(key string) (Item, error) {
 		return Item{}, err
 	}
 
-	// pack the secret into the aws-vault item
+	// pack the secret into the item
 	var ret Item
 	if err = json.Unmarshal(secret.Value, &ret); err != nil {
 		return Item{}, err
 	}
 
 	return ret, err
+}
+
+// GetMetadata for libsecret returns an error indicating that it's unsupported
+// for this backend.
+//
+// libsecret actually implements a metadata system which we could use, "Secret
+// Attributes"; I found no indication in documentation of anything like an
+// automatically maintained last-modification timestamp, so to use this we'd
+// need to have a SetMetadata API too.  Which we're not yet doing, but feel
+// free to contribute patches.
+func (k *secretsKeyring) GetMetadata(key string) (Metadata, error) {
+	return Metadata{}, ErrMetadataNeedsCredentials
 }
 
 func (k *secretsKeyring) Set(item Item) error {
@@ -153,6 +171,10 @@ func (k *secretsKeyring) Set(item Item) error {
 		k.collection = collection
 	}
 
+	if err := k.ensureCollectionUnlocked(); err != nil {
+		return err
+	}
+
 	// create the new item
 	data, err := json.Marshal(item)
 	if err != nil {
@@ -160,18 +182,6 @@ func (k *secretsKeyring) Set(item Item) error {
 	}
 
 	secret := libsecret.NewSecret(k.session, []byte{}, data, "application/json")
-
-	// unlock the collection first
-	locked, err := k.collection.Locked()
-	if err != nil {
-		return err
-	}
-
-	if locked {
-		if err := k.service.Unlock(k.collection); err != nil {
-			return err
-		}
-	}
 
 	if _, err := k.collection.CreateItem(item.Key, secret, true); err != nil {
 		return err
@@ -181,8 +191,10 @@ func (k *secretsKeyring) Set(item Item) error {
 }
 
 func (k *secretsKeyring) Remove(key string) error {
-	err := k.openCollection()
-	if err != nil {
+	if err := k.openCollection(); err != nil {
+		if err == errCollectionNotFound {
+			return ErrKeyNotFound
+		}
 		return err
 	}
 
@@ -219,24 +231,47 @@ func (k *secretsKeyring) Remove(key string) error {
 }
 
 func (k *secretsKeyring) Keys() ([]string, error) {
-	err := k.openCollection()
-	if err != nil {
-		return []string{}, err
+	if err := k.openCollection(); err != nil {
+		if err == errCollectionNotFound {
+			return []string{}, nil
+		}
+		return nil, err
 	}
-
+	if err := k.ensureCollectionUnlocked(); err != nil {
+		return nil, err
+	}
 	items, err := k.collection.Items()
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
-
 	keys := []string{}
-
 	for _, item := range items {
 		label, err := item.Label()
 		if err == nil {
 			keys = append(keys, label)
+		} else {
+			// err is being silently ignored here, not sure if that's good or bad
 		}
 	}
-
 	return keys, nil
+}
+
+// deleteCollection deletes the keyring's collection if it exists. This is mainly to support testing.
+func (k *secretsKeyring) deleteCollection() error {
+	if err := k.openCollection(); err != nil {
+		return err
+	}
+	return k.collection.Delete()
+}
+
+// unlock the collection if it's locked
+func (k *secretsKeyring) ensureCollectionUnlocked() error {
+	locked, err := k.collection.Locked()
+	if err != nil {
+		return err
+	}
+	if !locked {
+		return nil
+	}
+	return k.service.Unlock(k.collection)
 }
